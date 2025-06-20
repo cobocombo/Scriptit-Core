@@ -82,7 +82,7 @@ class TypeChecker
 ///////////////////////////////////////////////////////////
 
 /** Singleton class representing the main color object. */
-class ColorUtility
+class ColorManager
 {
   #errors;
   static #instance = null;
@@ -92,17 +92,17 @@ class ColorUtility
   {
     this.#errors = 
     {
-      singleInstanceError: 'Color Utility Error: Only one ColorUtility object can exist at a time.'
+      singleInstanceError: 'Color Manager Error: Only one ColorUtility object can exist at a time.'
     };
 
-    if(ColorUtility.#instance) throw this.#errors.singleInstanceError;
-    else ColorUtility.#instance = this;
+    if(ColorManager.#instance) throw this.#errors.singleInstanceError;
+    else ColorManager.#instance = this;
   }
 
   /** Static method to return a new ColorUtility instance. Allows for Singleton+Module pattern. */
   static getInstance() 
   {
-    return new ColorUtility();
+    return new ColorManager();
   }
   
   /** 
@@ -6040,7 +6040,7 @@ class Toast extends Component
 ///////////////////////////////////////////////////////////
 
 globalThis.typeChecker = TypeChecker.getInstance();
-globalThis.color = ColorUtility.getInstance();
+globalThis.color = ColorManager.getInstance();
 globalThis.app = App.getInstance();
 globalThis.ui = UserInterface.getInstance();
 
