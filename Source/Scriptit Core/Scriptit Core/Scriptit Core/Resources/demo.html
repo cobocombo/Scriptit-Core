@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'">
+    <link rel="stylesheet" href="onsenui.min.css">
+    <link rel="stylesheet" href="onsen-css-components.min.css">
+    <link rel="stylesheet" href="ionicons.min.css">
+    <link rel="stylesheet" href="material-design-iconic-font.min.css">
+    <link rel="stylesheet" href="all.min.css">
+    <link rel="stylesheet" href="v4-shims.min.css">
+</head>
+<body>
+    <script src="onsenui.min.js"></script>
+    <script src="ui.js"></script>
+    <script>
+      class HomePage extends ui.Page
+      {
+        onInit()
+        {
+          this.navigationBarTitle = 'Home';
+          this.navigationBarButtonsLeft = [ new ui.BarButton({ icon: 'fa-cog' }), new ui.BarButton({ icon: 'md-face' }) ]
+
+          //this.sheet = ui.ActionSheet();
+
+          //setTimeout(()=> { this.addComponentToCenter({ component: this.tx }); }, 2000);  
+          //this.addComponentToCenter({ component: new Text({ text: 'Hello World!' }) });
+
+          // let sw = new Switch();
+          // sw.color = 'red';
+          // sw.onChange = (state) => { console.log(state) };
+
+          // this.addComponentToCenter({component: sw });
+          // setTimeout(()=> { sw.toggle() }, 2000);
+          // setTimeout(()=> { sw.off() }, 4000);
+          // setTimeout(()=> { sw.on() }, 6000);
+          // setTimeout(()=> { sw.checked = false }, 8000);
+        }
+      }
+      
+      class MorePage extends Page
+      {
+        onInit()
+        {
+          this.backgroundColor = 'green';
+          this.navigationBarTitle = 'More';
+        }
+      }
+      
+      // const nav = new Navigator({ root: new HomePage() });
+
+      let homeTab = new Tab({ badge: '6', text: 'Home', icon: 'ion-ios-home', root: new HomePage(), color: 'red' });
+      let moretab = new Tab({ text: 'More', icon: 'ion-ios-more', root: new MorePage(), color: 'green' });
+      const tabbar = new ui.Tabbar({ tabs: [ homeTab, moretab ] });
+
+      //setTimeout(()=> { tabbar.activeTab = 2 }, 1000);
+      // setTimeout(()=> { console.log(tabbar.activeTab) }, 2000);
+      // setTimeout(()=> { console.log(tabbar.tabs) }, 3000);
+      // const menu = new SplitterMenu({ root: new MorePage(), mode: 'split' });
+      // const splitter = new Splitter({ leftMenu: menu, detail: new HomePage() });
+      
+      app.present({ root: tabbar });
+    </script>
+</body>
+</html>
