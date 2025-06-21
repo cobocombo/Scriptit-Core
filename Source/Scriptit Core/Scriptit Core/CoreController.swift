@@ -1,17 +1,22 @@
+//=======================================================//
+
 import UIKit
 import WebKit
 
+//=======================================================//
+
 class CoreController: UIViewController, WKScriptMessageHandler
 {
+  var webView: WKWebView!
+  var router: JavascriptMessageRouter!
+  
   override func viewDidLoad()
   {
     super.viewDidLoad();
     
-    let userContentController = WKUserContentController();
-    
     let overrideConsole = """
     function log(emoji, type, args) {
-      window.webkit.messageHandlers.logging.postMessage(
+      window.webkit.messageHandlers.consoleMessageHandler.postMessage(
         `${emoji} JS ${type}: ${Object.values(args)
           .map(v => typeof(v) === "undefined" ? "undefined" : typeof(v) === "object" ? JSON.stringify(v) : v.toString())
           .map(v => v.substring(0, 3000)) // Limit msg to 3000 chars
@@ -32,33 +37,84 @@ class CoreController: UIViewController, WKScriptMessageHandler
     window.addEventListener("error", function(e) {
        log("💥", "Uncaught", [`${e.message} at ${e.filename}:${e.lineno}:${e.colno}`])
     })
-    """
-    
+    """;
     let logUserScript = WKUserScript(source: overrideConsole, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+    
+    self.router = JavascriptMessageRouter();
+    self.router.registerHandler(ConsoleMessageHandler(), forMessageName: "consoleMessageHandler");
+    
+    let preferences = WKPreferences();
+    preferences.setValue(true, forKey: "developerExtrasEnabled");
+    
+    let userContentController = WKUserContentController();
+    
     userContentController.addUserScript(logUserScript)
-    userContentController.add(self, name: "logging")
+    userContentController.add(self, name: "consoleMessageHandler");
     
-    let preferences = WKPreferences()
-    preferences.setValue(true, forKey: "developerExtrasEnabled")
+    let webViewConfiguration = WKWebViewConfiguration();
+    webViewConfiguration.preferences = preferences;
+    webViewConfiguration.userContentController = userContentController;
     
-    let webViewConfig = WKWebViewConfiguration();
-    webViewConfig.userContentController = userContentController;
-    webViewConfig.preferences = preferences
-    
-    let webView = WKWebView(frame: view.bounds, configuration: webViewConfig);
-    webView.autoresizingMask = [ .flexibleWidth, .flexibleHeight];
+    self.webView = WKWebView(frame: view.bounds, configuration: webViewConfiguration);
+    self.webView.autoresizingMask = [ .flexibleWidth, .flexibleHeight];
     
     if let htmlPath = Bundle.main.path(forResource: "app", ofType: "html")
     {
       let fileURL = URL(fileURLWithPath: htmlPath);
       let fileDirectory = fileURL.deletingLastPathComponent();
-      webView.loadFileURL(fileURL, allowingReadAccessTo: fileDirectory);
-      self.view.addSubview(webView);
+      self.webView.loadFileURL(fileURL, allowingReadAccessTo: fileDirectory);
+      self.view.addSubview(self.webView);
     }
   }
   
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage)
   {
-    print(message.body)
+    self.router.routeMessage(message, webView: self.webView);
   }
 }
+
+//=======================================================//
+
+protocol JavascriptMessageHandler
+{
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+}
+
+//=======================================================//
+
+class JavascriptMessageRouter
+{
+  private var handlers: [String: JavascriptMessageHandler] = [:]
+  
+  func registerHandler(_ handler: JavascriptMessageHandler, forMessageName name: String)
+  {
+    handlers[name] = handler;
+  }
+  
+  func routeMessage(_ message: WKScriptMessage, webView: WKWebView )
+  {
+    if let handler = handlers[message.name]
+    {
+      handler.handleMessage(message, webView: webView);
+    }
+    else
+    {
+      print("No handler found for message: \(message.name)");
+    }
+  }
+}
+
+//=======================================================//
+
+class ConsoleMessageHandler: JavascriptMessageHandler
+{
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+  {
+    if let messageBody = message.body as? String
+    {
+      print(messageBody);
+    }
+  }
+}
+
+//=======================================================//
