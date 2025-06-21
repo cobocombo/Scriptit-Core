@@ -9,36 +9,34 @@ class CoreController: UIViewController, WKScriptMessageHandler
     
     let userContentController = WKUserContentController();
     
-    // Inject JS to capture console.log
-    let consoleLogScript = """
-    (function() {
-      var oldLog = console.log;
-      console.log = function(...args) {
-        window.webkit.messageHandlers.consoleLog.postMessage(args.join(" "));
-        oldLog.apply(console, args);
-      };
-    })();
-    """
-    
-    // Inject JS to capture window.onerror (uncaught errors)
-    let errorCaptureScript = """
-    window.onerror = function(message, source, lineno, colno, error) {
-      window.webkit.messageHandlers.jsError.postMessage(
-        'JS Error: ' + message + ' at ' + source + ':' + lineno + ':' + colno
-      );
-    };
-    """
-    
-    // Add the scripts to the controller
-    let logUserScript = WKUserScript(source: consoleLogScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-    let errorUserScript = WKUserScript(source: errorCaptureScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-    
-    userContentController.addUserScript(logUserScript)
-    userContentController.addUserScript(errorUserScript)
+    let overrideConsole = """
+    function log(emoji, type, args) {
+      window.webkit.messageHandlers.logging.postMessage(
+        `${emoji} JS ${type}: ${Object.values(args)
+          .map(v => typeof(v) === "undefined" ? "undefined" : typeof(v) === "object" ? JSON.stringify(v) : v.toString())
+          .map(v => v.substring(0, 3000)) // Limit msg to 3000 chars
+          .join(", ")}`
+      )
+    }
 
-    // Register handlers for messages
-    userContentController.add(self, name: "consoleLog")
-    userContentController.add(self, name: "jsError")
+    let originalLog = console.log
+    let originalWarn = console.warn
+    let originalError = console.error
+    let originalDebug = console.debug
+
+    console.log = function() { log("📗", "log", arguments); originalLog.apply(null, arguments) }
+    console.warn = function() { log("📙", "warning", arguments); originalWarn.apply(null, arguments) }
+    console.error = function() { log("📕", "error", arguments); originalError.apply(null, arguments) }
+    console.debug = function() { log("📘", "debug", arguments); originalDebug.apply(null, arguments) }
+
+    window.addEventListener("error", function(e) {
+       log("💥", "Uncaught", [`${e.message} at ${e.filename}:${e.lineno}:${e.colno}`])
+    })
+    """
+    
+    let logUserScript = WKUserScript(source: overrideConsole, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+    userContentController.addUserScript(logUserScript)
+    userContentController.add(self, name: "logging")
     
     let preferences = WKPreferences()
     preferences.setValue(true, forKey: "developerExtrasEnabled")
@@ -61,14 +59,6 @@ class CoreController: UIViewController, WKScriptMessageHandler
   
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage)
   {
-    switch message.name
-    {
-      case "consoleLog":
-        print("JS console.log: \(message.body)")
-      case "jsError":
-        print("JS Error:", message.body)
-      default:
-        break
-    }
+    print(message.body)
   }
 }
