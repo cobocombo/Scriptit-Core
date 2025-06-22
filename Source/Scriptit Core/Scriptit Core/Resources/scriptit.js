@@ -18,7 +18,7 @@ class ConsoleManager
       postError: 'Console Manager Error: Could not post message to iOS.'
     };
 
-    if(ConsoleManager.#instance) throw this.#errors.singleInstanceError;
+    if(ConsoleManager.#instance) console.error(this.#errors.singleInstanceError);
     else ConsoleManager.#instance = this;
 
     this.#originalConsole = 
@@ -150,7 +150,7 @@ class TypeChecker
       singleInstanceError: 'Typechecker Error: Only one TypeChecker object can exist at a time.'
     };
 
-    if(TypeChecker.#instance) throw this.#errors.singleInstanceError;
+    if(TypeChecker.#instance) console.error(this.#errors.singleInstanceError);
     else
     {
       TypeChecker.#instance = this;
@@ -191,7 +191,7 @@ class TypeChecker
    */
   checkMultiple({ types, value }) 
   {
-    if(!this.check({ type: 'array', value: types })) throw this.#errors.checkMultipleTypeError;
+    if(!this.check({ type: 'array', value: types })) console.error(this.#errors.checkMultipleTypeError);
     for(let type of types) if(this.check({ type: type, value: value })) return true;
     return false;
   }
@@ -203,7 +203,7 @@ class TypeChecker
    */
   register({ name, constructor }) 
   {
-    if(typeof name !== "string" || !(constructor instanceof Function)) throw this.#errors.registrationOfNewTypeError;
+    if(typeof name !== "string" || !(constructor instanceof Function)) console.error(this.#errors.registrationOfNewTypeError);
     this.#types[name] = (x) => x instanceof constructor;
   }
 }
@@ -226,7 +226,7 @@ class ColorManager
       singleInstanceError: 'Color Manager Error: Only one ColorUtility object can exist at a time.'
     };
 
-    if(ColorManager.#instance) throw this.#errors.singleInstanceError;
+    if(ColorManager.#instance) console.error(this.#errors.singleInstanceError);
     else ColorManager.#instance = this;
   }
 
@@ -290,7 +290,7 @@ class App
       statusBarColorTypeError: 'Text Error: Expected type string for color.'
     }
 
-    if(App._instance) throw this.#errors.singleInstanceError;
+    if(App._instance) console.error(this.#errors.singleInstanceError);
     else
     {
       App._instance = this;
@@ -331,8 +331,8 @@ class App
    */
   set statusBarColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.statusBarColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.statusBarColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.statusBarColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.statusBarColorInvalidError);
     document.body.style.backgroundColor = value;
   }
   
@@ -342,12 +342,12 @@ class App
    */
   present({ root } = {}) 
   {
-    if(!root) throw this.#errors.noRootComponentError;
+    if(!root) console.error(this.#errors.noRootComponentError);
 
     if(typeChecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar' ], value: root })) this.#root = root;
-    else throw this.#errors.rootComponentTypeError;
+    else console.error(this.#errors.rootComponentTypeError);
     
-    if(this.#isPresented == true)  throw this.#errors.appAlreadyPresentedError;
+    if(this.#isPresented == true)  console.error(this.#errors.appAlreadyPresentedError);
     else 
     {
       document.body.appendChild(this.#root.element);
@@ -361,8 +361,8 @@ class App
    */
   registerComponent({ component } = {}) 
   {
-    if(!typeChecker.check({ type: 'component', value: component })) this.#errors.componentRegistrationTypeError;    
-    if(!component.id) throw this.#errors.noIdComponentRegistrationError;
+    if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentRegistrationTypeError);    
+    if(!component.id) console.error(this.#errors.noIdComponentRegistrationError);
     this.#componentsById.set(component.id, component);
   }
   
@@ -372,10 +372,10 @@ class App
    */
   getComponentById({ id } = {}) 
   {
-    if(!typeChecker.check({ type: 'string', value: id })) throw this.#errors.idTypeError;
-    if(!this.#isPresented) throw this.#errors.appNotYetPresentedError;
+    if(!typeChecker.check({ type: 'string', value: id })) console.error(this.#errors.idTypeError);
+    if(!this.#isPresented) console.error(this.#errors.appNotYetPresentedError);
     const component = this.#componentsById.get(id);
-    if(!component) throw this.#errors.componentNotFoundError + ` "${id}".`;
+    if(!component) console.error(this.#errors.componentNotFoundError + ` "${id}".`);
     return component;
   }
 }
@@ -401,7 +401,7 @@ class UserInterface
       componentConstructorTypeError: 'User Interface Error: Expected type function for constructor.'
     };
 
-    if(UserInterface.#instance) throw this.#errors.singleInstanceError;
+    if(UserInterface.#instance) console.error(this.#errors.singleInstanceError);
     else
     {
       UserInterface.#instance = this;
@@ -422,8 +422,8 @@ class UserInterface
    */
   register({ name, constructor } = {}) 
   {
-    if(!typeChecker.check({ type: 'string', value: name })) throw this.#errors.componentNameTypeError;
-    if(!typeChecker.check({ type: 'function', value: constructor })) throw this.#errors.componentConstructorTypeError
+    if(!typeChecker.check({ type: 'string', value: name })) console.error(this.#errors.componentNameTypeError);
+    if(!typeChecker.check({ type: 'function', value: constructor })) console.error(this.#errors.componentConstructorTypeError);
     this.#registry.set(name, constructor);
     this[name] = constructor;
   }
@@ -507,8 +507,8 @@ class Component
    */
   #createElement({ tagName } = {})
   {
-    if(!tagName) throw this.#errors.noTagNameParameterError;
-    if(!typeChecker.check({ type: 'string', value: tagName })) throw this.#errors.tagNameTypeError;
+    if(!tagName) console.error(this.#errors.noTagNameParameterError);
+    if(!typeChecker.check({ type: 'string', value: tagName })) console.error(this.#errors.tagNameTypeError);
     this.#element = document.createElement(tagName);
   }
   
@@ -527,9 +527,9 @@ class Component
    */
   set alpha(value)
   { 
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.alphaTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.alphaTypeError);
     const numeric = parseFloat(value);
-    if(isNaN(numeric) || numeric < 0.0 || numeric > 1.0) throw this.#errors.alphaInvalidError;
+    if(isNaN(numeric) || numeric < 0.0 || numeric > 1.0) console.error(this.#errors.alphaInvalidError);
     this.#element.style.opacity = value;
   }
   
@@ -548,8 +548,8 @@ class Component
    */
   set backgroundColor(value)
   {   
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.backgroundColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.backgroundColorInvalidTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.backgroundColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.backgroundColorInvalidTypeError);
     this.#element.style.backgroundColor = value;
   }
 
@@ -568,8 +568,8 @@ class Component
    */
   set borderColor(value) 
   {
-    if(!typeChecker.check({ type: 'string', value })) throw this.#errors.borderColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.borderColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value })) console.error(this.#errors.borderColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.borderColorInvalidError);
     this.style.borderColor = value;
     this.style.borderStyle = 'solid';
   }
@@ -589,7 +589,7 @@ class Component
    */
   set borderWidth(value) 
   {
-    if(!typeChecker.check({ type: 'string', value })) throw this.#errors.borderWidthTypeError;
+    if(!typeChecker.check({ type: 'string', value })) console.error(this.#errors.borderWidthTypeError);
     this.style.borderWidth = value;
     this.style.borderStyle = 'solid';
   }
@@ -618,7 +618,7 @@ class Component
    */
   set height(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.heightTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.heightTypeError);
     this.#element.style.height = value;
   }
 
@@ -637,7 +637,7 @@ class Component
    */
   set id(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.idTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.idTypeError);
     this.#element.id = value;
     app.registerComponent({ component: this });
   }
@@ -657,7 +657,7 @@ class Component
    */
   set marginBottom(value)
   { 
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.marginBottomTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.marginBottomTypeError);
     this.#element.style.marginBottom = value;
   }
   
@@ -676,7 +676,7 @@ class Component
    */
   set marginLeft(value)
   {  
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.marginLeftTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.marginLeftTypeError);
     this.#element.style.marginLeft = value;
   }
   
@@ -695,7 +695,7 @@ class Component
    */
   set marginRight(value)
   {  
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.marginRightTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.marginRightTypeError);
     this.#element.style.marginRight = value;
   }
   
@@ -714,7 +714,7 @@ class Component
    */
   set marginTop(value)
   { 
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.marginTopTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.marginTopTypeError);
     this.#element.style.marginTop = value;
   }
   
@@ -734,10 +734,10 @@ class Component
    */
   set modifiers(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.modifiersTypeError; 
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.modifiersTypeError); 
     value.forEach(mod => 
     { 
-      if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.modifierTypeError;
+      if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.modifierTypeError);
       setTimeout(() => { this.addModifier({ modifier: mod });}, 1)
     });
   }
@@ -757,7 +757,7 @@ class Component
    */
   set onTap(value) 
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onTapTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onTapTypeError);
     if(this.#onTap) this.removeEventListener({ event: 'click', handler: this.#onTap });
     this.#onTap = value;
     this.addEventListener({ event: 'click', handler: value });
@@ -787,7 +787,7 @@ class Component
    */
   set transform(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.transformTypeError;    
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.transformTypeError);    
     this.#element.style.transform = value;
   }
   
@@ -806,7 +806,7 @@ class Component
    */
   set width(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.widthTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
     this.#element.style.width = value;
   }
   
@@ -825,7 +825,7 @@ class Component
    */
   set x(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.xTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.xTypeError);
     if(!this.#element.style.position) this.#element.style.position = 'absolute';
     this.#element.style.left = value;
   }
@@ -845,7 +845,7 @@ class Component
    */
   set y(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.yTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.yTypeError);
     if(!this.#element.style.position) this.#element.style.position = 'absolute';
     this.#element.style.top = value;
   }
@@ -857,8 +857,8 @@ class Component
    */
   addEventListener({ event, handler } = {}) 
   { 
-    if(!typeChecker.check({ type: 'string', value: event })) throw this.#errors.addEvEventTypeError;
-    if(!typeChecker.check({ type: 'function', value: handler })) throw this.#errors.addEvHandlerTypeError;
+    if(!typeChecker.check({ type: 'string', value: event })) console.error(this.#errors.addEvEventTypeError);
+    if(!typeChecker.check({ type: 'function', value: handler })) console.error(this.#errors.addEvHandlerTypeError);
     this.#element.addEventListener(event, handler);
   }
   
@@ -868,7 +868,7 @@ class Component
    */
   addModifier({ modifier } = {})
   {
-    if(!typeChecker.check({ type: 'string', value: modifier })) throw this.#errors.addModModifierTypeError;
+    if(!typeChecker.check({ type: 'string', value: modifier })) console.error(this.#errors.addModModifierTypeError);
     const existingModifiers = this.getAttribute({ key: 'modifier' }) || "";
     const modifiers = new Set(existingModifiers.split(" ").filter(Boolean));
     modifiers.add(modifier);
@@ -904,7 +904,7 @@ class Component
    */
   getAttribute({ key } = {}) 
   {
-    if(!typeChecker.check({ type: 'string', value: key })) throw this.#errors.getAttributeKeyTypeError;
+    if(!typeChecker.check({ type: 'string', value: key })) console.error(this.#errors.getAttributeKeyTypeError);
     return this.#element.getAttribute(key);
   }
   
@@ -918,7 +918,7 @@ class Component
   remove() 
   {
     if(this.#element.parentNode) this.#element.parentNode.removeChild(this.#element);
-    else throw this.#errors.removeComponentError;
+    else console.error(this.#errors.removeComponentError);
   }
   
   /** 
@@ -927,7 +927,7 @@ class Component
    */
   removeAttribute({ key } = {})
   {
-    if(!typeChecker.check({ type: 'string', value: key })) throw this.#errors.removeAttributeKeyTypeError;
+    if(!typeChecker.check({ type: 'string', value: key })) console.error(this.#errors.removeAttributeKeyTypeError);
     this.#element.removeAttribute(key);
   }
   
@@ -938,8 +938,8 @@ class Component
    */
   removeEventListener({ event, handler } = {}) 
   {
-    if(!typeChecker.check({ type: 'string', value: event })) throw this.#errors.removeEvEventTypeError;
-    if(!typeChecker.check({ type: 'function', value: handler })) throw this.#errors.removeEvHandlerTypeError;
+    if(!typeChecker.check({ type: 'string', value: event })) console.error(this.#errors.removeEvEventTypeError);
+    if(!typeChecker.check({ type: 'function', value: handler })) console.error(this.#errors.removeEvHandlerTypeError);
     this.#element.removeEventListener(event, handler);
   }
   
@@ -949,7 +949,7 @@ class Component
    */
   removeModifier({ modifier } = {}) 
   {
-    if(!typeChecker.check({ type: 'string', value: modifier })) throw this.#errors.removeModModifierTypeError;
+    if(!typeChecker.check({ type: 'string', value: modifier })) console.error(this.#errors.removeModModifierTypeError);
     const existingModifiers = this.getAttribute({ key: 'modifier' }) || "";
     const modifiers = new Set(existingModifiers.split(" ").filter(Boolean));
     modifiers.delete(modifier);
@@ -963,8 +963,8 @@ class Component
    */
   setAttribute({ key, value } = {}) 
   { 
-    if(!typeChecker.check({ type: 'string', value: key })) throw this.#errors.setAttributeKeyTypeError;
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.setAttributeValueTypeError;
+    if(!typeChecker.check({ type: 'string', value: key })) console.error(this.#errors.setAttributeKeyTypeError);
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.setAttributeValueTypeError);
     this.#element.setAttribute(key, value);
   }
   
@@ -1031,8 +1031,8 @@ class ActionSheet extends Component
    */
   set buttons(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.buttonsTypeError;
-    if(value.length === 0) throw this.#errors.buttonsEmptyError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.buttonsTypeError);
+    if(value.length === 0) console.error(this.#errors.buttonsEmptyError);
 
     const sheetContainer = this.element.querySelector('.action-sheet');
     if(sheetContainer)
@@ -1054,7 +1054,7 @@ class ActionSheet extends Component
 
     allButtons.forEach(button => 
     { 
-      if(!typeChecker.check({ type: 'action-sheet-button', value: button })) throw this.#errors.buttonTypeError;
+      if(!typeChecker.check({ type: 'action-sheet-button', value: button })) console.error(this.#errors.buttonTypeError);
 
       const refNode = this.#titleElement.previousSibling;
       if(!sheetContainer) this.element.insertBefore(button.element, refNode);
@@ -1085,8 +1085,8 @@ class ActionSheet extends Component
    */
   set cancelTextColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.cancelTextColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.cancelTextColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.cancelTextColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.cancelTextColorInvalidError);
 
     if(this.#cancelButton) this.#cancelButton.textColor = value;
     this.#cancelTextColor = value;
@@ -1107,7 +1107,7 @@ class ActionSheet extends Component
    */
   set title(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.titleTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.titleTypeError);
     this.#titleElement.textContent = value;
   }
 
@@ -1117,7 +1117,7 @@ class ActionSheet extends Component
    */
   dismiss({ animated = true } = {})
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.dismissAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.dismissAnimationTypeError);
     
     if(animated) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });
@@ -1131,7 +1131,7 @@ class ActionSheet extends Component
    */
   present({ animated = true } = {})
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.presentAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.presentAnimationTypeError);
     
     if(animated == true) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });
@@ -1182,7 +1182,7 @@ class ActionSheetButton extends Component
    */
   set text(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.textContent = value;
   }
   
@@ -1201,8 +1201,8 @@ class ActionSheetButton extends Component
    */
   set textColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
     this.element.style.color = value;
   }
 }
@@ -1278,8 +1278,8 @@ class AlertDialog extends Component
    */
   set buttons(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.buttonsTypeError;
-    if(value.length === 0) throw this.#errors.buttonsEmptyError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.buttonsTypeError);
+    if(value.length === 0) console.error(this.#errors.buttonsEmptyError);
 
     if(this.#buttons) 
     {
@@ -1289,7 +1289,7 @@ class AlertDialog extends Component
 
     value.forEach(button => 
     {
-      if(!typeChecker.check({ type: 'alert-dialog-button', value: button })) throw this.#errors.buttonTypeError;
+      if(!typeChecker.check({ type: 'alert-dialog-button', value: button })) console.error(this.#errors.buttonTypeError);
 
       button.addEventListener({ event: 'click', handler: () => 
       {
@@ -1319,7 +1319,7 @@ class AlertDialog extends Component
    */
   set cancelable(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.cancelableTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.cancelableTypeError);
     if(value == true) this.setAttribute({ key: 'cancelable', value: '' });
     else this.removeAttribute({ key: 'cancelable' });
     this.#cancelable = value;
@@ -1340,7 +1340,7 @@ class AlertDialog extends Component
    */
   set title(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.titleTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.titleTypeError);
     this.#titleElement.textContent = value;
   }
 
@@ -1359,7 +1359,7 @@ class AlertDialog extends Component
    */
   set rowfooter(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.rowfooterTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.rowfooterTypeError);
     if(value == true) this.addModifier({ modifier: 'rowfooter' });
     else this.removeModifier({ modifier: 'rowfooter' });
     this.#rowfooter = value;
@@ -1371,11 +1371,11 @@ class AlertDialog extends Component
    */
   addComponents({ components } = {})
   {
-    if(!typeChecker.check({ type: 'array', value: components })) throw this.#errors.componentsTypeError;
+    if(!typeChecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
     
     components.forEach(component =>
     {
-      if(!typeChecker.check({ type: 'component', value: component })) throw this.#errors.componentTypeError;
+      if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
       this.#contentElement.appendChild(component.element);
     });
   }
@@ -1386,7 +1386,7 @@ class AlertDialog extends Component
    */
   dismiss({ animated = true } = {})
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.dismissAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.dismissAnimationTypeError);
 
     if(animated == true) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });
@@ -1400,7 +1400,7 @@ class AlertDialog extends Component
    */
   present({ animated = true } = {})
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.presentAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.presentAnimationTypeError);
 
     if(animated == true ) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });
@@ -1451,7 +1451,7 @@ class AlertDialogButton extends Component
    */
   set text(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.textContent = value;
   }
   
@@ -1470,8 +1470,8 @@ class AlertDialogButton extends Component
    */
   set textColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
     this.element.style.color = color;
   }
 }
@@ -1519,7 +1519,7 @@ class BackBarButton extends Component
    */
   set text(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;  
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);  
     if(this.element.querySelector(".back-button__label")) label.textContent = value;
     else this.element.textContent = value; 
   }
@@ -1539,8 +1539,8 @@ class BackBarButton extends Component
    */
   set textColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
 
     this.element.style.color = value;
     requestAnimationFrame(() => 
@@ -1581,7 +1581,7 @@ class BarButton extends Component
     this.#containsIcon = false;
     this.#containsText = false;
 
-    if(options.text && options.icon) throw this.#errors.buttonTypeError;
+    if(options.text && options.icon) console.error(this.#errors.buttonTypeError);
     if(options.text) this.text = options.text;
     else if(options.icon) this.icon = options.icon;
     if(options.color) this.color = options.color;
@@ -1602,8 +1602,8 @@ class BarButton extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.element.style.color = value;
   }
 
@@ -1622,11 +1622,11 @@ class BarButton extends Component
    */
   set icon(value)
   {
-    if(this.#containsText == true) throw this.#errors.buttonTypeError;
+    if(this.#containsText == true) console.error(this.#errors.buttonTypeError);
     if(this.#iconElement) this.element.innerHTML = '';
     if(typeChecker.check({ type: 'string', value: value })) this.#iconElement = new Icon({ icon: value });
     else if(typeChecker.check({ type: 'icon', value: value })) this.#iconElement = value;
-    else throw this.#errors.iconTypeError;
+    else console.error(this.#errors.iconTypeError);
     this.appendChild({ child: this.#iconElement.element });
     this.#containsIcon = true;
   }
@@ -1646,8 +1646,8 @@ class BarButton extends Component
    */
   set text(value)
   {
-    if(this.#containsIcon == true) throw this.#errors.buttonTypeError;
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(this.#containsIcon == true) console.error(this.#errors.buttonTypeError);
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
 
     let span = document.createElement('span');
     span.textContent = value;
@@ -1746,7 +1746,7 @@ class Button extends Component
    */
   set icon(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.iconTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.iconTypeError);
     if(this.#iconElement) this.#iconElement.icon = value;
     else this.#iconElement = new Icon({ icon: value });
     this.#render();
@@ -1767,8 +1767,8 @@ class Button extends Component
    */
   set iconColor(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.iconColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.iconColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.iconColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.iconColorInvalidError);
     if(this.#iconElement) this.#iconElement.element.style.color = value;
   }
 
@@ -1787,8 +1787,8 @@ class Button extends Component
    */
   set iconSide(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.iconSideTypeError;
-    if(!['left', 'right'].includes(value)) throw this.#errors.iconSideInvalidSideError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.iconSideTypeError);
+    if(!['left', 'right'].includes(value)) console.error(this.#errors.iconSideInvalidSideError);
 
     this.#iconSide = value;
     this.#render();
@@ -1809,7 +1809,7 @@ class Button extends Component
    */
   set text(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.#textElement.nodeValue = value;
     this.#render();
   }
@@ -1829,8 +1829,8 @@ class Button extends Component
    */
   set textColor(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
     if(this.#textWrapper) this.#textWrapper.style.color = value;
   }
 }
@@ -1864,11 +1864,11 @@ class Card extends Component
    */
   addComponents({ components } = {})
   {
-    if(!typeChecker.check({ type: 'array', value: components })) throw this.#errors.componentsTypeError;
+    if(!typeChecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
     components.forEach(component =>
     {
-      if(!typeChecker.check({ type: 'component', value: component })) throw this.#errors.componentTypeError;
-      if(typeChecker.check({ type: 'page', value: component })) throw this.#errors.pageUnsupportedTypeError;
+      if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
+      if(typeChecker.check({ type: 'page', value: component })) console.error(this.#errors.pageUnsupportedTypeError);
       this.appendChild({ child: component });
     });
   }
@@ -1931,8 +1931,8 @@ class CircularProgress extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.style.setProperty('--progress-circle-primary-color', value);
     this.#color = value;
   }
@@ -1952,7 +1952,7 @@ class CircularProgress extends Component
    */
   set indeterminate(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.indeterminateTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.indeterminateTypeError);
     if(value == true) this.setAttribute({ key: 'indeterminate', value: '' });
     else this.removeAttribute({ key: 'indeterminate' });
     this.#indeterminate = value;
@@ -1973,13 +1973,13 @@ class CircularProgress extends Component
    */
   set progress(value) 
   { 
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.progressTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.progressTypeError);
     if(value >= 0 && value <= 100)
     {
       this.setAttribute({ key: 'value', value: String(value) }); 
       this.#progress = value;
     }
-    else throw this.#errors.progressValueInvalidError; 
+    else console.error(this.#errors.progressValueInvalidError); 
   }
 
   /** 
@@ -1997,8 +1997,8 @@ class CircularProgress extends Component
    */
   set secondaryColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.secondaryColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.secondaryColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.secondaryColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.secondaryColorInvalidError);
     this.style.setProperty('--progress-circle-secondary-color', value);
     this.#secondaryColor = value;
   }
@@ -2018,13 +2018,13 @@ class CircularProgress extends Component
    */
   set secondaryProgress(value) 
   { 
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.secondaryProgressTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.secondaryProgressTypeError);
     if(value >= 0 && value <= 100)
     {
       this.setAttribute({ key: 'secondary-value', value: String(value) });
       this.#secondaryProgress = value;
     }
-    else throw this.#errors.progressValueInvalidError;
+    else console.error(this.#errors.progressValueInvalidError);
   }
   
   /** 
@@ -2042,7 +2042,7 @@ class CircularProgress extends Component
    */
   set size(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.sizeTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.sizeTypeError);
     this.width = value;
     this.height = value;
     this.#size = value;
@@ -2092,7 +2092,7 @@ class ColorPicker extends Component
    */
   set onChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
 
@@ -2116,9 +2116,9 @@ class ColorPicker extends Component
    */
   set color(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
-    if(!color.isHexColor({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
+    if(!color.isHexColor({ color: value })) console.error(this.#errors.colorInvalidError);
     this.element.value = value;
   }
 }
@@ -2165,7 +2165,7 @@ class Column extends Component
    */
   set width(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.widthTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
     this.setAttribute({ key: 'width', value });
     this.#width = value;
   }
@@ -2176,11 +2176,11 @@ class Column extends Component
    */
   addComponents({ components, center = true } = {}) 
   { 
-    if(!typeChecker.check({ type: 'array', value: components })) throw this.#errors.componentsTypeError;
-    if(!typeChecker.check({ type: 'boolean', value: center })) throw this.#errors.centerTypeError;
+    if(!typeChecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
+    if(!typeChecker.check({ type: 'boolean', value: center })) console.error(this.#errors.centerTypeError);
     components.forEach(component => 
     {
-      if(!typeChecker.check({ type: 'component', value: component })) throw this.#errors.componentTypeError;
+      if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
       if(center == true)
       {
         let centerContainer = document.createElement('div');
@@ -2248,7 +2248,7 @@ class Dialog extends Component
    */
   set cancelable(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.cancelableTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.cancelableTypeError);
     if(value == true) this.setAttribute({ key: 'cancelable', value: '' });
     else this.removeAttribute({ key: 'cancelable' });
     this.#cancelable = value;
@@ -2269,7 +2269,7 @@ class Dialog extends Component
    */
   set height(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.heightTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.heightTypeError);
 
     setTimeout(() => 
     {
@@ -2294,7 +2294,7 @@ class Dialog extends Component
    */
   set width(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.widthTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
 
     setTimeout(() => 
     {
@@ -2310,12 +2310,12 @@ class Dialog extends Component
    */
   addComponents({ components } = {})
   {
-    if(this.#root) throw this.#errors.rootComponentPreventsOtherComponentsError;
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.componentsTypeError;
+    if(this.#root) console.error(this.#errors.rootComponentPreventsOtherComponentsError);
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.componentsTypeError);
    
     components.forEach(component =>
     {
-      if(!typeChecker.check({ type: 'component', value: component })) throw this.#errors.componentTypeError;
+      if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
       this.appendChild({ child: component });
     });
   }
@@ -2326,7 +2326,7 @@ class Dialog extends Component
    */
   dismiss({ animated = true } = {})
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.dismissAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.dismissAnimationTypeError);
     if(animated) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });    
     this.element.hide();
@@ -2342,7 +2342,7 @@ class Dialog extends Component
     {
       if(root)
       {
-        if(!typeChecker.check({ type: 'page', value: root })) throw this.#errors.rootComponentTypeError; // Need to add Navigator support here.
+        if(!typeChecker.check({ type: 'page', value: root })) console.error(this.#errors.rootComponentTypeError); // Need to add Navigator support here.
         setTimeout(() => 
         {
           const container = this.element.querySelector('.dialog-container');
@@ -2352,7 +2352,7 @@ class Dialog extends Component
       }
     }
 
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.presentAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.presentAnimationTypeError);
     if(animated) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });
 
@@ -2417,7 +2417,7 @@ class FabButton extends Component
       this.#iconElement.transform = 'translateY(-4px)';
     }
     else if(typeChecker.check({ type: 'icon', value: value })) this.#iconElement = value;
-    else throw this.#errors.iconTypeError;
+    else console.error(this.#errors.iconTypeError);
     
     this.element.appendChild(this.#iconElement.element);
   }
@@ -2437,8 +2437,8 @@ class FabButton extends Component
    */
   set iconColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.iconColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.iconColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.iconColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.iconColorInvalidError);
     if(this.#iconElement)  this.#iconElement.element.style.color = value;
   }
   
@@ -2457,10 +2457,10 @@ class FabButton extends Component
    */
   set position(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.positionTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.positionTypeError);
 
     const validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-    if(!validPositions.includes(value)) throw this.#errors.positionInvalidError;
+    if(!validPositions.includes(value)) console.error(this.#errors.positionInvalidError);
 
     let pos = '';
     if(value == 'top-left') pos = 'top left';
@@ -2521,7 +2521,7 @@ class Icon extends Component
    */
   set icon(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.iconTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.iconTypeError);
     this.setAttribute({ key: 'icon', value: value });
     this.#icon = value;
   }
@@ -2541,7 +2541,7 @@ class Icon extends Component
    */
   set size(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.sizeTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.sizeTypeError);
     this.setAttribute({ key: 'size', value: value });
     this.#size = value;
   }
@@ -2561,7 +2561,7 @@ class Icon extends Component
    */
   set spin(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.spinTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.spinTypeError);
     if(value == true) this.setAttribute({ key: 'spin', value: '' });
     else this.removeAttribute({ key: 'spin' });
     this.#spin = value;
@@ -2582,8 +2582,8 @@ class Icon extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.element.style.color = value;
   }
 }
@@ -2628,7 +2628,7 @@ class Image extends Component
    */
   set alt(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.altTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.altTypeError);
     this.setAttribute({ key: 'alt', value: value });
   }
 
@@ -2647,7 +2647,7 @@ class Image extends Component
    */
   set source(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.sourceTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.sourceTypeError);
     this.setAttribute({ key: 'src', value: value });
   }  
 }
@@ -2696,7 +2696,7 @@ class List extends Component
    */
   set inset(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.insetTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.insetTypeError);
     if(value == true) this.addModifier({ modifier: 'inset' });
     else this.removeModifier({ modifier: 'inset' });
     this.#inset = value;
@@ -2727,7 +2727,7 @@ class List extends Component
    */
   addItem({ item } = {}) 
   { 
-    if(!typeChecker.checkMultiple({ types: [ 'list-item', 'list-title', 'list-header' ], value: item })) throw this.#errors.itemTypeError;
+    if(!typeChecker.checkMultiple({ types: [ 'list-item', 'list-title', 'list-header' ], value: item })) console.error(this.#errors.itemTypeError);
     this.appendChild({ child: item });
   }
 
@@ -2737,7 +2737,7 @@ class List extends Component
    */
   addItems({ items } = {}) 
   {
-    if(!typeChecker.check({ type: 'array', value: items })) throw this.#errors.itemsTypeError;
+    if(!typeChecker.check({ type: 'array', value: items })) console.error(this.#errors.itemsTypeError);
     items.forEach(item => { this.addItem({ item: item }) });
   }
 
@@ -2747,8 +2747,8 @@ class List extends Component
    */
   removeItem({ index } = {}) 
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.indexTypeError;
-    if(index < 0 || index >= this.element.children.length) throw this.#errors.indexOutOfBoundsError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.indexTypeError);
+    if(index < 0 || index >= this.element.children.length) console.error(this.#errors.indexOutOfBoundsError);
     this.element.children[index].remove();
   }
 
@@ -2805,7 +2805,7 @@ class ListHeader extends Component
    */
   set text(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.textContent = value;
   }
 }
@@ -2857,7 +2857,7 @@ class ListItem extends Component
 
     if(typeChecker.check({ type: 'component', value: content })) div.appendChild(content.element);
     else if(typeChecker.check({ type: 'string', value: content })) div.textContent = content;
-    else throw this.#errors.componentTypeError;
+    else console.error(this.#errors.componentTypeError);
   }
 
   /** 
@@ -2993,7 +2993,7 @@ class ListTitle extends Component
    */
   set text(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.textContent = value;
   }
 }
@@ -3031,12 +3031,12 @@ class Modal extends Component
    */
   addComponents({ components } = {})
   {
-    if(this.#root) throw this.#errors.rootComponentPreventsOtherComponentsError;
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.componentsTypeError;
+    if(this.#root) console.error(this.#errors.rootComponentPreventsOtherComponentsError);
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.componentsTypeError);
    
     components.forEach(component =>
     {
-      if(!typeChecker.check({ type: 'component', value: component })) throw this.#errors.componentTypeError;
+      if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
       this.appendChild({ child: component });
     });
   }
@@ -3047,7 +3047,7 @@ class Modal extends Component
    */
   dismiss({ animated = true } = {})
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.dismissAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.dismissAnimationTypeError);
     if(animated) this.setAttribute({ key: 'animation', value: 'lift' });
     else this.setAttribute({ key: 'animation', value: 'none' });    
     this.element.hide();
@@ -3063,13 +3063,13 @@ class Modal extends Component
     {
       if(root)
       {
-        if(!typeChecker.check({ type: 'page', value: root })) throw this.#errors.rootComponentTypeError; // Need to add Navigator support here.
+        if(!typeChecker.check({ type: 'page', value: root })) console.error(this.#errors.rootComponentTypeError); // Need to add Navigator support here.
         this.#root = root;
         this.appendChild({ child: root });
       }
     }
 
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.presentAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.presentAnimationTypeError);
     if(animated) this.setAttribute({ key: 'animation', value: 'lift' });
     else this.setAttribute({ key: 'animation', value: 'none' });
 
@@ -3110,7 +3110,7 @@ class Navigator
     this.#stack = [];
     
     if(root) this.push({ page: root, animated: false });
-    else throw this.#errors.noRootComponentError;
+    else console.error(this.#errors.noRootComponentError);
     if(id) this.id = id;
   }
   
@@ -3138,7 +3138,7 @@ class Navigator
    */
   set id(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.idTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.idTypeError);
     this.#container.id = value;
     app.registerComponent({ component: this });
   }
@@ -3150,8 +3150,8 @@ class Navigator
    */
   push({ page, animated = true } = {}) 
   {
-    if(!typeChecker.check({ type: 'page', value: page })) throw this.#errors.pageTypeError;
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.pushAnimationTypeError;
+    if(!typeChecker.check({ type: 'page', value: page })) console.error(this.#errors.pageTypeError);
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.pushAnimationTypeError);
     
     if(this.#stack.length === 0) 
     {
@@ -3180,8 +3180,8 @@ class Navigator
    */
   pop({ animated = true } = {}) 
   {
-    if(this.#stack.length <= 1) throw this.#errors.lastPagePopError;
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.popAnimationTypeError;
+    if(this.#stack.length <= 1) console.error(this.#errors.lastPagePopError);
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.popAnimationTypeError);
 
     const currentPage = this.#stack.pop();
     const previousPage = this.#stack[this.#stack.length - 1];
@@ -3215,10 +3215,10 @@ class Navigator
    */
   switchTo({ index, animated = true } = {}) 
   {
-    if(!typeChecker.check({ type: 'number', value: index })) throw this.#errors.indexTypeError;
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.switchToAnimationTypeError;
+    if(!typeChecker.check({ type: 'number', value: index })) console.error(this.#errors.indexTypeError);
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.switchToAnimationTypeError);
 
-    if(index < 0 || index >= this.#stack.length) throw this.#errors.stackOutOfBoundsError;
+    if(index < 0 || index >= this.#stack.length) console.error(this.#errors.stackOutOfBoundsError);
     
     const currentPage = this.#stack[this.#stack.length - 1];
     const targetPage = this.#stack[index];
@@ -3396,8 +3396,8 @@ class Page extends Component
    */
   set backgroundColor(value)
   { 
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.backgroundColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.backgroundColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.backgroundColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.backgroundColorInvalidError);
     const background = this.element.querySelector('.background');
     if(background) background.style.backgroundColor = value;
   }
@@ -3418,7 +3418,7 @@ class Page extends Component
    */
   set navigationBarTitle(value)
   { 
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.navigationTitleTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.navigationTitleTypeError);
     if(!this.#navigationBar) this.#addNavigationBar();
 
     let centerDiv = this.#navigationBar.querySelector('.center');
@@ -3447,7 +3447,7 @@ class Page extends Component
    */
   set navigationBarButtonsLeft(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.navigationBarButtonsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.navigationBarButtonsTypeError);
     if(!this.#navigationBar) this.#addNavigationBar();
     
     let leftDiv = this.#navigationBar.querySelector('.left');
@@ -3463,7 +3463,7 @@ class Page extends Component
     value.forEach(button => 
     {
       if(typeChecker.checkMultiple({ types: [ 'bar-button', 'back-bar-button' ], value: button })) leftDiv.appendChild(button.element);
-      else throw this.#errors.navigationBarButtonLeftTypeError;
+      else console.error(this.#errors.navigationBarButtonLeftTypeError);
     });
     this.#navigationBarButtonsLeft = value;
   }
@@ -3483,7 +3483,7 @@ class Page extends Component
    */
   set navigationBarButtonsRight(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.navigationBarButtonsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.navigationBarButtonsTypeError);
     if(!this.#navigationBar) this.#addNavigationBar();
     
     let rightDiv = this.#navigationBar.querySelector('.right');
@@ -3499,7 +3499,7 @@ class Page extends Component
     value.forEach(button => 
     {
       if(typeChecker.check({ type: 'bar-button', value: value })) rightDiv.appendChild(button.element);
-      else throw this.#errors.navigationBarButtonRightTypeError;
+      else console.error(this.#errors.navigationBarButtonRightTypeError);
     });
     this.#navigationBarButtonsRight = value;
   }
@@ -3519,7 +3519,7 @@ class Page extends Component
    */
   set toolbarButtonsLeft(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.toolbarButtonsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.toolbarButtonsTypeError);
     if(!this.#toolbar) this.#addToolbar();
    
     this.#leftToolbarContainer.innerHTML = '';
@@ -3527,7 +3527,7 @@ class Page extends Component
     value.forEach(button => 
     {
       if(typeChecker.check({ type: 'bar-button', value: button })) this.#leftToolbarContainer.appendChild(button.element);
-      else throw this.#errors.toolbarButtonTypeError;
+      else console.error(this.#errors.toolbarButtonTypeError);
     });
     this.#leftToolbarContainer.style.justifyContent = 'flex-start';
     this.#toolbarButtonsLeft = value;
@@ -3548,7 +3548,7 @@ class Page extends Component
    */
   set toolbarButtonsRight(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.toolbarButtonsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.toolbarButtonsTypeError);
     if(!this.#toolbar) this.#addToolbar();
     
     this.#rightToolbarContainer.innerHTML = '';
@@ -3556,7 +3556,7 @@ class Page extends Component
     value.forEach(button => 
     {
       if(typeChecker.check({ type: 'bar-button', value: button }))  this.#rightToolbarContainer.appendChild(button.element);
-      else throw this.#errors.toolbarButtonTypeError;
+      else console.error(this.#errors.toolbarButtonTypeError);
     });
     this.#rightToolbarContainer.style.justifyContent = 'flex-start';
     this.#toolbarButtonsRight = value;
@@ -3568,11 +3568,11 @@ class Page extends Component
    */
   addComponents({ components } = {}) 
   { 
-    if(!typeChecker.check({ type: 'array', value: components })) throw this.#errors.componentsTypeError;
+    if(!typeChecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
     components.forEach(component => 
     {
       if(typeChecker.check({ type: 'component', value: component })) this.#contentContainer.appendChild(component.element);
-      else throw this.#errors.componentTypeError;  
+      else console.error(this.#errors.componentTypeError);  
     });
   }
   
@@ -3610,7 +3610,7 @@ class Page extends Component
       centerContainer.innerHTML = '';
       centerContainer.appendChild(component.element);
     }
-    else throw this.#errors.componentTypeError;
+    else console.error(this.#errors.componentTypeError);
   }
   
   /**
@@ -3619,7 +3619,7 @@ class Page extends Component
    */
   addImageToNavigationBar({ image } = {})
   {
-    if(!typeChecker.check({ type: 'image', value: image })) throw this.#errors.imageTypeError;
+    if(!typeChecker.check({ type: 'image', value: image })) console.error(this.#errors.imageTypeError);
     if(!this.#navigationBar) this.#addNavigationBar();
     
     let centerDiv = this.#navigationBar.querySelector('.center');
@@ -3644,7 +3644,7 @@ class Page extends Component
    */
   addSearchToNavigationBar({ searchbar } = {})
   {
-    if(!typeChecker.check({ type: 'searchbar', value: searchbar })) throw this.#errors.searchbarTypeError;
+    if(!typeChecker.check({ type: 'searchbar', value: searchbar })) console.error(this.#errors.searchbarTypeError);
     if(!this.#navigationBar) this.#addNavigationBar();
   
     let centerDiv = this.#navigationBar.querySelector('.center');
@@ -3751,7 +3751,7 @@ class Popover extends Component
    */
   set cancelable(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.cancelableTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.cancelableTypeError);
     if(value == true) this.setAttribute({ key: 'cancelable', value: '' });
     else this.removeAttribute({ key: 'cancelable' });
     this.#cancelable = value;
@@ -3772,9 +3772,9 @@ class Popover extends Component
    */
   set direction(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.directionTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.directionTypeError);
     const validDirections = ['up', 'down', 'left', 'right'];
-    if(!validDirections.includes(value)) throw this.#errors.directionInvalidError;
+    if(!validDirections.includes(value)) console.error(this.#errors.directionInvalidError);
     this.setAttribute({ key: 'direction', value: value });
     this.#direction = value;
   }
@@ -3785,11 +3785,11 @@ class Popover extends Component
    */
   addComponents({ components } = {}) 
   {
-    if(!typeChecker.check({ type: 'array', value: components })) throw this.#errors.componentsTypeError;
+    if(!typeChecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
     components.forEach(component => 
     {
       if(typeChecker.check({ type: 'component', value: component })) this.#contentElement.appendChild(component.element);
-      else throw this.#errors.componentTypeError;
+      else console.error(this.#errors.componentTypeError);
     });
   }
 
@@ -3799,7 +3799,7 @@ class Popover extends Component
    */
   dismiss({ animated = true } = {}) 
   {
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.dismissAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.dismissAnimationTypeError);
     if(animated) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });    
     this.element.hide();
@@ -3812,11 +3812,11 @@ class Popover extends Component
    */
   present({ animated = true, target = null } = {}) 
   {
-    if(!target) throw this.#errors.targetNotSetError;
+    if(!target) console.error(this.#errors.targetNotSetError);
 
-    if(!typeChecker.check({ type: 'component', value: target })) throw this.#errors.targetTypeError;
+    if(!typeChecker.check({ type: 'component', value: target })) console.error(this.#errors.targetTypeError);
 
-    if(!typeChecker.check({ type: 'boolean', value: animated })) throw this.#errors.presentAnimationTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.presentAnimationTypeError);
     if(animated) this.setAttribute({ key: 'animation', value: 'default' });
     else this.setAttribute({ key: 'animation', value: 'none' });
 
@@ -3879,8 +3879,8 @@ class ProgressBar extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.style.setProperty('--progress-bar-color', value);
     this.#color = value;
   }
@@ -3900,7 +3900,7 @@ class ProgressBar extends Component
    */
   set indeterminate(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.indeterminateTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.indeterminateTypeError);
     if(value == true) this.setAttribute({ key: 'indeterminate', value: '' });
     else this.removeAttribute({ key: 'indeterminate' });
     this.#indeterminate = value;
@@ -3921,13 +3921,13 @@ class ProgressBar extends Component
    */
   set progress(value) 
   { 
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.progressTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.progressTypeError);
     if(value >= 0 && value <= 100)
     {
       this.setAttribute({ key: 'value', value: String(value) }); 
       this.#progress = value;
     }
-    else throw this.#errors.progressValueInvalidError;
+    else console.error(this.#errors.progressValueInvalidError);
   }
 
   /** 
@@ -3945,8 +3945,8 @@ class ProgressBar extends Component
    */
   set secondaryColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.secondaryColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.secondaryColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.secondaryColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.secondaryColorInvalidError);
     this.style.setProperty('--progress-bar-secondary-color', value);
     this.#secondaryColor = value;
   }
@@ -3966,13 +3966,13 @@ class ProgressBar extends Component
    */
   set secondaryProgress(value) 
   { 
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.secondaryProgressTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.secondaryProgressTypeError);
     if(value >= 0 && value <= 100)
     {
       this.setAttribute({ key: 'secondary-value', value: String(value) });
       this.#secondaryProgress = value;
     }
-    else throw this.#errors.progressValueInvalidError;
+    else console.error(this.#errors.progressValueInvalidError);
   }
 }
 
@@ -4022,7 +4022,7 @@ class Row extends Component
    */
   addColumn({ column } = {}) 
   {
-    if(!typeChecker.check({ type: 'column', value: column })) throw this.#errors.columnTypeError;
+    if(!typeChecker.check({ type: 'column', value: column })) console.error(this.#errors.columnTypeError);
     this.appendChild({ child: column.element });
   }
 }
@@ -4084,8 +4084,8 @@ class Searchbar extends Component
    */
   set caretColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.caretColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.caretColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.caretColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.caretColorInvalidError);
     this.style.caretColor = value;
   }
   
@@ -4104,7 +4104,7 @@ class Searchbar extends Component
    */
   set maxLength(value) 
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.maxLengthTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.maxLengthTypeError);
     this.setAttribute({ key: 'maxlength', value: String(value) });
     this.#maxLength = value;
   }
@@ -4124,7 +4124,7 @@ class Searchbar extends Component
    */
   set onChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
     const handler = (event) => value(event.target.value);
@@ -4148,7 +4148,7 @@ class Searchbar extends Component
    */
   set onTextChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onTextChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onTextChangeTypeError);
 
     if(this.#onTextChange) this.removeEventListener({ event: 'input', handler: this.#onTextChange });
     const handler = (event) => value(event.target.value);
@@ -4172,7 +4172,7 @@ class Searchbar extends Component
    */
   set placeholder(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.placeholderTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.placeholderTypeError);
     this.setAttribute({ key: 'placeholder', value: value });
     this.#placeholder = value;
   }
@@ -4192,7 +4192,7 @@ class Searchbar extends Component
    */
   set text(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.value = value;
   }
   
@@ -4211,8 +4211,8 @@ class Searchbar extends Component
    */
   set textColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
 
     this.style.setProperty("--input-text-color", value);
     this.#textColor = value;
@@ -4300,9 +4300,9 @@ class SegmentedControl extends Component
    */
   set activeIndex(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.activeIndexTypeError;
-    if(value > this.#segments.length) throw this.#errors.activeIndexTooHighError
-    if(value < 0 && this.#segments.length > 0)  throw this.#errors.activeIndexNegativeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.activeIndexTypeError);
+    if(value > this.#segments.length) console.error(this.#errors.activeIndexTooHighError);
+    if(value < 0 && this.#segments.length > 0)  console.error(this.#errors.activeIndexNegativeError);
     this.element.setActiveButton(value);
   }
 
@@ -4321,8 +4321,8 @@ class SegmentedControl extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
 
     this.style.setProperty('--segment-color', value );
     this.style.setProperty('--segment-border-top', `1px solid ${value}`);
@@ -4345,7 +4345,7 @@ class SegmentedControl extends Component
    */
   set onChange(value) 
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
     if(this.#onChange) this.removeEventListener({ event: 'postchange', handler: this.#onChange });
   
     const handler = (event) => 
@@ -4375,10 +4375,10 @@ class SegmentedControl extends Component
   {
     this.element.innerHTML = '';
     this.#segments = [];
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.segmentsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.segmentsTypeError);
     value.forEach(segment => 
     { 
-      if(!typeChecker.check({ type: 'string', value: segment })) throw this.#errors.segmentTypeError;
+      if(!typeChecker.check({ type: 'string', value: segment })) console.error(this.#errors.segmentTypeError);
       this.#segments.push(segment); 
     });
     this.#render();
@@ -4436,7 +4436,7 @@ class Selector extends Component
    */
   set onChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
 
     const handler = (event) => 
@@ -4464,7 +4464,7 @@ class Selector extends Component
    */
   set options(value) 
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.optionsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.optionsTypeError);
 
     this.element.innerHTML = '';
     this.#options = [];
@@ -4473,7 +4473,7 @@ class Selector extends Component
     selectElement.classList = 'select-input select-input--underbar';
     this.#options.forEach((opt) => 
     {
-      if(!typeChecker.check({ type: 'string', value: opt })) throw this.#errors.optionTypeError;
+      if(!typeChecker.check({ type: 'string', value: opt })) console.error(this.#errors.optionTypeError);
       const optionElement = document.createElement('option');
       optionElement.textContent = opt;
       optionElement.value = opt;
@@ -4497,8 +4497,8 @@ class Selector extends Component
    */
   set selectedOption(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.selectedOptionTypeError;
-    if(!this.#options.includes(value)) throw this.#errors.selectedOptionNotFoundError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.selectedOptionTypeError);
+    if(!this.#options.includes(value)) console.error(this.#errors.selectedOptionNotFoundError);
     this.element.value = value;
   }
 
@@ -4517,7 +4517,7 @@ class Selector extends Component
    */
   set underbar(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.underbarTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.underbarTypeError);
     if(value == true) this.addModifier({ modifier: 'underbar' });
     else this.removeModifier({ modifier: 'underbar' });
     this.#underbar = value;
@@ -4579,7 +4579,7 @@ class Slider extends Component
    */
   set max(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.maxTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.maxTypeError);
     this.setAttribute({ key: 'max', value: String(value) });
     this.#max = value;
   }
@@ -4599,7 +4599,7 @@ class Slider extends Component
    */
   set min(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.minTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.minTypeError);
     this.setAttribute({ key: 'min', value: String(value) });
     this.#min = value;
   }
@@ -4619,7 +4619,7 @@ class Slider extends Component
    */
   set onChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
 
     const handler = (event) => 
@@ -4647,7 +4647,7 @@ class Slider extends Component
    */
   set step(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.stepTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.stepTypeError);
     this.setAttribute({ key: 'step', value: String(value) });
     this.#step = value;
   }
@@ -4667,8 +4667,8 @@ class Slider extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.element.style.setProperty('--range-track-background-color-active', value);
     this.#color = value;
   }
@@ -4688,7 +4688,7 @@ class Slider extends Component
    */
   set value(value) 
   { 
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.valueTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.valueTypeError);
     this.element.value = String(value); 
   }
 }
@@ -4738,7 +4738,7 @@ class Splitter extends Component
    */
   set leftMenu(value)
   {
-    if(!typeChecker.check({ type: 'splitter-menu', value: value })) throw this.#errors.leftMenuTypeError;
+    if(!typeChecker.check({ type: 'splitter-menu', value: value })) console.error(this.#errors.leftMenuTypeError);
     value.side = 'left';
     this.#leftMenu = value;
     this.appendChild({ child: this.#leftMenu });
@@ -4759,7 +4759,7 @@ class Splitter extends Component
    */
   set rightMenu(value)
   {
-    if(!typeChecker.check({ type: 'splitter-menu', value: value })) throw this.#errors.rightMenuTypeError;
+    if(!typeChecker.check({ type: 'splitter-menu', value: value })) console.error(this.#errors.rightMenuTypeError);
     value.side = 'right';
     this.#rightMenu = value;
     this.appendChild({ child: this.#rightMenu });
@@ -4780,7 +4780,7 @@ class Splitter extends Component
    */
   set detail(value)
   {
-    if(!typeChecker.checkMultiple({ types: [ 'page', 'navigator', 'tabbar' ], value: value })) throw this.#errors.detailTypeError;
+    if(!typeChecker.checkMultiple({ types: [ 'page', 'navigator', 'tabbar' ], value: value })) console.error(this.#errors.detailTypeError);
   
     this.#detail = value;
   
@@ -4843,7 +4843,7 @@ class SplitterMenu extends Component
    */
   set mode(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.modeTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.modeTypeError);
     if(this.#mode)
     {
       this.removeAttribute({ key: 'split' });
@@ -4876,7 +4876,7 @@ class SplitterMenu extends Component
    */
   set side(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.sideTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.sideTypeError);
     if(value == 'right')
     {
       this.setAttribute({ key: 'side', value: 'right' });
@@ -4904,7 +4904,7 @@ class SplitterMenu extends Component
    */
   set swipeable(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.swipeableTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.swipeableTypeError);
     if(value == true) this.setAttribute({ key: 'swipeable', value: '' });
     else this.removeAttribute({ key: 'swipeable' });
     this.#swipeable = value;
@@ -4925,7 +4925,7 @@ class SplitterMenu extends Component
    */
   set root(value)
   {
-    if(!typeChecker.checkMultiple({ types: [ 'page', 'navigator', 'tabbar' ], value: value })) throw this.#errors.rootTypeError;
+    if(!typeChecker.checkMultiple({ types: [ 'page', 'navigator', 'tabbar' ], value: value })) console.error(this.#errors.rootTypeError);
     this.#root = value.element;
     this.appendChild({ child: value.element });
   }
@@ -4945,7 +4945,7 @@ class SplitterMenu extends Component
    */
   set width(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.widthTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
     this.setAttribute({ key: 'width', value: value });
     this.#width = value;
   }
@@ -5023,7 +5023,7 @@ class Switch extends Component
    */
   set checked(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.checkedTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.checkedTypeError);
     if(value == true) this.on();
     else this.off();
   }
@@ -5067,8 +5067,8 @@ class Switch extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.element.style.setProperty("--switch-checked-background-color", value);
     this.element.style.setProperty("--switch-thumb-border-color-active", value);
     this.#color = value;
@@ -5151,7 +5151,7 @@ class Tab extends Component
    */
   set badge(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.badgeTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.badgeTypeError);
     this.setAttribute({ key: 'badge', value: value });
     if(value == 'none') this.removeAttribute({ key: 'badge' });
     this.#badge = value;
@@ -5172,7 +5172,7 @@ class Tab extends Component
    */
   set text(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.setAttribute({ key: 'label', value: value });
     this.#text = value;
   }
@@ -5192,7 +5192,7 @@ class Tab extends Component
    */
   set icon(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.iconTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.iconTypeError);
     this.setAttribute({ key: 'icon', value: value });
     this.#icon = value;
   }
@@ -5212,7 +5212,7 @@ class Tab extends Component
    */
   set root(value)
   {
-    if(!typeChecker.checkMultiple({ types: [ 'page', 'navigator' ], value: value })) throw this.#errors.rootTypeError;
+    if(!typeChecker.checkMultiple({ types: [ 'page', 'navigator' ], value: value })) console.error(this.#errors.rootTypeError);
     this.#root = value;
     //setTimeout(() => { value.element.classList.remove('ons-swiper-blocker'); }, 5)
   }
@@ -5232,8 +5232,8 @@ class Tab extends Component
    */
   set color(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.#color = value;
   }
 }
@@ -5287,11 +5287,11 @@ class Tabbar extends Component
    */
   set activeTab(value) 
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.activeTabTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.activeTabTypeError);
 
     let selectedTab = null;
     const index = value === 0 ? 1 : value;
-    if(index < 1 || index >= this.#tabs.length) this.#errors.activeTabIndexOutOfBoundsError;
+    if(index < 1 || index >= this.#tabs.length) console.error(this.#errors.activeTabIndexOutOfBoundsError);
     selectedTab = this.#tabs[index];
 
     if(selectedTab === 0) selectedTab = 1;
@@ -5346,7 +5346,7 @@ class Tabbar extends Component
    */
   set tabs(value)
   {
-    if(!typeChecker.check({ type: 'array', value: value })) throw this.#errors.tabsTypeError;
+    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.tabsTypeError);
 
     if(!this.#tabs)
     {
@@ -5354,7 +5354,7 @@ class Tabbar extends Component
       this.#rootComponents = [];
       this.#contentContainer.innerHTML = '';
 
-      value.forEach(tab => { if(!typeChecker.check({ type: 'tab', value: tab })) throw this.#errors.tabTypeError; });
+      value.forEach(tab => { if(!typeChecker.check({ type: 'tab', value: tab })) console.error(this.#errors.tabTypeError); });
       this.#tabs = value;
       const ghostTab = new Tab({ text: '', icon: '', root: new Page(), color: 'transparent' });
       ghostTab.element.style.display = 'none';
@@ -5372,7 +5372,7 @@ class Tabbar extends Component
     
       setTimeout(() => { if(this.#tabs.length > 1) this.activeTab = 1; }, 1);
     }
-    else throw this.#errors.tabsAlreadySetError;
+    else console.error(this.#errors.tabsAlreadySetError);
   }
 }
 
@@ -5444,8 +5444,8 @@ class Text extends Component
    */
   set color(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.colorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.colorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.style.color = value;
   }
   
@@ -5464,7 +5464,7 @@ class Text extends Component
    */
   set font(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.fontTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
     this.style.fontFamily = value;
   }
   
@@ -5483,7 +5483,7 @@ class Text extends Component
    */
   set fontSize(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.fontSizeTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.fontSizeTypeError);
     this.style.fontSize = value;
   }
 
@@ -5502,7 +5502,7 @@ class Text extends Component
    */
   set text(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.textContent = value;
   }
 
@@ -5582,8 +5582,8 @@ class TextArea extends Component
    */
   set caretColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.caretColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.caretColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.caretColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.caretColorInvalidError);
     this.style.caretColor = value;
   }
   
@@ -5602,7 +5602,7 @@ class TextArea extends Component
    */
   set cols(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.colsTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.colsTypeError);
     this.setAttribute({ key: 'cols', value: String(value) });
     this.#cols = value;
   }
@@ -5622,7 +5622,7 @@ class TextArea extends Component
    */
   set maxLength(value) 
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.maxLengthTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.maxLengthTypeError);
     this.setAttribute({ key: 'maxlength', value: String(value) });
     this.#maxLength = value;
   }
@@ -5642,7 +5642,7 @@ class TextArea extends Component
    */
   set onChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
     const handler = (event) => value(event.target.value);
@@ -5666,7 +5666,7 @@ class TextArea extends Component
    */
   set onTextChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onTextChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onTextChangeTypeError);
 
     if(this.#onTextChange) this.removeEventListener({ event: 'input', handler: this.#onTextChange });
     const handler = (event) => value(event.target.value);
@@ -5690,7 +5690,7 @@ class TextArea extends Component
    */
   set placeholder(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.placeholderTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.placeholderTypeError);
     this.setAttribute({ key: 'placeholder', value: value });
     this.#placeholder = value;  
   }
@@ -5710,7 +5710,7 @@ class TextArea extends Component
    */
   set resizable(value) 
   {
-    if(!typeChecker.check({ type: 'boolean', value })) throw this.#errors.resizableTypeError; 
+    if(!typeChecker.check({ type: 'boolean', value })) console.error(this.#errors.resizableTypeError); 
     this.style.resize = value ? 'both' : 'none';
     this.#resizable = value;
   }
@@ -5730,7 +5730,7 @@ class TextArea extends Component
    */
   set rows(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.rowsTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.rowsTypeError);
     this.setAttribute({ key: 'rows', value: String(value) });
     this.#rows = value;
   }
@@ -5750,7 +5750,7 @@ class TextArea extends Component
    */
   set text(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.value = value;
   }
   
@@ -5769,8 +5769,8 @@ class TextArea extends Component
    */
   set textColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
     this.style.color = value;
   }
 }
@@ -5849,8 +5849,8 @@ class Textfield extends Component
    */
   set caretColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.caretColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.caretColorInvalidError; 
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.caretColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.caretColorInvalidError); 
     this.style.caretColor = value;
   }
   
@@ -5869,7 +5869,7 @@ class Textfield extends Component
    */
   set maxLength(value) 
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.maxLengthTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.maxLengthTypeError);
     this.setAttribute({ key: 'maxlength', value: String(value) });
     this.#maxLength = value;
   }
@@ -5889,7 +5889,7 @@ class Textfield extends Component
    */
   set onChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
     const handler = (event) => value(event.target.value);
@@ -5913,7 +5913,7 @@ class Textfield extends Component
    */
   set onTextChange(value)
   {
-    if(!typeChecker.check({ type: 'function', value: value })) throw this.#errors.onTextChangeTypeError;
+    if(!typeChecker.check({ type: 'function', value: value })) console.error(this.#errors.onTextChangeTypeError);
 
     if(this.#onTextChange) this.removeEventListener({ event: 'input', handler: this.#onTextChange });
     const handler = (event) => value(event.target.value);
@@ -5937,7 +5937,7 @@ class Textfield extends Component
    */
   set placeholder(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.placeholderTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.placeholderTypeError);
     this.setAttribute({ key: 'placeholder', value: value });
     this.#placeholder = value;  
   }
@@ -5957,7 +5957,7 @@ class Textfield extends Component
    */
   set text(value) 
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
     this.element.value = value;
   }
   
@@ -5976,8 +5976,8 @@ class Textfield extends Component
    */
   set textColor(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.textColorTypeError;
-    if(!color.isValid({ color: value })) throw this.#errors.textColorInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
     this.style.setProperty("--input-text-color", value);
     this.#textColor = value;
     setTimeout(() => 
@@ -6002,8 +6002,8 @@ class Textfield extends Component
    */
   set type(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.typeTypeError;
-    if(!Object.values(this.#validTypes).includes(value)) throw this.#errors.typeInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.typeTypeError);
+    if(!Object.values(this.#validTypes).includes(value)) console.error(this.#errors.typeInvalidError);
     this.setAttribute({ key: 'type', value: value });
     this.#type = value;
   }
@@ -6023,7 +6023,7 @@ class Textfield extends Component
    */
   set underbar(value)
   {
-    if(!typeChecker.check({ type: 'boolean', value: value })) throw this.#errors.underbarTypeError;
+    if(!typeChecker.check({ type: 'boolean', value: value })) console.error(this.#errors.underbarTypeError);
     if(value == true) this.addModifier({ modifier: 'underbar' });
     else this.removeModifier({ modifier: 'underbar' });
     this.#underbar = value;
@@ -6097,8 +6097,8 @@ class Toast extends Component
    */
   set animation(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.animationTypeError;
-    if(!Object.values(this.#animationTypes).includes(value)) throw this.#errors.animationInvalidError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.animationTypeError);
+    if(!Object.values(this.#animationTypes).includes(value)) console.error(this.#errors.animationInvalidError);
     this.element.setAttribute('animation', value);
     this.#animation = value;
   }
@@ -6118,7 +6118,7 @@ class Toast extends Component
    */
   set dismissIcon(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.dismissIconTypeError;
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.dismissIconTypeError);
     if(this.#dismissIcon) this.#dismissButton.innerHTML = '';
     this.#dismissIcon = new Icon({ icon: value, size: '22px' });
     this.#dismissButton.appendChild(this.#dismissIcon.element);
@@ -6141,7 +6141,7 @@ class Toast extends Component
    */
   set message(value)
   {
-    if(!typeChecker.check({ type: 'string', value: value })) throw this.#errors.messageTypeError;  
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.messageTypeError);  
     this.#messageElement.textContent = value;
   }
 
@@ -6160,7 +6160,7 @@ class Toast extends Component
    */
   set timeout(value)
   {
-    if(!typeChecker.check({ type: 'number', value: value })) throw this.#errors.timeoutTypeError;
+    if(!typeChecker.check({ type: 'number', value: value })) console.error(this.#errors.timeoutTypeError);
     this.#timeout = value;
   }
   
@@ -6201,7 +6201,7 @@ class BrowserManager
       urlTypeError: 'Browser Error: Expected type string for url.'
     };
 
-    if(BrowserManager.#instance) throw this.#errors.singleInstanceError;
+    if(BrowserManager.#instance) console.error(this.#errors.singleInstanceError);
     else BrowserManager.#instance = this;
   }
 
@@ -6261,7 +6261,7 @@ class DeviceManager
       singleInstanceError: 'Device Manager Error: Only one DeviceManager object can exist at a time.',
     };
 
-    if(DeviceManager.#instance) throw this.#errors.singleInstanceError;
+    if(DeviceManager.#instance) console.error(this.#errors.singleInstanceError);
     else DeviceManager.#instance = this;
 
     this.update();
