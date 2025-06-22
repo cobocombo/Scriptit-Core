@@ -6169,12 +6169,61 @@ class Toast extends Component
 }
 
 ///////////////////////////////////////////////////////////
+// BROWSER MANAGER MODULE
+///////////////////////////////////////////////////////////
+
+/** Singleton class representing the main BrowserManager object. */
+class BrowserManager
+{
+  #errors;
+  static #instance = null;
+
+  /** Creates the browser object. **/
+  constructor() 
+  {
+    this.#errors = 
+    {
+      animatedTypeError: 'Browser Error: Expected type boolean for animated.',
+      inAppTypeError: 'Browser Error: Expected type boolean for inApp.',
+      singleInstanceError: 'Browser Manager Error: Only one BrowserManager object can exist at a time.',
+      urlInvalidError: 'Browser Error: Invalid url supplied, could not open.',
+      urlTypeError: 'Browser Error: Expected type string for url.'
+    };
+
+    if(BrowserManager.#instance) throw this.#errors.singleInstanceError;
+    else BrowserManager.#instance = this;
+  }
+
+  /** Static method to return a new ConsoleManager instance. Allows for Singleton+Module pattern. */
+  static getInstance() 
+  {
+    return new BrowserManager();
+  }
+
+  isValidWebsiteUrl({ url } = {}) 
+  {
+    const regex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/i;
+    return regex.test(url);
+  }
+
+  open({ url, inApp = true, animated = true } = {})
+  {
+    if(!typeChecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
+    if(!this.isValidWebsiteUrl({ url: url })) console.error(this.#errors.urlInvalidError);
+    if(!typeChecker.check({ type: 'boolean', value: inApp })) console.error(this.#errors.inAppTypeError);
+    if(!typeChecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.animatedTypeError);
+    window.webkit.messageHandlers.browserMessageManager.postMessage({ url: url, inApp: inApp, animated: animated });
+  }
+}
+
+///////////////////////////////////////////////////////////
 
 globalThis.consoleManager = ConsoleManager.getInstance();
 globalThis.typeChecker = TypeChecker.getInstance();
 globalThis.color = ColorManager.getInstance();
 globalThis.app = App.getInstance();
 globalThis.ui = UserInterface.getInstance();
+globalThis.browser = BrowserManager.getInstance();
 
 typeChecker.register({ name: 'action-sheet', constructor: ActionSheet });
 typeChecker.register({ name: 'action-sheet-button', constructor: ActionSheetButton });

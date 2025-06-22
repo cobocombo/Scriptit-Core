@@ -19,14 +19,12 @@
         onInit()
         {
           this.navigationBarTitle = 'Home';
-          this.backgroundColor = 'red';
+          
+          let button = new ui.Button();
+          button.text = 'Hello World!';
+          button.onTap = () => { browser.open({ url: 'https://www.google.com', inApp: true, animated: true }) };
 
-          let helloText = new ui.Text({ type: 'header-1' });
-          helloText.text = 'Hello World!';
-          helloText.color = 'white';
-          helloText.onTap = () => { console.log('Hello World!!') };
-
-          this.addComponentToCenter({ component: helloText });
+          this.addComponentToCenter({ component: button });
         }
       }
       app.present({ root: new HomePage() });
