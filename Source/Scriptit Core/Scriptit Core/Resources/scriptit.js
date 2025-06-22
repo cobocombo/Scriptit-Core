@@ -3509,7 +3509,7 @@ class Page extends Component
     
     value.forEach(button => 
     {
-      if(typeChecker.check({ type: 'bar-button', value: value })) rightDiv.appendChild(button.element);
+      if(typeChecker.check({ type: 'bar-button', value: button })) rightDiv.appendChild(button.element);
       else console.error(this.#errors.navigationBarButtonRightTypeError);
     });
     this.#navigationBarButtonsRight = value;
