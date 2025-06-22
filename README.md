@@ -9,12 +9,11 @@ Scriptit Core is a mobile framework for creating iOS apps quick with just plain 
 
 ## 💰 Support
 
-If you enjoy Scriptit Core, and you feel like this repository is a great learning space for building apps, then feel free to help support further development by keeping me fueled with beer. Thanks!
+If you enjoy Scriptit Core, and you feel like this repository is a great learning space for building apps, then feel free to help support further development by keeping me fueled with coffee. Thanks!
 
-
-<div>
-  <a href="https://www.buymeacoffee.com/cobocombo"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a beer&emoji=🍺&slug=cobocombo&button_colour=FF5F5F&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00" /></a>
-</div>
+<a href="https://buymeacoffee.com/cobocombo">
+  <img src="Images/bmc-button.png" alt="Alt Text" width="300">
+</a>
 
 ## 🧑🏻‍💻 Contributing
 
