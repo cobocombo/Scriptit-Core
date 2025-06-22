@@ -25,6 +25,8 @@
           button.onTap = () => { browser.open({ url: 'https://www.google.com', inApp: true, animated: true }) };
 
           this.addComponentToCenter({ component: button });
+
+          setTimeout(() => { console.log(app.coreVersion); }, 2000);
         }
       }
       app.present({ root: new HomePage() });

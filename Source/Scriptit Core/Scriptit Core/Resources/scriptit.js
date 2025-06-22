@@ -267,6 +267,7 @@ class ColorManager
 class App 
 {
   #componentsById;
+  #coreVersion;
   #errors;
   #isPresented;
   #root;
@@ -296,6 +297,7 @@ class App
       this.#componentsById = new Map();
       this.#isPresented = false;
       this.statusBarColor = 'black';
+      this.#coreVersion = '1.0';
     }    
   }
   
@@ -303,6 +305,15 @@ class App
   static getInstance() 
   {
     return new App();
+  }
+
+  /** 
+   * Get property to return the current released version of the Scriptit Core framework.
+   * @return {string} The current released version of the Scriptit Core framework.
+   */
+  get coreVersion()
+  {
+    return this.#coreVersion;
   }
 
   /** 
