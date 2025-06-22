@@ -267,6 +267,7 @@ class ColorManager
 class App 
 {
   #componentsById;
+  #coreReleaseDate;
   #coreVersion;
   #errors;
   #isPresented;
@@ -298,6 +299,7 @@ class App
       this.#isPresented = false;
       this.statusBarColor = 'black';
       this.#coreVersion = '1.0';
+      this.#coreReleaseDate = '6/22/25';
     }    
   }
   
@@ -305,6 +307,15 @@ class App
   static getInstance() 
   {
     return new App();
+  }
+
+  /** 
+   * Get property to return the latest release date of the Scriptit Core framework.
+   * @return {string} The latest release date of the Scriptit Core framework.
+   */
+  get coreReleaseDate()
+  {
+    return this.#coreReleaseDate;
   }
 
   /** 

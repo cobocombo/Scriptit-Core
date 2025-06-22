@@ -22,7 +22,7 @@
           
           let button = new ui.Button();
           button.text = 'Hello World!';
-          button.onTap = () => { browser.open({ url: 'https://www.google.com', inApp: true, animated: true }) };
+          button.onTap = () => { console.log(app.coreReleaseDate); };
 
           this.addComponentToCenter({ component: button });
 
