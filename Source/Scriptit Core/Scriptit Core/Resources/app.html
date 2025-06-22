@@ -26,7 +26,20 @@
 
           this.addComponentToCenter({ component: button });
 
-          setTimeout(() => { console.log(app.coreVersion); }, 2000);
+          setTimeout(() => 
+          { 
+            console.log(`Scriptit Core Version: ${app.coreVersion}`);
+            console.log(`Is iPad: ${device.isIpad}`);
+            console.log(`Is iPhone: ${device.isIphone}`);
+            console.log(`Is Landscape: ${device.isLandscape}`);
+            console.log(`Is Portrait: ${device.isPortrait}`);
+            console.log(`Screen Height: ${device.screenHeight}`);  
+            console.log(`Screen Width: ${device.screenWidth}`);
+            console.log(`Battery Level: ${device.batteryLevel}`);
+            console.log(`Battery State: ${device.batteryState}`);
+            console.log(`System Name: ${device.systemName}`);
+            console.log(`System Version: ${device.systemVersion}`);        
+          }, 2000);
         }
       }
       app.present({ root: new HomePage() });

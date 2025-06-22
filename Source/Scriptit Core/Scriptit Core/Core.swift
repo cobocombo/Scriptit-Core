@@ -18,6 +18,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     self.router = JavascriptMessageRouter();
     self.router.registerHandler(ConsoleMessageManager(), forMessageName: "consoleMessageManager");
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
+    self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
     
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
@@ -25,6 +26,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     let userContentController = WKUserContentController();
     userContentController.add(self, name: "consoleMessageManager");
     userContentController.add(self, name: "browserMessageManager");
+    userContentController.add(self, name: "deviceMessageManager");
     
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;
@@ -105,6 +107,44 @@ class BrowserMessageManager: NSObject, JavascriptMessageManager
       rootViewController?.present(safariVC, animated: animated, completion: nil);
     }
     else { UIApplication.shared.open(url!, options: [:], completionHandler: nil); }
+  }
+}
+
+//=======================================================//
+
+class DeviceMessageManager: JavascriptMessageManager
+{
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+  {
+    UIDevice.current.isBatteryMonitoringEnabled = true;
+    
+    let systemName = UIDevice.current.systemName;
+    let systemVersion = UIDevice.current.systemVersion;
+    let batteryLevel = UIDevice.current.batteryLevel;
+    let batteryState: String;
+
+    switch UIDevice.current.batteryState
+    {
+      case .charging: batteryState = "charging"
+      case .full: batteryState = "full"
+      case .unplugged: batteryState = "unplugged"
+      case .unknown: fallthrough
+      @unknown default: batteryState = "unknown"
+    }
+
+    let deviceInfo: [String: Any] = [
+      "systemName": systemName,
+      "systemVersion": systemVersion,
+      "batteryLevel": batteryLevel,
+      "batteryState": batteryState
+    ]
+
+    if let jsonData = try? JSONSerialization.data(withJSONObject: deviceInfo, options: []),
+       let jsonString = String(data: jsonData, encoding: .utf8)
+      {
+        let jsCallback = "device.receive(\(jsonString));"
+        webView.evaluateJavaScript(jsCallback, completionHandler: nil)
+      }
   }
 }
 

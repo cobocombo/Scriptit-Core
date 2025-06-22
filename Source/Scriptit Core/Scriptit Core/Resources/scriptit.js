@@ -6180,7 +6180,7 @@ class Toast extends Component
 }
 
 ///////////////////////////////////////////////////////////
-// BROWSER MANAGER MODULE
+// BROWSER MODULE
 ///////////////////////////////////////////////////////////
 
 /** Singleton class representing the main BrowserManager object. */
@@ -6205,18 +6205,30 @@ class BrowserManager
     else BrowserManager.#instance = this;
   }
 
-  /** Static method to return a new ConsoleManager instance. Allows for Singleton+Module pattern. */
+  /** Static method to return a new BrowserManager instance. Allows for Singleton+Module pattern. */
   static getInstance() 
   {
     return new BrowserManager();
   }
 
+  /** 
+   * Public method to check if url is a valid website url.
+   * @param {string} url - The url to be checked.
+   * @return {boolean} If the url is a valid website url or not.
+   */
   isValidWebsiteUrl({ url } = {}) 
   {
+    if(!typeChecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
     const regex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/i;
     return regex.test(url);
   }
 
+  /** 
+   * Public method to open a website url in safari, either within the app or outside in a seperate app.
+   * @param {string} url - The url to be opened.
+   * @param {boolean} inApp - Flag dictating if the the url should be opened inside or outside the current app.
+   * @param {boolean} animated - If the url should be opened with animation or not. Only works when inApp is true.
+   */
   open({ url, inApp = true, animated = true } = {})
   {
     if(!typeChecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
@@ -6228,6 +6240,151 @@ class BrowserManager
 }
 
 ///////////////////////////////////////////////////////////
+// DEVICE MODULE
+///////////////////////////////////////////////////////////
+
+/** Singleton class representing the main DeviceManager object. */
+class DeviceManager
+{
+  #errors;
+  #batteryLevel;
+  #batteryState;
+  #systemName;
+  #systemVersion;
+  static #instance = null;
+
+  /** Creates the device object. **/
+  constructor() 
+  {
+    this.#errors = 
+    {
+      singleInstanceError: 'Device Manager Error: Only one DeviceManager object can exist at a time.',
+    };
+
+    if(DeviceManager.#instance) throw this.#errors.singleInstanceError;
+    else DeviceManager.#instance = this;
+
+    this.update();
+    setInterval(() => this.update(), 30000); // every 30 seconds.
+  }
+
+  /** Static method to return a new DeviceManager instance. Allows for Singleton+Module pattern. */
+  static getInstance() 
+  {
+    return new DeviceManager();
+  }
+
+  /** 
+   * Get property to return the latest stored battery level.
+   * @return {string} The latest stored battery level.
+   */
+  get batteryLevel()
+  {
+    return this.#batteryLevel;
+  }
+
+  /** 
+   * Get property to return the latest stored battery state.
+   * @return {string} The latest stored battery state.
+   */
+  get batteryState()
+  {
+    return this.#batteryState;
+  }
+
+  /** 
+   * Get property to return if the current device is an iPad or not.
+   * @return {boolean} Value informing the user if current device is an iPad or not.
+   */
+  get isIpad()
+  {
+    return ons.platform.isIPad();
+  }
+
+  /** 
+   * Get property to return if the current device is an iPhone or not.
+   * @return {boolean} Value informing the user if current device is an iPhone or not.
+   */
+  get isIphone()
+  {
+    return ons.platform.isIPhone();
+  }
+
+  /** 
+   * Get property to return if the current device is in landscape orientation or not.
+   * @return {boolean} Value informing the user if current device is in landscape orientation or not.
+   */
+  get isLandscape()
+  {
+    return ons.orientation.isLandscape();
+  }
+
+  /** 
+   * Get property to return if the current device is in portrait orientation or not.
+   * @return {boolean} Value informing the user if current device is in portrait orientation or not.
+   */
+  get isPortrait()
+  {
+    return ons.orientation.isPortrait();
+  }
+
+  /** 
+   * Get property to return the device's screen height.
+   * @return {number} The device's screen height.
+   */
+  get screenHeight()
+  {
+    return window.innerHeight;
+  }
+
+  /** 
+   * Get property to return the device's screen width.
+   * @return {number} The device's screen width.
+   */
+  get screenWidth()
+  {
+    return window.innerWidth;
+  }
+
+  /** 
+   * Get property to return the device's system name.
+   * @return {string} The device's system name.
+   */
+  get systemName()
+  {
+    return this.#systemName;
+  }
+
+  /** 
+   * Get property to return the device's system version.
+   * @return {string} The device's system version.
+   */
+  get systemVersion()
+  {
+    return this.#systemVersion;
+  }
+
+  /** 
+  * Public method called by iOS to populate device info. 
+  * @param {object} data - The populated device info within a json object.
+  */
+  receive(data) 
+  {
+    this.#batteryLevel = data.batteryLevel;
+    this.#batteryState = data.batteryState;
+    this.#systemName = data.systemName;
+    this.#systemVersion = data.systemVersion;
+  }
+
+  /** Public method called by every 30 seconds to retrieve the latest device information in the background. */
+  update() 
+  { 
+    window.webkit?.messageHandlers?.deviceMessageManager?.postMessage(null);
+  }
+}
+
+
+///////////////////////////////////////////////////////////
 
 globalThis.consoleManager = ConsoleManager.getInstance();
 globalThis.typeChecker = TypeChecker.getInstance();
@@ -6235,6 +6392,7 @@ globalThis.color = ColorManager.getInstance();
 globalThis.app = App.getInstance();
 globalThis.ui = UserInterface.getInstance();
 globalThis.browser = BrowserManager.getInstance();
+globalThis.device = DeviceManager.getInstance();
 
 typeChecker.register({ name: 'action-sheet', constructor: ActionSheet });
 typeChecker.register({ name: 'action-sheet-button', constructor: ActionSheetButton });
