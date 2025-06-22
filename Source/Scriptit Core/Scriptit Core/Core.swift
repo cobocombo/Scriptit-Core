@@ -1,9 +1,14 @@
 //=======================================================//
+// CORE VERSION: 1.0
+// RELEASE DATE: 6/22/25
+//=======================================================//
 
 import UIKit
 import WebKit
 import SafariServices
 
+//=======================================================//
+// MAIN CORE CONTROLLER
 //=======================================================//
 
 class ScriptitCoreController: UIViewController, WKScriptMessageHandler
@@ -51,13 +56,13 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
 }
 
 //=======================================================//
+// MESSAGE MANAGER / ROUTER
+//=======================================================//
 
 protocol JavascriptMessageManager
 {
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
 }
-
-//=======================================================//
 
 class JavascriptMessageRouter
 {
@@ -76,6 +81,8 @@ class JavascriptMessageRouter
 }
 
 //=======================================================//
+// MESSAGE MANAGERS
+//=======================================================//
 
 class ConsoleMessageManager: JavascriptMessageManager
 {
@@ -85,7 +92,7 @@ class ConsoleMessageManager: JavascriptMessageManager
   }
 }
 
-//=======================================================//
+//=============================================//
 
 class BrowserMessageManager: NSObject, JavascriptMessageManager
 {
@@ -110,7 +117,7 @@ class BrowserMessageManager: NSObject, JavascriptMessageManager
   }
 }
 
-//=======================================================//
+//=============================================//
 
 class DeviceMessageManager: JavascriptMessageManager
 {

@@ -1,5 +1,9 @@
 import UIKit
 
+//=======================================================//
+// SCENE DELEGATE
+//=======================================================//
+
 class SceneDelegate: UIResponder, UIWindowSceneDelegate
 {
   var window: UIWindow?
@@ -39,3 +43,5 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate
       
   }
 }
+
+//=======================================================//
