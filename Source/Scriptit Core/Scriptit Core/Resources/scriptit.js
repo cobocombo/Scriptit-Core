@@ -328,6 +328,23 @@ class App
   }
 
   /** 
+   * Get property to determine if this is the first launch of the app.
+   * @return {boolean} True if this is the first launch, otherwise false.
+   */
+  get isFirstLaunch()
+  {
+    const key = 'is-first-launch';
+
+    if(localStorage.getItem(key) === null)
+    {
+      localStorage.setItem(key, 'false');
+      return true;
+    }
+
+    return false;
+  }
+
+  /** 
    * Get property to return the color of the status bar.
    * @return {string} The color of the status bar. Defaults to black.
    */
