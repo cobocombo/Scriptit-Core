@@ -3201,6 +3201,7 @@ class Navigator
     const previousPage = this.#stack[this.#stack.length - 1];
 
     currentPage.onHide?.();
+    previousPage.onShow?.();
 
     if(animated) 
     {
