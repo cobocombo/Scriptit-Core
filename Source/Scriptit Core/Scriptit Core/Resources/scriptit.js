@@ -2194,10 +2194,13 @@ class Column extends Component
       if(!typeChecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
       if(center == true)
       {
-        let centerContainer = document.createElement('div');
+        const centerContainer = document.createElement('div');
         centerContainer.style.display = 'flex';
         centerContainer.style.justifyContent = 'center';
         centerContainer.style.alignItems = 'center';
+        centerContainer.style.width = '100%';
+        centerContainer.style.height = '100%';
+        
         centerContainer.appendChild(component.element);
         this.appendChild({ child: centerContainer });
       }
