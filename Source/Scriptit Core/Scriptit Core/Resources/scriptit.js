@@ -1483,7 +1483,7 @@ class AlertDialogButton extends Component
   {
     if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.textColorTypeError);
     if(!color.isValid({ color: value })) console.error(this.#errors.textColorInvalidError);
-    this.element.style.color = color;
+    this.element.style.color = value;
   }
 }
 
