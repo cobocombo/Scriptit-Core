@@ -765,7 +765,7 @@ class Component
     if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.modifiersTypeError); 
     value.forEach(mod => 
     { 
-      if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.modifierTypeError);
+      if(!typeChecker.check({ type: 'string', value: mod })) console.error(this.#errors.modifierTypeError);
       setTimeout(() => { this.addModifier({ modifier: mod });}, 1)
     });
   }
