@@ -3063,7 +3063,7 @@ class Modal extends Component
   addComponents({ components } = {})
   {
     if(this.#root) console.error(this.#errors.rootComponentPreventsOtherComponentsError);
-    if(!typeChecker.check({ type: 'array', value: value })) console.error(this.#errors.componentsTypeError);
+    if(!typeChecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
    
     components.forEach(component =>
     {
