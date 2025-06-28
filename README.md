@@ -1,4 +1,5 @@
-## 👀 Overview 
+# Scriptit Core
+
 Scriptit Core is a mobile framework for creating iOS apps quick with just plain vanilla javascript. FYI this framework is currently a work in progress. More to come!
 
 ## 🗂️ Change Log 
