@@ -12,7 +12,7 @@ Scriptit Core is a mobile framework for creating iOS apps quick with just plain 
 ## 🔨 Apps Made With Scriptit Core
 
 <a href="https://apps.apple.com/us/app/corn-score/id6446418989">
-  <img src="Images/corn-score.png" alt="corn-score-app-icon" width=150, height=150>
+  <img src="Images/corn-score.png" alt="corn-score-app-icon" width=100, height=100>
 </a>
 
 ## 💰 Support
