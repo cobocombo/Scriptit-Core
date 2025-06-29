@@ -6,7 +6,8 @@ Scriptit Core is a mobile framework for creating iOS apps quick with just plain 
 
 | Release | Date | Notes |
 |----------|----------|----------|
-| v1.0  | 6/22/25  | Initial release. |
+| v1.0  | 6/22/25  | - Initial release. |
+| v1.1  | 6/29/25  | - Bug fixes. |
 
 ## 💰 Support
 
