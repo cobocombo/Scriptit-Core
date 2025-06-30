@@ -2622,7 +2622,7 @@ class Icon extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the image component. */
-class Image extends Component
+class ImageV2 extends Component
 {
   #errors;
 
@@ -6415,6 +6415,26 @@ class DeviceManager
   }
 }
 
+///////////////////////////////////////////////////////////
+// PHASER
+///////////////////////////////////////////////////////////
+
+class PhaserScene extends Component 
+{
+  constructor({ phaserConfig = {}, ...options } = {}) 
+  {
+    super({ tagName: 'div', options });
+
+    this.width = '100%';
+    this.height = '100%';
+    this.style.position = 'relative';
+
+    requestAnimationFrame(() => 
+    {
+      this.game = new Phaser.Game({ type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: this.element, ...phaserConfig });
+    });
+  }
+}
 
 ///////////////////////////////////////////////////////////
 

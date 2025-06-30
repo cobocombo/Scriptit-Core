@@ -11,26 +11,9 @@
     <link rel="stylesheet" href="v4-shims.min.css">
 </head>
 <body>
+    <script src="phaser.min.js"></script>
     <script src="onsenui.min.js"></script>
     <script src="scriptit.js"></script>
-    <script>
-      class HomePage extends ui.Page
-      {
-        onInit()
-        {
-          this.navigationBarTitle = 'Home';
-          
-          let button = new ui.Button();
-          button.text = 'Hello World!';
-          button.onTap = () => { console.log(app.coreReleaseDate); };
-
-          this.addComponentToCenter({ component: button });
-
-          if(app.isFirstLaunch == true) console.log('This is the first launch!!');
-          else console.log('The app has been launched before!');
-        }
-      }
-      app.present({ root: new HomePage() });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
