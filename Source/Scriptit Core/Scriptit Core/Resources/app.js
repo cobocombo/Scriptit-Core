@@ -1,3 +1,28 @@
+///////////////////////////////////////////////////////////
+
+class PhaserScene extends Component 
+{
+  constructor({ config = {}, ...options } = {}) 
+  {
+    super({ tagName: 'div', options });
+
+    this.width = '100%';
+    this.height = '100%';
+    this.style.position = 'relative';
+
+    if(!config.width) config.width = 100;
+    if(!config.height) config.height = 100;
+    this.game = new Phaser.Game({ type: Phaser.CANVAS, parent: this.element, ...config });
+  }
+}
+
+class PhaserGame extends Component
+{
+
+}
+
+///////////////////////////////////////////////////////////
+
 class GameScene extends Phaser.Scene 
 {
   constructor() 
@@ -23,10 +48,11 @@ class PhaserPage extends ui.Page
   onInit()
   {
     this.navigationBarTitle = 'Phaser Game';
-    let scene = new PhaserScene({ phaserConfig: { scene: [ GameScene ]} });
+    let scene = new PhaserScene({ config: { width: 100, scene: [ GameScene ]} });
     this.addComponents({ components: [ scene ] });
   }
 }
 
-let scene = new PhaserScene({ phaserConfig: { scene: [ GameScene ]} });
 app.present({ root: new PhaserPage() });
+
+///////////////////////////////////////////////////////////
