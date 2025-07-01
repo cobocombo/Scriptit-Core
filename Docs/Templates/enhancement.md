@@ -14,6 +14,8 @@ So that I can ...
 
 ## Supporting Info
 
+## Implementation Details
+
 ## Testing
 
 - [ ] Test case #1...
