@@ -50,9 +50,19 @@ class PhaserPage extends ui.Page
     this.navigationBarTitle = 'Phaser Game';
     let scene = new PhaserScene({ config: { width: 100, scene: [ GameScene ]} });
     this.addComponents({ components: [ scene ] });
+
+    this.button = new ui.Button({ text: 'Hello World'});
+    this.button.onTap = () => 
+    {
+      console.log(`Screen Height: ${device.screenHeight}`);
+      console.log(`Screen Width: ${device.screenWidth}`);
+    }
+
+    this.addComponentToCenter({ component: this.button });
   }
 }
 
+app.statusBarColor = 'red';
 app.present({ root: new PhaserPage() });
 
 ///////////////////////////////////////////////////////////

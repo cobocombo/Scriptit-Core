@@ -6366,7 +6366,8 @@ class DeviceManager
    */
   get screenHeight()
   {
-    return window.innerHeight;
+    if(this.isPortrait === true) return window.innerHeight;
+    else return window.innerWidth;
   }
 
   /** 
@@ -6375,7 +6376,8 @@ class DeviceManager
    */
   get screenWidth()
   {
-    return window.innerWidth;
+    if(this.isPortrait === true) return window.innerWidth;
+    else return window.innerHeight;
   }
 
   /** 
