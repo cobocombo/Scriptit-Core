@@ -372,7 +372,7 @@ class App
   {
     if(!root) console.error(this.#errors.noRootComponentError);
 
-    if(typeChecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar' ], value: root })) this.#root = root;
+    if(typeChecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar', 'phaser-scene' ], value: root })) this.#root = root;
     else console.error(this.#errors.rootComponentTypeError);
     
     if(this.#isPresented == true)  console.error(this.#errors.appAlreadyPresentedError);
@@ -6421,7 +6421,38 @@ class DeviceManager
 // PHASER
 ///////////////////////////////////////////////////////////
 
+/** Class representing the PhaserGame component. */
+class PhaserGame extends Component 
+{
+  #game;
 
+  /**
+   * Creates the PhaserGame object.
+   * @param {object} gameConfig - Custom phaser game options to init properties for the internal Phaser.Game object.
+   * @param {object} options - Custom options object to init properties from the constructor for the component itself.
+   */
+  constructor({ config = {}, ...options } = {}) 
+  {
+    super({ tagName: 'div', options: options });
+
+    this.width = '100%';
+    this.height = '100%';
+    this.style.position = 'relative';
+    if(!config.width) config.width = '100%';
+    if(!config.height) config.height = '100%';
+
+    this.#game = new Phaser.Game({ type: Phaser.CANVAS, parent: this.element, ...config });
+  }
+
+  /** 
+   * Get property to return the game object created internally.
+   * @return {Phaser.Game} The game object created internally.
+   */
+  get game()
+  {
+    return this.#game;
+  }
+}
 
 ///////////////////////////////////////////////////////////
 
@@ -6456,6 +6487,7 @@ typeChecker.register({ name: 'list-title', constructor: ListTitle });
 typeChecker.register({ name: 'modal', constructor: Modal });
 typeChecker.register({ name: 'navigator', constructor: Navigator });
 typeChecker.register({ name: 'page', constructor: Page });
+typeChecker.register({ name: 'phaser-scene', constructor: PhaserGame });
 typeChecker.register({ name: 'popover', constructor: Popover });
 typeChecker.register({ name: 'progress-bar', constructor: ProgressBar });
 typeChecker.register({ name: 'rectangle', constructor: Rectangle });
@@ -6479,6 +6511,7 @@ ui.register({ name: 'ActionSheetButton', constructor: ActionSheetButton });
 ui.register({ name: 'AlertDialog', constructor: AlertDialog });
 ui.register({ name: 'AlertDialogButton', constructor: AlertDialogButton });
 ui.register({ name: 'BackBarButton', constructor: BackBarButton });
+ui.register({ name: 'BarButton', constructor: BarButton });
 ui.register({ name: 'Button', constructor: Button });
 ui.register({ name: 'Card', constructor: Card });
 ui.register({ name: 'CircularProgress', constructor: CircularProgress });
@@ -6496,6 +6529,7 @@ ui.register({ name: 'ListTitle', constructor: ListTitle });
 ui.register({ name: 'Modal', constructor: Modal });
 ui.register({ name: 'Navigator', constructor: Navigator });
 ui.register({ name: 'Page', constructor: Page });
+ui.register({ name: 'PhaserGame', constructor: PhaserGame });
 ui.register({ name: 'Popover', constructor: Popover });
 ui.register({ name: 'ProgressBar', constructor: ProgressBar });
 ui.register({ name: 'Rectangle', constructor: Rectangle });
@@ -6513,6 +6547,5 @@ ui.register({ name: 'Text', constructor: Text });
 ui.register({ name: 'TextArea', constructor: TextArea });
 ui.register({ name: 'Textfield', constructor: Textfield });
 ui.register({ name: 'Toast', constructor: Toast });
-ui.register({ name: 'BarButton', constructor: BarButton });
 
 ///////////////////////////////////////////////////////////

@@ -1,45 +1,43 @@
 ///////////////////////////////////////////////////////////
 
-class PhaserScene extends Component 
+class SplashScene extends Phaser.Scene 
 {
-  constructor({ config = {}, ...options } = {}) 
+  constructor() 
   {
-    super({ tagName: 'div', options });
+    super({ key: 'SplashScene' });
+  }
 
-    this.width = '100%';
-    this.height = '100%';
-    this.style.position = 'relative';
-
-    if(!config.width) config.width = 100;
-    if(!config.height) config.height = 100;
-    this.game = new Phaser.Game({ type: Phaser.CANVAS, parent: this.element, ...config });
+  create() 
+  {
+    this.cameras.main.setBackgroundColor('#00ff00');
+    setTimeout(() => { this.scene.start('MainMenuScene'); }, 2000);
   }
 }
 
-class PhaserGame extends Component
+class MainMenuScene extends Phaser.Scene 
 {
+  constructor() 
+  {
+    super({ key: 'MainMenuScene' });
+  }
 
+  create() 
+  {
+    this.cameras.main.setBackgroundColor('#0000ff');
+     setTimeout(() => { this.scene.start('GameScene'); }, 2000);
+  }
 }
-
-///////////////////////////////////////////////////////////
 
 class GameScene extends Phaser.Scene 
 {
   constructor() 
   {
-    super('GameScene');
-    console.log('GameScene init...')
-  }
-
-  preload() 
-  {
-    console.log('GameScene loading...')
+    super({ key: 'GameScene' });
   }
 
   create() 
   {
-    console.log('GameScene creation...')
-    this.cameras.main.setBackgroundColor("#d5d5d5");
+    this.cameras.main.setBackgroundColor('#ff0000');
   }
 }
 
@@ -47,22 +45,11 @@ class PhaserPage extends ui.Page
 {
   onInit()
   {
-    this.navigationBarTitle = 'Phaser Game';
-    let scene = new PhaserScene({ config: { width: 100, scene: [ GameScene ]} });
-    this.addComponents({ components: [ scene ] });
-
-    this.button = new ui.Button({ text: 'Hello World'});
-    this.button.onTap = () => 
-    {
-      console.log(`Screen Height: ${device.screenHeight}`);
-      console.log(`Screen Width: ${device.screenWidth}`);
-    }
-
-    this.addComponentToCenter({ component: this.button });
+    let game = new PhaserGame({ config: { scene: [ SplashScene, MainMenuScene, GameScene ]} });
+    this.addComponents({ components: [ game ] });
   }
 }
 
-app.statusBarColor = 'red';
 app.present({ root: new PhaserPage() });
 
 ///////////////////////////////////////////////////////////
