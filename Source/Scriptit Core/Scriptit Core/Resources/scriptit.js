@@ -3286,10 +3286,12 @@ class Page extends Component
   #errors;
   #toolbar;
   #contentContainer;
+  #lastOrientation;
   #leftToolbarContainer;
   #navigationBar;
   #navigationBarButtonsLeft;
   #navigationBarButtonsRight;
+  #onOrientationChange;
   #rightToolbarContainer;
   #toolbarButtonsLeft;
   #toolbarButtonsRight;
@@ -3313,10 +3315,13 @@ class Page extends Component
       navigationBarButtonLeftTypeError: 'Page Error: Expected type BarButton or BackBarButton when setting left navigation bar button.',
       navigationBarButtonRightTypeError: 'Page Error: Expected type BarButton when setting right navigation bar button.',
       navigationBarButtonsTypeError: 'Page Error: Expected type array for buttons when setting navigation bar buttons.',
+      onOrientationChangeTypeError: 'Page Error: Expected type function for onOrientationChange.',
       searchbarTypeError: 'Page Error: Expected type Searchbar.',
       toolbarButtonTypeError: 'Page Error: Expected type BarButton when setting toolbar button.',
       toolbarButtonsTypeError: 'Page Error: Expected type array for buttons when setting toolbar buttons.'
     }
+
+    this.#lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
 
     this.#addContentContainer();
     this.#addBackgroundContainer();
@@ -3534,6 +3539,47 @@ class Page extends Component
       else console.error(this.#errors.navigationBarButtonRightTypeError);
     });
     this.#navigationBarButtonsRight = value;
+  }
+
+  /** 
+   * Get property to return the component's function declaration for orientation change events.
+   * @return {function} The component's function declaration for orientation change events.
+   */
+  get onOrientationChange() 
+  {
+    return this.#onOrientationChange;
+  }
+
+  /** 
+   * Set property to change the component's function declaration for orientation change events.
+   * @param {function} value - The component's function declaration for orientation change events.
+   */
+  set onOrientationChange(value) 
+  {
+    if(!typeChecker.check({ type: 'function', value: value })) 
+    {
+      console.error(this.#errors.onOrientationChangeTypeError);
+      return;
+    }
+
+    if(this.#onOrientationChange) 
+    {
+      window.removeEventListener('resize', this.#onOrientationChange);
+    }
+
+    this.#lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+    this.#onOrientationChange = () => 
+    {
+      const currentOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+
+      if(this.#lastOrientation !== currentOrientation) 
+      {
+        this.#lastOrientation = currentOrientation;
+        value(currentOrientation);
+      }
+    };
+
+    window.addEventListener('resize', this.#onOrientationChange);
   }
   
   /** 
