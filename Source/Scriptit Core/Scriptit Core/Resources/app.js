@@ -48,9 +48,21 @@ class PhaserPage extends ui.Page
     let game = new PhaserGame({ config: { scene: [ SplashScene, MainMenuScene, GameScene ]} });
     //this.addComponents({ components: [ game ] });
 
-    let button = new ui.Button({ text: 'Orientation Check' });
-    button.onTap = () => { console.log(device.currentOrientation) }
-    this.addComponentToCenter({ component: button });
+    // let button = new ui.Button({ text: 'Confetti Check' });
+    // button.onTap = () => 
+    // { 
+    //   confetti.start({ timeout: 3000 }); 
+    // }
+    // this.addComponentToCenter({ component: button });
+
+    setTimeout(() => { confetti.start() }, 1000);
+    setTimeout(() => { console.log(confetti.isRunning) }, 2000);
+    setTimeout(() => { confetti.pause() }, 3000);
+    setTimeout(() => { console.log(confetti.isPaused) }, 4000);
+    setTimeout(() => { confetti.resume() }, 5000);
+    setTimeout(() => { confetti.togglePause() }, 6000);
+    setTimeout(() => { confetti.resume() }, 7000);
+    setTimeout(() => { confetti.stop() }, 7000);
   }
 }
 
