@@ -6325,6 +6325,16 @@ class DeviceManager
   }
 
   /** 
+   * Get property to return the current orientation.
+   * @return {string} The current orientation. Returns either portrait or landscape.
+   */
+  get currentOrientation()
+  {
+    if(this.isPortrait === true) return 'portrait';
+    else return 'landscape';
+  }
+
+  /** 
    * Get property to return if the current device is an iPad or not.
    * @return {boolean} Value informing the user if current device is an iPad or not.
    */

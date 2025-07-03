@@ -46,7 +46,11 @@ class PhaserPage extends ui.Page
   onInit()
   {
     let game = new PhaserGame({ config: { scene: [ SplashScene, MainMenuScene, GameScene ]} });
-    this.addComponents({ components: [ game ] });
+    //this.addComponents({ components: [ game ] });
+
+    let button = new ui.Button({ text: 'Orientation Check' });
+    button.onTap = () => { console.log(device.currentOrientation) }
+    this.addComponentToCenter({ component: button });
   }
 }
 
