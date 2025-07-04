@@ -3310,11 +3310,15 @@ class Page extends Component
       backgroundColorTypeError: 'Page Error: Expected type string for backgroundColor.',
       componentTypeError: 'Page Error: Expected type component.',
       componentsTypeError: 'Page Error: Expected type array for components in addComponents call.',
-      navigationTitleTypeError: 'Page Error: Expected type string for navigation bar title.',
       imageTypeError: 'Page Error: Expected type Image.',
       navigationBarButtonLeftTypeError: 'Page Error: Expected type BarButton or BackBarButton when setting left navigation bar button.',
       navigationBarButtonRightTypeError: 'Page Error: Expected type BarButton when setting right navigation bar button.',
       navigationBarButtonsTypeError: 'Page Error: Expected type array for buttons when setting navigation bar buttons.',
+      navigationBarColorInvalidError: 'Page Error: Invalid color provided for navigationBarColor',
+      navigationBarColorTypeError: 'Page Error: Expected type string for navigationBarColor',
+      navigationTitleTypeError: 'Page Error: Expected type string for navigationBarTitle.',
+      navigationBarTitleColorInvalidError: 'Page Error: Invalid color provided for navigationBarTitleColor',
+      navigationBarTitleColorTypeError: 'Page Error: Expected type string for navigationBarTitleColor.',
       onOrientationChangeTypeError: 'Page Error: Expected type function for onOrientationChange.',
       searchbarTypeError: 'Page Error: Expected type Searchbar.',
       toolbarButtonTypeError: 'Page Error: Expected type BarButton when setting toolbar button.',
@@ -3322,7 +3326,6 @@ class Page extends Component
     }
 
     this.#lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
-
     this.#addContentContainer();
     this.#addBackgroundContainer();
     this.#observeLifecycle();
@@ -3438,6 +3441,26 @@ class Page extends Component
     const background = this.element.querySelector('.background');
     if(background) background.style.backgroundColor = value;
   }
+
+  /** 
+   * Get property to return the navigation bar's color.
+   * @return {string} The navigation bar's color.
+   */
+  get navigationBarColor()
+  {
+    return this.#navigationBar.style.backgroundColor;
+  }
+
+  /** 
+   * Set property to change the the navigation bar's color.
+   * @param {string} value - The navigation bar's color.
+   */
+  set navigationBarColor(value)
+  {
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.navigationBarColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.navigationBarColorInvalidError);
+    if(this.#navigationBar) this.#navigationBar.style.backgroundColor = value;
+  }
   
   /** 
    * Get property to return the page's navigation bar title.
@@ -3467,6 +3490,31 @@ class Page extends Component
     }
 
     centerDiv.textContent = value;
+  }
+
+  /** 
+   * Get property to return the page's navigation bar title color.
+   * @return {string} The page's navigation bar title color.
+   */
+  get navigationBarTitleColor()
+  {
+    let centerDiv = this.#navigationBar.querySelector('.center');
+    return centerDiv.style.color;
+  }
+
+  /** 
+   * Set property to change the page's navigation bar title color.
+   * @param {string} value - The page's navigation bar title color. 
+   */
+  set navigationBarTitleColor(value)
+  {
+    if(!typeChecker.check({ type: 'string', value: value })) console.error(this.#errors.navigationBarTitleColorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.navigationBarColorInvalidError);
+    if(this.#navigationBar)
+    {
+      let centerDiv = this.#navigationBar.querySelector('.center');
+      centerDiv.style.color = value;
+    }
   }
   
   /** 
