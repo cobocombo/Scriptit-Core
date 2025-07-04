@@ -4496,7 +4496,7 @@ class Selector extends Component
     if(options.options) this.options = options.options;
     if(options.onChange) this.onChange = options.onChange;
     if(options.selectedOption) this.selectedOption = options.selectedOption;
-    this.underbar = options.underbar || true;
+    if(options.underbar) this.underbar = options.underbar;
   }
   
   /** 
@@ -4548,7 +4548,6 @@ class Selector extends Component
     this.#options = [];
     this.#options = value;
     const selectElement = document.createElement('select');
-    selectElement.classList = 'select-input select-input--underbar';
     this.#options.forEach((opt) => 
     {
       if(!typeChecker.check({ type: 'string', value: opt })) console.error(this.#errors.optionTypeError);

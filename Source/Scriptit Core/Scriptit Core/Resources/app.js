@@ -1,12 +1,19 @@
 ///////////////////////////////////////////////////////////
 
-let home = new ui.Page();
-home.navigationBarTitle = 'Home';
-home.onOrientationChange = (newOrientation) => 
+class HomePage extends ui.Page
 {
-  if(newOrientation == 'portrait') home.backgroundColor = 'blue';
-  else home.backgroundColor = 'red';
-};
-app.present({ root: home });
+  onInit()
+  {
+    this.navigationBarTitle = 'Home';
+
+    let textSizeSelctor = new ui.Selector();
+    textSizeSelctor.options = ['Small','Medium','Large'];
+    textSizeSelctor.underbar = false;
+
+    this.addComponentToCenter({ component: textSizeSelctor });
+  }
+}
+
+app.present({ root: new HomePage() });
 
 ///////////////////////////////////////////////////////////
