@@ -3349,6 +3349,9 @@ class Page extends Component
     {
       const content = document.createElement('div');
       content.className = 'page__content';
+      content.style.overflowY = 'auto';
+      content.style.height = '100%';
+      content.style.webkitOverflowScrolling = 'touch';
       this.element.appendChild(content);
       this.#contentContainer = content;
     }
