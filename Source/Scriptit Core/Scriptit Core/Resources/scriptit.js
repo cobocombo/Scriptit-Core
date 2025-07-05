@@ -6431,6 +6431,10 @@ class DeviceManager
     else return 'landscape';
   }
 
+  /** 
+   * Get property to return the current interface style.
+   * @return {string} The current interface style. Returns either light or dark.
+   */
   get interfaceStyle()
   {
     return this.#interfaceStyle;
