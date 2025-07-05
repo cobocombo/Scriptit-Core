@@ -6377,6 +6377,7 @@ class DeviceManager
   #errors;
   #batteryLevel;
   #batteryState;
+  #interfaceStyle;
   #systemName;
   #systemVersion;
   static #instance = null;
@@ -6393,7 +6394,7 @@ class DeviceManager
     else DeviceManager.#instance = this;
 
     this.update();
-    setInterval(() => this.update(), 30000); // every 30 seconds.
+    setInterval(() => this.update(), 15000); // every 15 seconds.
   }
 
   /** Static method to return a new DeviceManager instance. Allows for Singleton+Module pattern. */
@@ -6428,6 +6429,11 @@ class DeviceManager
   {
     if(this.isPortrait === true) return 'portrait';
     else return 'landscape';
+  }
+
+  get interfaceStyle()
+  {
+    return this.#interfaceStyle;
   }
 
   /** 
@@ -6512,6 +6518,7 @@ class DeviceManager
   {
     this.#batteryLevel = data.batteryLevel;
     this.#batteryState = data.batteryState;
+    this.#interfaceStyle = data.interfaceStyle;
     this.#systemName = data.systemName;
     this.#systemVersion = data.systemVersion;
   }

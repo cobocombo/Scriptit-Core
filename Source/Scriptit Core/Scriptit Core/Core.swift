@@ -128,8 +128,8 @@ class DeviceMessageManager: JavascriptMessageManager
     let systemName = UIDevice.current.systemName;
     let systemVersion = UIDevice.current.systemVersion;
     let batteryLevel = UIDevice.current.batteryLevel;
+    
     let batteryState: String;
-
     switch UIDevice.current.batteryState
     {
       case .charging: batteryState = "charging"
@@ -138,12 +138,26 @@ class DeviceMessageManager: JavascriptMessageManager
       case .unknown: fallthrough
       @unknown default: batteryState = "unknown"
     }
+    
+    let interfaceStyle: String;
+    if #available(iOS 12.0, *)
+    {
+      let style = UIScreen.main.traitCollection.userInterfaceStyle;
+      switch style
+      {
+        case .dark: interfaceStyle = "dark"
+        case .light: interfaceStyle = "light"
+        default: interfaceStyle = "unspecified"
+      }
+    }
+    else { interfaceStyle = "unspecified" }
 
     let deviceInfo: [String: Any] = [
       "systemName": systemName,
       "systemVersion": systemVersion,
       "batteryLevel": batteryLevel,
-      "batteryState": batteryState
+      "batteryState": batteryState,
+      "interfaceStyle": interfaceStyle
     ]
 
     if let jsonData = try? JSONSerialization.data(withJSONObject: deviceInfo, options: []),

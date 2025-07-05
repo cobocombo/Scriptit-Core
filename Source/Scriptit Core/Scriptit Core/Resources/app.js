@@ -35,13 +35,12 @@ class SettingsPage extends ui.Page
     list.addItem({ item: new ui.ListItem({ center: 'Item 16' }) });
     this.addComponents({ components: [ list ]});
 
+    console.log(device.interfaceStyle);
+
     setTimeout(() => 
     {
-      let alert = new ui.AlertDialog({ title: 'Alert Dialog Test' })
-      alert.buttons = [ new ui.AlertDialogButton({ text: 'Ok' }) ];
-      alert.present();
-    }, 3000)
-    
+      console.log(device.interfaceStyle);
+    }, 20000)
   }
 }
 
