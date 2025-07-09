@@ -27,6 +27,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
+    preferences.setValue(true, forKey: "allowFileAccessFromFileURLs");
     
     let userContentController = WKUserContentController();
     userContentController.add(self, name: "consoleMessageManager");
