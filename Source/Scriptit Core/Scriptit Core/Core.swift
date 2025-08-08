@@ -1,6 +1,6 @@
 //=======================================================//
-// CORE VERSION: 1.2
-// RELEASE DATE: 7/5/25
+// CORE VERSION: 1.3
+// RELEASE DATE: TBD
 //=======================================================//
 
 import UIKit
@@ -36,6 +36,8 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;
+    webViewConfiguration.allowsInlineMediaPlayback = true;
+    webViewConfiguration.mediaTypesRequiringUserActionForPlayback = [];
     webViewConfiguration.userContentController = userContentController;
     
     self.webView = WKWebView(frame: view.bounds, configuration: webViewConfiguration);
