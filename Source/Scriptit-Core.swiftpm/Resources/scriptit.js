@@ -6744,8 +6744,15 @@ class ConfettiManager
   remove() 
   {
     this.stop();
-    this.#pause = false;
+    this.#pause = true;
     this.#particles = [];
+  
+    if(this.#animationTimer) 
+    {
+      cancelAnimationFrame(this.#animationTimer);
+      this.#animationTimer = null;
+    }
+  
     if(this.#canvas) 
     {
       this.#canvas.remove();
