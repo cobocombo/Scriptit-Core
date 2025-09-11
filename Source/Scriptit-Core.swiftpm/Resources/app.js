@@ -12,13 +12,6 @@ class SettingsPage extends ui.Page
     list.addItem({ item: new ui.ListItem({ center: 'Item 3' }) });
     list.addItem({ item: new ui.ListItem({ center: 'Item 4' }) });
     this.addComponents({ components: [ list ]});
-    
-    confetti.start();
-
-    setTimeout(() => 
-    {
-      confetti.remove();
-    }, 2000)
   }
 }
 

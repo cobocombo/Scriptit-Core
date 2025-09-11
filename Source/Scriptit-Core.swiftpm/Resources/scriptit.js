@@ -2622,7 +2622,7 @@ class Icon extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the image component. */
-class ImageV2 extends Component
+class Img extends Component
 {
   #errors;
 
@@ -2632,12 +2632,12 @@ class ImageV2 extends Component
    */
   constructor(options = {})
   {
-    super({ tagName: 'img', options: options});
+    super({ tagName: 'img', options: options });
 
     this.#errors = 
     {
-      altTypeError: 'Image Error: Expected type string for alt.',
-      sourceTypeError: 'Image Error: Expected type string for source.'
+      altTypeError: 'Img Error: Expected type string for alt.',
+      sourceTypeError: 'Img Error: Expected type string for source.'
     }
     
     if(options.alt) this.alt = options.alt;
@@ -3310,7 +3310,7 @@ class Page extends Component
       backgroundColorTypeError: 'Page Error: Expected type string for backgroundColor.',
       componentTypeError: 'Page Error: Expected type component.',
       componentsTypeError: 'Page Error: Expected type array for components in addComponents call.',
-      imageTypeError: 'Page Error: Expected type Image.',
+      imageTypeError: 'Page Error: Expected type Img.',
       navigationBarButtonLeftTypeError: 'Page Error: Expected type BarButton or BackBarButton when setting left navigation bar button.',
       navigationBarButtonRightTypeError: 'Page Error: Expected type BarButton when setting right navigation bar button.',
       navigationBarButtonsTypeError: 'Page Error: Expected type array for buttons when setting navigation bar buttons.',
@@ -3744,11 +3744,11 @@ class Page extends Component
   
   /**
    * Public method to add an image to the center of the navigation bar of the page.
-   * @param {Image} image - Image to be added to the navigation bar of the page.
+   * @param {Img} image - Img to be added to the navigation bar of the page.
    */
   addImageToNavigationBar({ image } = {})
   {
-    if(!typechecker.check({ type: 'image', value: image })) console.error(this.#errors.imageTypeError);
+    if(!typechecker.check({ type: 'img', value: image })) console.error(this.#errors.imageTypeError);
     if(!this.#navigationBar) this.#addNavigationBar();
     
     let centerDiv = this.#navigationBar.querySelector('.center');
@@ -7062,7 +7062,7 @@ typechecker.register({ name: 'component', constructor: Component });
 typechecker.register({ name: 'dialog', constructor: Dialog });
 typechecker.register({ name: 'fab-button', constructor: FabButton });
 typechecker.register({ name: 'icon', constructor: Icon });
-typechecker.register({ name: 'image', constructor: Image });
+typechecker.register({ name: 'img', constructor: Img });
 typechecker.register({ name: 'list', constructor: List }); 
 typechecker.register({ name: 'list-header', constructor: ListHeader });
 typechecker.register({ name: 'list-item', constructor: ListItem });
@@ -7104,7 +7104,7 @@ ui.register({ name: 'Component', constructor: Component });
 ui.register({ name: 'Dialog', constructor: Dialog });
 ui.register({ name: 'FabButton', constructor: FabButton });
 ui.register({ name: 'Icon', constructor: Icon });
-ui.register({ name: 'Image', constructor: Image });
+ui.register({ name: 'Img', constructor: Img });
 ui.register({ name: 'List', constructor: List });
 ui.register({ name: 'ListHeader', constructor: ListHeader });
 ui.register({ name: 'ListItem', constructor: ListItem });
