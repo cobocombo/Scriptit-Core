@@ -2,15 +2,6 @@
 
 Scriptit Core is a mobile framework for creating iOS apps and games quick with just plain vanilla javascript. FYI this framework is currently a work in progress. More to come!
 
-## 🗂️ Change Log 
-
-| Release | Date | Notes |
-|----------|----------|----------|
-| v1.0  | 6/22/25  | - Initial release. |
-| v1.1  | 6/29/25  | - Small bug fixes. |
-| v1.2  | 7/5/25   | - Added basic phaser support in #28. <br> - Added confetti module in #27. <br> - Added validator module in #26. <br> - Small enhancements to Page component and device module. <br> - Bug fixes. |
-| v1.3  | 9/11/25  | - Added Swift playground support for iPad. <br> - Bug fixes. <br> - Tech debt. |
-
 ## 🔨 Apps Made With Scriptit Core
 
 <a href="https://apps.apple.com/us/app/corn-score/id6446418989">
@@ -28,6 +19,15 @@ If you enjoy Scriptit Core, and you feel like this repository is a great learnin
 ## 🧑🏻‍💻 Contributing
 
 At this time Scriptit Core is not open to other code contributions. This may change in the future, but for now this repository is for showcase / learning purposes only.
+
+## 🗂️ Change Log 
+
+| Release | Date | Notes |
+|----------|----------|----------|
+| v1.0  | 6/22/25  | - Initial release. |
+| v1.1  | 6/29/25  | - Small bug fixes. |
+| v1.2  | 7/5/25   | - Added basic phaser support in #28. <br> - Added confetti module in #27. <br> - Added validator module in #26. <br> - Small enhancements to Page component and device module. <br> - Bug fixes. |
+| v1.3  | 9/11/25  | - Added Swift playground support for iPad. <br> - Bug fixes. <br> - Tech debt. |
 
 ## 😎 License
 Copyright (c) 2023 Colton Boyd
