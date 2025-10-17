@@ -2195,7 +2195,10 @@ class Column extends Component
   {
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
     this.setAttribute({ key: 'width', value });
-    this.#width = value;
+    setTimeout(() => 
+    {
+      this.#width = value;
+    }, 1);
   }
 
   /**
@@ -2342,7 +2345,7 @@ class Dialog extends Component
   addComponents({ components } = {})
   {
     if(this.#root) console.error(this.#errors.rootComponentPreventsOtherComponentsError);
-    if(!typechecker.check({ type: 'array', value: value })) console.error(this.#errors.componentsTypeError);
+    if(!typechecker.check({ type: 'array', value: components })) console.error(this.#errors.componentsTypeError);
    
     components.forEach(component =>
     {
