@@ -7,12 +7,14 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     
     let dialog = new ui.Dialog({ width: '300px', height: '200px' });    
-    let dismissButton = new ui.Button({ text: 'Dismiss', onTap: () => { dialog.dismiss(); } });  
+    let dismissButton = new ui.Button({ text: 'Dismiss', onTap: () => { dialog.dismiss(); } }); 
+    
     let row = new ui.Row({ width: '100%', height: '200px' });
     let column = new ui.Column({ width: '100%' });
     
     row.addColumn({ column: column });
     column.addComponents({ components: [ dismissButton ] });
+    
     dialog.addComponents({ components: [ row ] });
     dialog.present();
     
