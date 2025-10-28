@@ -22,15 +22,10 @@ At this time Scriptit Core is not open to other code contributions. This may cha
 
 ## 🗂️ Change Log 
 
-| Release | Date | Notes |
-|----------|----------|----------|
-| v1.0  | 6/22/25  | - Initial release. |
-| v1.1  | 6/29/25  | - Small bug fixes. |
-| v1.2  | 7/5/25   | - Added basic phaser support in #28. <br> - Added confetti module in #27. <br> - Added validator module in #26. <br> - Small enhancements to Page component and device module. <br> - Bug fixes. |
-| v1.3  | 9/11/25  | - Added Swift playground support for iPad. <br> - Bug fixes. <br> - Tech debt. |
+[View Changes For Each Version](https://github.com/cobocombo/Scriptit-Core/wiki/🗂%EF%B8%8F-Change-Log)
 
 ## 😎 License
-Copyright (c) 2023 Colton Boyd
+Copyright (c) 2025 Colton Boyd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
