@@ -5078,7 +5078,7 @@ class SplitterMenu extends Component
   {
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
     this.setAttribute({ key: 'width', value: value });
-    this.#width = value;
+    setTimeout(() => { this.#width = value; },1);
   }
   
   /* Public method to close the splitter menu. */
