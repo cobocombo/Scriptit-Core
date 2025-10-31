@@ -2307,8 +2307,8 @@ class Dialog extends Component
 
     setTimeout(() => 
     {
-      const inner = this.element.querySelector('.dialog');
-      if(inner) inner.style.height = value;
+      let container = this.element.querySelector('.dialog');
+      if(container) container.style.height = value;
       this.#height = value;
     }, 1);
   }
@@ -2326,18 +2326,33 @@ class Dialog extends Component
    * Set property to change the dialog's width.
    * @param {string} value - The dialog's width. 
    */
-  set width(value)
+  set width(value) 
   {
-    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
+    if (!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.widthTypeError);
 
     setTimeout(() => 
     {
-      const inner = this.element.querySelector('.dialog');
-      if(inner) inner.style.width = value;
+      let container = this.element.querySelector('.dialog-container');
+      let dialog = this.element.querySelector('.dialog');
+  
+      if(dialog) 
+      {
+        dialog.style.maxWidth = 'none';
+        dialog.style.width = value;
+        dialog.style.margin = '0 auto';
+      }
+  
+      if(container) 
+      {
+        container.style.width = value;
+        container.style.maxWidth = 'none';
+        container.style.margin = '0 auto';
+      }
+  
       this.#width = value;
     }, 1);
   }
-  
+
   /**
    * Public method to add one or multiple components to a dialog.
    * @param {array} components - Array of components to be added to the dialog. Will throw an error if it already contains a root component type.
