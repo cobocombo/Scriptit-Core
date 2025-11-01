@@ -2,11 +2,12 @@ class HomePage extends ui.Page
 {
   onInit()
   {    
-    let hud = new ui.Dialog({ width: '90%', height: '100px' });   
-    setTimeout(() => { hud.present(); });
+    this.addComponentToCenter({ component: new ui.Text({ text: 'Hello World', font: font.library.system }) })
   }
 }
 
 app.present({ root: new HomePage() });
+
+console.log(font.library);
 
 ///////////////////////////////////////////////////////////

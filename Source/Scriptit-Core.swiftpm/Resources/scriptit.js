@@ -409,6 +409,55 @@ class App
 }
 
 ///////////////////////////////////////////////////////////
+// FONTS MODULE
+///////////////////////////////////////////////////////////
+
+/** Singleton class representing the main font object. */
+class FontManager
+{
+  #errors;
+  static #instance = null;
+  library;
+
+  /** Creates the font object. **/
+  constructor() 
+  {
+    this.#errors = 
+    {
+      singleInstanceError: 'Font Manager Error: Only one FontManager object can exist at a time.'
+    };
+
+    if(FontManager.#instance) console.error(this.#errors.singleInstanceError);
+    else FontManager.#instance = this;
+    
+    this.library = 
+    {
+      americanTypewriter: 'American Typewriter',
+      arial: 'Arial',
+      avenirNext: 'Avenir Next',
+      chalkduster: 'Chalkduster',
+      courier: 'Courier',
+      futura: 'Futura',
+      helveticaNeue: 'Helvetica Neue',
+      menlo: 'Menlo',
+      noteworthy: 'Noteworthy',
+      system: '-apple-system'
+    }
+  }
+
+  /** Static method to return a new FontManager instance. Allows for Singleton+Module pattern. */
+  static getInstance() 
+  {
+    return new FontManager();
+  }
+  
+  load({ name, source })
+  {
+    
+  }
+}
+
+///////////////////////////////////////////////////////////
 // UI MODULE
 ///////////////////////////////////////////////////////////
 
@@ -7059,6 +7108,7 @@ globalThis.consoleManager = ConsoleManager.getInstance();
 globalThis.typechecker = TypeChecker.getInstance();
 globalThis.color = ColorManager.getInstance();
 globalThis.app = App.getInstance();
+globalThis.font = FontManager.getInstance();
 globalThis.ui = UserInterface.getInstance();
 globalThis.browser = BrowserManager.getInstance();
 globalThis.device = DeviceManager.getInstance();
