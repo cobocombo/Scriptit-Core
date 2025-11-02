@@ -86,7 +86,7 @@ class ConsoleManager
     {
       try 
       {
-        const message = `${emoji} JS ${type}: ${Array.from(args)
+        let message = `${emoji} JS ${type}: ${Array.from(args)
           .map(v =>
             typeof v === "undefined" ? "undefined" :
             typeof v === "object" ? JSON.stringify(v) :
@@ -105,7 +105,7 @@ class ConsoleManager
   #setupErrorListener() 
   {
     window.addEventListener("error", (e) => {
-      const message = `${e.message} at ${e.filename}:${e.lineno}:${e.colno}`;
+      let message = `${e.message} at ${e.filename}:${e.lineno}:${e.colno}`;
       this.#uncaught(message);
     });
   }
@@ -242,7 +242,7 @@ class ColorManager
    */
   isValid({ color } = {}) 
   {
-    const s = new Option().style;
+    let s = new Option().style;
     s.color = '';
     s.color = color;
     return s.color !== '';
@@ -333,7 +333,7 @@ class App
    */
   get isFirstLaunch()
   {
-    const key = 'is-first-launch';
+    let key = 'is-first-launch';
 
     if(localStorage.getItem(key) === null)
     {
@@ -402,7 +402,7 @@ class App
   {
     if(!typechecker.check({ type: 'string', value: id })) console.error(this.#errors.idTypeError);
     if(!this.#isPresented) console.error(this.#errors.appNotYetPresentedError);
-    const component = this.#componentsById.get(id);
+    let component = this.#componentsById.get(id);
     if(!component) console.error(this.#errors.componentNotFoundError + ` "${id}".`);
     return component;
   }
@@ -653,7 +653,7 @@ class Component
   set alpha(value)
   { 
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.alphaTypeError);
-    const numeric = parseFloat(value);
+    let numeric = parseFloat(value);
     if(isNaN(numeric) || numeric < 0.0 || numeric > 1.0) console.error(this.#errors.alphaInvalidError);
     this.#element.style.opacity = value;
   }
@@ -849,7 +849,7 @@ class Component
    */
   get modifiers()
   {
-    const existingModifiers = this.getAttribute({ key: "modifier" }) || "";
+    let existingModifiers = this.getAttribute({ key: "modifier" }) || "";
     return new Array(existingModifiers.split(" ").filter(Boolean));
   }
   
@@ -994,8 +994,8 @@ class Component
   addModifier({ modifier } = {})
   {
     if(!typechecker.check({ type: 'string', value: modifier })) console.error(this.#errors.addModModifierTypeError);
-    const existingModifiers = this.getAttribute({ key: 'modifier' }) || "";
-    const modifiers = new Set(existingModifiers.split(" ").filter(Boolean));
+    let existingModifiers = this.getAttribute({ key: 'modifier' }) || "";
+    let modifiers = new Set(existingModifiers.split(" ").filter(Boolean));
     modifiers.add(modifier);
     this.#element.setAttribute('modifier', Array.from(modifiers).join(" "));
   }
@@ -1075,8 +1075,8 @@ class Component
   removeModifier({ modifier } = {}) 
   {
     if(!typechecker.check({ type: 'string', value: modifier })) console.error(this.#errors.removeModModifierTypeError);
-    const existingModifiers = this.getAttribute({ key: 'modifier' }) || "";
-    const modifiers = new Set(existingModifiers.split(" ").filter(Boolean));
+    let existingModifiers = this.getAttribute({ key: 'modifier' }) || "";
+    let modifiers = new Set(existingModifiers.split(" ").filter(Boolean));
     modifiers.delete(modifier);
     this.#element.setAttribute('modifier', Array.from(modifiers).join(" "));
   }
@@ -1159,7 +1159,7 @@ class ActionSheet extends Component
     if(!typechecker.check({ type: 'array', value: value })) console.error(this.#errors.buttonsTypeError);
     if(value.length === 0) console.error(this.#errors.buttonsEmptyError);
 
-    const sheetContainer = this.element.querySelector('.action-sheet');
+    let sheetContainer = this.element.querySelector('.action-sheet');
     if(sheetContainer)
     {
       sheetContainer.querySelectorAll('ons-action-sheet-button').forEach(btn => { sheetContainer.removeChild(btn); });
@@ -1167,27 +1167,27 @@ class ActionSheet extends Component
       this.#cancelButton = null;
     }
 
-    const cancelButton = new ActionSheetButton({ text: 'Cancel', textColor: this.cancelTextColor });
+    let cancelButton = new ActionSheetButton({ text: 'Cancel', textColor: this.cancelTextColor });
     cancelButton.addEventListener({ event: "click", handler: () => 
     {
-      const animated = this.getAttribute({ key: 'animation' }) === 'default';
+      let animated = this.getAttribute({ key: 'animation' }) === 'default';
       this.dismiss({ animated: animated });
     }});
     this.#cancelButton = cancelButton;
 
-    const allButtons = [...value, cancelButton];
+    let allButtons = [...value, cancelButton];
 
     allButtons.forEach(button => 
     { 
       if(!typechecker.check({ type: 'action-sheet-button', value: button })) console.error(this.#errors.buttonTypeError);
 
-      const refNode = this.#titleElement.previousSibling;
+      let refNode = this.#titleElement.previousSibling;
       if(!sheetContainer) this.element.insertBefore(button.element, refNode);
       else sheetContainer.insertBefore(button.element, refNode);      
 
       button.addEventListener({ event: "click", handler: () => 
       {
-        const animated = this.getAttribute({ key: 'animation' }) === 'default';
+        let animated = this.getAttribute({ key: 'animation' }) === 'default';
         this.dismiss({ animated: animated });
       }});
     });
@@ -1670,7 +1670,7 @@ class BackBarButton extends Component
     this.element.style.color = value;
     requestAnimationFrame(() => 
     {
-      const arrowIcon = this.element.querySelector(".back-button__icon");
+      let arrowIcon = this.element.querySelector(".back-button__icon");
       if(arrowIcon) arrowIcon.style.fill = value;
     });
   }
@@ -2221,7 +2221,7 @@ class ColorPicker extends Component
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
 
-    const handler = (input) => value(event.target.value);
+    let handler = (input) => value(event.target.value);
     this.#onChange = handler;
     this.addEventListener({ event: 'change', handler });
   }
@@ -2311,7 +2311,7 @@ class Column extends Component
       if(!typechecker.check({ type: 'component', value: component })) console.error(this.#errors.componentTypeError);
       if(center == true)
       {
-        const centerContainer = document.createElement('div');
+        let centerContainer = document.createElement('div');
         centerContainer.style.display = 'flex';
         centerContainer.style.justifyContent = 'center';
         centerContainer.style.alignItems = 'center';
@@ -2491,7 +2491,7 @@ class Dialog extends Component
         if(!typechecker.check({ type: 'page', value: root })) console.error(this.#errors.rootComponentTypeError); // Need to add Navigator support here.
         setTimeout(() => 
         {
-          const container = this.element.querySelector('.dialog-container');
+          let container = this.element.querySelector('.dialog-container');
           container.appendChild(root.element);
         }, 1)
         this.#root = root;
@@ -2605,7 +2605,7 @@ class FabButton extends Component
   {
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.positionTypeError);
 
-    const validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+    let validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
     if(!validPositions.includes(value)) console.error(this.#errors.positionInvalidError);
 
     let pos = '';
@@ -3306,7 +3306,7 @@ class Navigator
       return;
     }
 
-    const currentPage = this.#stack[this.#stack.length - 1];
+    let currentPage = this.#stack[this.#stack.length - 1];
     setTimeout(() => { currentPage.element.style.display = 'none'; }, 300);
 
     this.#stack.push(page);
@@ -3329,8 +3329,8 @@ class Navigator
     if(this.#stack.length <= 1) console.error(this.#errors.lastPagePopError);
     if(!typechecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.popAnimationTypeError);
 
-    const currentPage = this.#stack.pop();
-    const previousPage = this.#stack[this.#stack.length - 1];
+    let currentPage = this.#stack.pop();
+    let previousPage = this.#stack[this.#stack.length - 1];
 
     currentPage.onHide?.();
     previousPage.onShow?.();
@@ -3367,8 +3367,8 @@ class Navigator
 
     if(index < 0 || index >= this.#stack.length) console.error(this.#errors.stackOutOfBoundsError);
     
-    const currentPage = this.#stack[this.#stack.length - 1];
-    const targetPage = this.#stack[index];
+    let currentPage = this.#stack[this.#stack.length - 1];
+    let targetPage = this.#stack[index];
 
     if(currentPage === targetPage) return;
 
@@ -3451,7 +3451,7 @@ class Page extends Component
   {
     if(!this.element.querySelector('.background')) 
     {
-      const background = document.createElement('div');
+      let background = document.createElement('div');
       background.className = 'background';
       this.element.insertBefore(background, this.element.firstChild);
     }
@@ -3462,7 +3462,7 @@ class Page extends Component
   {
     if(!this.element.querySelector('.page__content')) 
     {
-      const content = document.createElement('div');
+      let content = document.createElement('div');
       content.className = 'page__content';
       content.style.overflowY = 'auto';
       content.style.height = '100%';
@@ -3520,7 +3520,7 @@ class Page extends Component
       }
     }).observe(this.element, { attributes: true, attributeFilter: ['style', 'hidden'] });
 
-    const observer = new MutationObserver((mutations) => 
+    let observer = new MutationObserver((mutations) => 
     {
       mutations.forEach((mutation) => 
       {
@@ -3544,7 +3544,7 @@ class Page extends Component
    */
   get backgroundColor()
   {
-    const background = this.element.querySelector('.background');
+    let background = this.element.querySelector('.background');
     if(background) return background.style.backgroundColor;
   }
   
@@ -3556,7 +3556,7 @@ class Page extends Component
   { 
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.backgroundColorTypeError);
     if(!color.isValid({ color: value })) console.error(this.#errors.backgroundColorInvalidError);
-    const background = this.element.querySelector('.background');
+    let background = this.element.querySelector('.background');
     if(background) background.style.backgroundColor = value;
   }
 
@@ -3736,7 +3736,7 @@ class Page extends Component
     this.#lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
     this.#onOrientationChange = () => 
     {
-      const currentOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+      let currentOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
 
       if(this.#lastOrientation !== currentOrientation) 
       {
@@ -4017,7 +4017,7 @@ class Popover extends Component
   set direction(value)
   {
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.directionTypeError);
-    const validDirections = ['up', 'down', 'left', 'right'];
+    let validDirections = ['up', 'down', 'left', 'right'];
     if(!validDirections.includes(value)) console.error(this.#errors.directionInvalidError);
     this.setAttribute({ key: 'direction', value: value });
     this.#direction = value;
@@ -4371,7 +4371,7 @@ class Searchbar extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
-    const handler = (event) => value(event.target.value);
+    let handler = (event) => value(event.target.value);
 
     this.#onChange = handler;
     this.addEventListener({ event: 'change' , handler });
@@ -4395,7 +4395,7 @@ class Searchbar extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onTextChangeTypeError);
 
     if(this.#onTextChange) this.removeEventListener({ event: 'input', handler: this.#onTextChange });
-    const handler = (event) => value(event.target.value);
+    let handler = (event) => value(event.target.value);
 
     this.#onTextChange = handler;
     this.addEventListener({ event: 'input', handler: handler });
@@ -4462,7 +4462,7 @@ class Searchbar extends Component
     this.#textColor = value;
     setTimeout(() => 
     {
-      const input = this.element.querySelector('input');
+      let input = this.element.querySelector('input');
       if(input) input.style.color = value;
     });
   }
@@ -4510,16 +4510,16 @@ class SegmentedControl extends Component
   {
     this.#segments.forEach((segment, index) => 
     {
-      const button = document.createElement('button');
+      let button = document.createElement('button');
       button.classList.add('segment__item');
   
-      const input = document.createElement("input");
+      let input = document.createElement("input");
       input.classList.add("segment__input");
       input.type = "radio";
       input.value = index;
       input.name = 'ons-segment-gen-0';
   
-      const div = document.createElement("div");
+      let div = document.createElement("div");
       div.classList.add("segment__button");
       div.textContent = segment;
   
@@ -4592,9 +4592,9 @@ class SegmentedControl extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
     if(this.#onChange) this.removeEventListener({ event: 'postchange', handler: this.#onChange });
   
-    const handler = (event) => 
+    let handler = (event) => 
     {
-      const selectedIndex = event.detail.index;
+      let selectedIndex = event.detail.index;
       value(selectedIndex);
     };
   
@@ -4683,9 +4683,9 @@ class Selector extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
 
-    const handler = (event) => 
+    let handler = (event) => 
     {
-      const option = event.target.value;
+      let option = event.target.value;
       value(option);
     };
 
@@ -4713,11 +4713,11 @@ class Selector extends Component
     this.element.innerHTML = '';
     this.#options = [];
     this.#options = value;
-    const selectElement = document.createElement('select');
+    let selectElement = document.createElement('select');
     this.#options.forEach((opt) => 
     {
       if(!typechecker.check({ type: 'string', value: opt })) console.error(this.#errors.optionTypeError);
-      const optionElement = document.createElement('option');
+      let optionElement = document.createElement('option');
       optionElement.textContent = opt;
       optionElement.value = opt;
       selectElement.appendChild(optionElement)
@@ -4865,9 +4865,9 @@ class Slider extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
 
-    const handler = (event) => 
+    let handler = (event) => 
     {
-      const val = event.target.value;
+      let val = event.target.value;
       value(val);
     };
 
@@ -5027,9 +5027,9 @@ class Splitter extends Component
   
     this.#detail = value;
   
-    const existing = this.element.querySelector('ons-splitter-content');
+    let existing = this.element.querySelector('ons-splitter-content');
     if(existing) this.element.removeChild(existing);
-    const contentWrapper = document.createElement('ons-splitter-content');
+    let contentWrapper = document.createElement('ons-splitter-content');
 
     contentWrapper.appendChild(value.element);
     this.appendChild({ child: contentWrapper });
@@ -5247,7 +5247,7 @@ class Switch extends Component
   /* Private method to emit switch changes internally. */
   #emitChange()
   {
-    const event = new Event('change', { bubbles: true });
+    let event = new Event('change', { bubbles: true });
     this.element.dispatchEvent(event);
   }
   
@@ -5289,7 +5289,7 @@ class Switch extends Component
     if(!typechecker.check({ type: 'function', value: value })) throw '';
   
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
-    const handler = (event) => value(event.target.checked);
+    let handler = (event) => value(event.target.checked);
   
     this.#onChange = handler;
     this.addEventListener({ event: 'change', handler: handler });
@@ -5533,7 +5533,7 @@ class Tabbar extends Component
     if(!typechecker.check({ type: 'number', value: value })) console.error(this.#errors.activeTabTypeError);
 
     let selectedTab = null;
-    const index = value === 0 ? 1 : value;
+    let index = value === 0 ? 1 : value;
     if(index < 1 || index >= this.#tabs.length) console.error(this.#errors.activeTabIndexOutOfBoundsError);
     selectedTab = this.#tabs[index];
 
@@ -5541,27 +5541,27 @@ class Tabbar extends Component
   
     this.#rootComponents.forEach((component, index) => 
     {
-      const tab = this.#tabs[index];
-      const isActive = (tab === selectedTab);
+      let tab = this.#tabs[index];
+      let isActive = (tab === selectedTab);
 
       component.element.style.display = isActive ? "block" : "none";
       setTimeout(() => { component.element.classList.remove('ons-swiper-blocker'); }, 5);
 
-      const icon = tab.element.querySelector(".tabbar__icon ons-icon");
-      const text = tab.element.querySelector(".tabbar__label");
+      let icon = tab.element.querySelector(".tabbar__icon ons-icon");
+      let text = tab.element.querySelector(".tabbar__label");
   
       if(icon) icon.style.color = isActive ? tab.color : '#999';
       if(text) text.style.color = isActive ? tab.color : '#999';
     });
   
-    const selectedIndex = this.#tabs.indexOf(selectedTab);
-    const selectedComponent = this.#rootComponents[selectedIndex];
+    let selectedIndex = this.#tabs.indexOf(selectedTab);
+    let selectedComponent = this.#rootComponents[selectedIndex];
 
     if(selectedComponent?.constructor?.name === 'Page') 
     {
-      const content = selectedComponent.element.querySelector('.page__content');
-      const background = selectedComponent.element.querySelector('.page__background');
-      const toolbar = selectedComponent.element.querySelector('ons-toolbar');
+      let content = selectedComponent.element.querySelector('.page__content');
+      let background = selectedComponent.element.querySelector('.page__background');
+      let toolbar = selectedComponent.element.querySelector('ons-toolbar');
   
       if(toolbar) if(background) background.style.marginTop = '-44px'; 
       else 
@@ -5599,7 +5599,7 @@ class Tabbar extends Component
 
       value.forEach(tab => { if(!typechecker.check({ type: 'tab', value: tab })) console.error(this.#errors.tabTypeError); });
       this.#tabs = value;
-      const ghostTab = new Tab({ text: '', icon: '', root: new Page(), color: 'transparent' });
+      let ghostTab = new Tab({ text: '', icon: '', root: new Page(), color: 'transparent' });
       ghostTab.element.style.display = 'none';
       ghostTab.root.element.style.display = 'none';
     
@@ -5888,7 +5888,7 @@ class TextArea extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
-    const handler = (event) => value(event.target.value);
+    let handler = (event) => value(event.target.value);
 
     this.#onChange = handler;
     this.addEventListener({ event: 'change', handler: handler });
@@ -5912,7 +5912,7 @@ class TextArea extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onTextChangeTypeError);
 
     if(this.#onTextChange) this.removeEventListener({ event: 'input', handler: this.#onTextChange });
-    const handler = (event) => value(event.target.value);
+    let handler = (event) => value(event.target.value);
 
     this.#onTextChange = handler;
     this.addEventListener({ event: 'input', handler: handler });
@@ -6135,7 +6135,7 @@ class Textfield extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
 
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
-    const handler = (event) => value(event.target.value);
+    let handler = (event) => value(event.target.value);
 
     this.#onChange = handler;
     this.addEventListener({ event: 'change', handler: handler });
@@ -6159,7 +6159,7 @@ class Textfield extends Component
     if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onTextChangeTypeError);
 
     if(this.#onTextChange) this.removeEventListener({ event: 'input', handler: this.#onTextChange });
-    const handler = (event) => value(event.target.value);
+    let handler = (event) => value(event.target.value);
 
     this.#onTextChange = handler;
     this.addEventListener({ event: 'input', handler: handler });
@@ -6225,7 +6225,7 @@ class Textfield extends Component
     this.#textColor = value;
     setTimeout(() => 
     {
-      const input = this.element.querySelector('input');
+      let input = this.element.querySelector('input');
       if(input) input.style.color = value;
     });
   }
@@ -6462,7 +6462,7 @@ class BrowserManager
   isValidWebsiteUrl({ url } = {}) 
   {
     if(!typechecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
-    const regex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/i;
+    let regex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/i;
     return regex.test(url);
   }
 
@@ -6719,16 +6719,16 @@ class ConfettiManager
   /** Private method to draw all confetti particles. */
   #drawParticles() 
   {
-    for(const p of this.#particles) 
+    for(let p of this.#particles) 
     {
       this.#context.beginPath();
-      const x2 = p.x + p.tilt;
-      const y2 = p.y + p.tilt + p.diameter / 2;
-      const x = x2 + p.diameter / 2;
+      let x2 = p.x + p.tilt;
+      let y2 = p.y + p.tilt + p.diameter / 2;
+      let x = x2 + p.diameter / 2;
 
       if(this.gradient) 
       {
-        const grad = this.#context.createLinearGradient(p.x, p.y, x2, y2);
+        let grad = this.#context.createLinearGradient(p.x, p.y, x2, y2);
         grad.addColorStop("0", p.color);
         grad.addColorStop("1.0", p.color2);
         this.#context.strokeStyle = grad;
@@ -6781,8 +6781,8 @@ class ConfettiManager
   {
     if(this.#pause) return;
 
-    const now = Date.now();
-    const delta = now - this.#lastFrameTime;
+    let now = Date.now();
+    let delta = now - this.#lastFrameTime;
 
     if(delta > this.frameInterval) 
     {
@@ -6803,13 +6803,13 @@ class ConfettiManager
   /** Private method to update all particle positions. */
   #updateParticles() 
   {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
     this.#waveAngle += 0.01;
 
     for(let i = 0; i < this.#particles.length; i++) 
     {
-      const p = this.#particles[i];
+      let p = this.#particles[i];
       if(!this.#streaming && p.y < -15) p.y = height + 100;
       else 
       {
@@ -6997,7 +6997,7 @@ class ValidationManager
   isValidEmail({ email } = {}) 
   {
     if(!typechecker.check({ type: 'string', value: email })) console.error(this.#errors.emailTypeError);
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
  
@@ -7009,7 +7009,7 @@ class ValidationManager
   isValidPhoneNumber({ phoneNumber } = {}) 
   {
     if(!typechecker.check({ type: 'string', value: phoneNumber })) console.error(this.#errors.phoneNumberTypeError);
-    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    let phoneRegex = /^\+?[0-9]{10,15}$/;
     return phoneRegex.test(phoneNumber);
   }
  
@@ -7021,7 +7021,7 @@ class ValidationManager
   isValidURL({ url } = {}) 
   {
     if(!typechecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
-    const urlRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-]*)*$/;
+    let urlRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-]*)*$/;
     return urlRegex.test(url);
   }
  
@@ -7033,7 +7033,7 @@ class ValidationManager
   isValidPassword({ password } = {}) 
   {
     if(!typechecker.check({ type: 'string', value: password })) console.error(this.#errors.passwordTypeError);
-    const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
+    let passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
     return passwordRegex.test(password);
   }
  
@@ -7061,10 +7061,10 @@ class ValidationManager
   {
     if(!typechecker.check({ type: 'string', value: dateString })) console.error(this.#errors.dateStringTypeError);
 
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    let dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(dateString)) return false;
  
-    const date = new Date(dateString);
+    let date = new Date(dateString);
     return date instanceof Date && !isNaN(date.getTime());
   }
  
@@ -7077,7 +7077,7 @@ class ValidationManager
   {
     if(!typechecker.check({ type: 'string', value: username })) console.error(this.#errors.usernameTypeError);
 
-    const usernameRegex = /^[a-zA-Z0-9_]{3,16}$/;
+    let usernameRegex = /^[a-zA-Z0-9_]{3,16}$/;
     return usernameRegex.test(username);
   }
  
@@ -7090,7 +7090,7 @@ class ValidationManager
   {
     if(!typechecker.check({ type: 'string', value: cardNumber })) console.error(this.#errors.cardNumberTypeError);
 
-    const cardRegex = /^\d{13,19}$/;
+    let cardRegex = /^\d{13,19}$/;
     if(!cardRegex.test(cardNumber)) return false;
  
     let sum = 0;
