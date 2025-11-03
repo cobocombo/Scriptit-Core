@@ -5625,6 +5625,8 @@ class Tabbar extends Component
 class Text extends Component 
 {
   #errors;
+  #rawText;
+  #tagMap;
   #type;
   
   /**
@@ -5666,8 +5668,11 @@ class Text extends Component
       textTypeError: 'Text Error: Expected type string for text.'
     };
 
+    this.#rawText = '';
+    this.#tagMap = ['b','i','s','u','mark','small','sub','sup'];
+    
     if(options.text) this.text = options.text;
-    this.font = options.font || "-apple-system, 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif";
+    this.font = options.font || font.library.system;
     if(options.fontSize) this.fontSize = options.fontSize;
     if(options.color) this.color = options.color;
   }
@@ -5731,22 +5736,63 @@ class Text extends Component
   }
 
   /** 
-   * Get property to return the text value of the text object.
-   * @return {string} The text value of text object. 
+   * Get property to return the paragraph's text value.
+   * @return {string} The paragraph's text value. If inline elements were used the same text will be returned. 
    */
   get text() 
-  { 
-    return this.element.textContent; 
+  {
+    if(!this.#rawText) return '';
+    let raw = this.element.innerHTML;
+    raw = raw.replace(
+      /<abbr title="(.+?)">(.+?)<\/abbr>/g,
+      '[abbr:$2|$1]'
+    );
+
+    for(let tag of this.#tagMap) 
+    {
+      let regex = new RegExp(`<${tag}>(.+?)<\/${tag}>`, 'g');
+      raw = raw.replace(regex, `[${tag}:$1]`);
+    }
+
+    return raw;
   }
   
   /** 
-   * Set property to set the text value of the the text object.
-   * @param {string} value - The text value of the the text object.
+   * Set property to set the paragraph's text value.
+   * @param {string} value - The text's text value.
+   * 
+   * Supports inline element support through bracket notation.
+   * Ex: This is a [i:very] [b:strong] paragraph! 
+   * It Supports the following tags:
+   * 
+   * - b: bold
+   * - i: italic
+   * - s: strikethrough
+   * - u: underline
+   * - mark: highlight
+   * - shrink: small
+   * - subscript: sub
+   * - superscript: sup
    */
   set text(value) 
   {
-    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.textTypeError);
-    this.element.textContent = value;
+    if(!typechecker.check({ type: 'string', value })) console.error(this.#errors.textTypeError);
+
+    this.#rawText = value;
+    
+    let formatted = value;
+    formatted = formatted.replace(
+      /\[abbr:(.+?)\|(.+?)\]/g,
+      '<abbr title="$2">$1</abbr>'
+    );
+
+    for(let tag of this.#tagMap) 
+    {
+      let regex = new RegExp(`\\[${tag}:(.+?)\\]`, 'g');
+      formatted = formatted.replace(regex, `<${tag}>$1</${tag}>`);
+    }
+
+    this.element.innerHTML = formatted;
   }
 
   /** 
