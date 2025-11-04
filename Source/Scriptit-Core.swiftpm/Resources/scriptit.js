@@ -237,6 +237,16 @@ class ColorManager
   }
   
   /** 
+   * Public method to check if a string is a valid hex color value or not.
+   * @param {string} color - The color to verify.
+   */
+  isHexColor({ color } = {}) 
+  {
+    if(typeof color !== 'string') return false;
+    return /^#[0-9a-fA-F]{6}$/.test(color);
+  }
+  
+  /** 
    * Public method to check if a color value is valid or not. 
    * @param {string} color - The color to verify.
    */
@@ -246,16 +256,6 @@ class ColorManager
     s.color = '';
     s.color = color;
     return s.color !== '';
-  }
-
-  /** 
-   * Public method to check if a string is a valid hex color value or not.
-   * @param {string} color - The color to verify.
-   */
-  isHexColor({ color } = {}) 
-  {
-    if (typeof color !== 'string') return false;
-    return /^#[0-9a-fA-F]{6}$/.test(color);
   }
 }
 
