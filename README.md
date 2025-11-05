@@ -22,7 +22,7 @@ At this time Scriptit Core is not open to other code contributions. This may cha
 
 ## 🗂️ Change Log 
 
-[View Changes For Each Version](https://github.com/cobocombo/Scriptit-Core/wiki/🗂%EF%B8%8F-Change-Log)
+[View Release Notes For Each Released Version Here](https://github.com/cobocombo/Scriptit-Core/releases)
 
 ## 😎 License
 Copyright (c) 2025 Colton Boyd
