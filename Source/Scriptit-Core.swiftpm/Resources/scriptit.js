@@ -1127,6 +1127,7 @@ class ActionSheet extends Component
       cancelTextColorTypeError: 'Action Sheet Error: Expected type string for cancel text color.',
       cancelTextColorInvalidError: 'Action Sheet Error: Invalid color value provided for cancel text color.',
       dismissAnimationTypeError: 'Action Sheet Error: Expected type boolean for animated when dismissing the sheet.',
+      fontTypeError: 'Action Sheet Error: Expected type string for font.',
       presentAnimationTypeError: 'Action Sheet Error: Expected type boolean for animated when presenting the sheet.',
       titleTypeError: 'Action Sheet Error: Expected type string for title.'
     };
@@ -1137,6 +1138,7 @@ class ActionSheet extends Component
     
     this.title = options.title || '';
     this.cancelTextColor = options.cancelTextColor || '#0076ff';
+    this.font = options.font || font.library.system;
     if(options.buttons) this.buttons = options.buttons;
   }
 
@@ -1167,7 +1169,7 @@ class ActionSheet extends Component
       this.#cancelButton = null;
     }
 
-    let cancelButton = new ActionSheetButton({ text: 'Cancel', textColor: this.cancelTextColor });
+    let cancelButton = new ActionSheetButton({ text: 'Cancel', textColor: this.cancelTextColor, font: this.font });
     cancelButton.addEventListener({ event: "click", handler: () => 
     {
       let animated = this.getAttribute({ key: 'animation' }) === 'default';
@@ -1215,6 +1217,25 @@ class ActionSheet extends Component
 
     if(this.#cancelButton) this.#cancelButton.textColor = value;
     this.#cancelTextColor = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the action sheet object.
+   * @return {string} The font value of action sheet object. 
+   */
+  get font() 
+  { 
+    return this.#titleElement.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the action sheet object.
+   * @param {string} value - The font value of the the action sheet object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.#titleElement.style.fontFamily = value;
   }
 
   /** 
@@ -1283,13 +1304,34 @@ class ActionSheetButton extends Component
 
     this.#errors = 
     {
+      fontTypeError: 'Action Sheet Button Error: Expected type string for font.',
       textColorInvalidError: 'Action Sheet Button Error: Invalid color value provided for text color.',
       textColorTypeError: 'Action Sheet Button Error: Expected type string for text color.',
       textTypeError: 'Action Sheet Button Error: Expected type string for text.',
     };
 
+    this.font = options.font || font.library.system;
     this.text = options.text || '';
     this.textColor = options.textColor || '#0076ff';
+  }
+  
+  /** 
+   * Get property to return the font value of the action sheet button object.
+   * @return {string} The font value of action sheet button object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the action sheet button object.
+   * @param {string} value - The font value of the the action sheet button object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
   
   /** 
@@ -1363,6 +1405,7 @@ class AlertDialog extends Component
       componentsTypeError: 'Alert Dialog Error: Expected type array for components in addComponents call.',
       componentTypeError: 'Alert Dialog Error: Expected type component in components array.',
       dismissAnimationTypeError: 'Alert Dialog Error: Expected type boolean for animated when dismissing the dialog.',
+      fontTypeError: 'Alert Dialog Error: Expected type string for font.',
       presentAnimationTypeError: 'Alert Dialog Error: Expected type boolean for animated when presenting the dialog.',
       rowfooterTypeError: 'Alert Dialog Error: Expected type boolean for rowfooter.',
       titleTypeError: 'Alert Dialog Error: Expected type string for title.'
@@ -1383,6 +1426,7 @@ class AlertDialog extends Component
 
     this.title = options.title || '';
     this.cancelable = options.cancelable || true;
+    this.font = options.font || font.library.system;
     this.rowfooter = options.rowfooter || true;
     if(options.buttons) this.buttons = options.buttons;
   }
@@ -1448,6 +1492,25 @@ class AlertDialog extends Component
     if(value == true) this.setAttribute({ key: 'cancelable', value: '' });
     else this.removeAttribute({ key: 'cancelable' });
     this.#cancelable = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the alert dialog title.
+   * @return {string} The font value of the alert dialog title. 
+   */
+  get font() 
+  { 
+    return this.#titleElement.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the alert dialog title.
+   * @param {string} value - The font value of the alert dialog title.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.#titleElement.style.fontFamily = value;
   }
 
   /** 
@@ -1552,13 +1615,34 @@ class AlertDialogButton extends Component
 
     this.#errors = 
     {
+      fontTypeError: 'Alert Dialog Button Error: Expected type string for font.',
       textColorInvalidError: 'Alert Dialog Button Error: Invalid color value provided for text color.',
       textColorTypeError: 'Alert Dialog Button Error: Expected type string for text color.',
       textTypeError: 'Alert Dialog Button Error: Expected type string for text.'
     }
     
+    this.font = options.font || font.library.system;
     this.text = options.text || '';
     this.textColor = options.textColor || '#0076ff';
+  }
+  
+  /** 
+   * Get property to return the font value of the alert dialog button object.
+   * @return {string} The font value of alert dialog button object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the alert dialog button object.
+   * @param {string} value - The font value of the the alert dialog button object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
   
   /** 
@@ -1618,15 +1702,36 @@ class BackBarButton extends Component
 
     this.#errors = 
     {
-      textColorInvalidError: 'Bar Back Button Error: Invalid color value provided for text color.',
-      textColorTypeError: 'Bar Back Button Error: Expected type string for text color.',
-      textTypeError: 'Bar Back Button Error: Expected type string for text.'
+      fontTypeError: 'Back Bar Button Error: Expected type string for font.',
+      textColorInvalidError: 'Back Bar Button Error: Invalid color value provided for text color.',
+      textColorTypeError: 'Back Bar Button Error: Expected type string for text color.',
+      textTypeError: 'Back Bar Button Error: Expected type string for text.'
     }
 
+    this.font = options.font || font.library.system;
     this.text = options.text || 'Back';
     if(options.textColor) this.textColor = options.textColor;
     this.style.paddingRight = '12px';
     this.style.paddingLeft = '12px'; 
+  }
+  
+  /** 
+   * Get property to return the font value of the back bar button object.
+   * @return {string} The font value of back bar button object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the back bar button object.
+   * @param {string} value - The font value of the the back bar button object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
   
   /** 
@@ -1699,6 +1804,7 @@ class BarButton extends Component
       buttonTypeError: "Bar Button Error: Button can only have either 'text' or 'icon', not both.",
       colorInvalidError: 'Bar Button Error: Invalid color value provided for color.',
       colorTypeError: 'Bar Button Error: Expected type string for color.',
+      fontTypeError: 'Bar Button Error: Expected type string for font.',
       iconTypeError: 'Bar Button Error: Expected type string or Icon for icon.',
       textTypeError: 'Bar Button Error: Expected type string for text.'
     };
@@ -1706,6 +1812,7 @@ class BarButton extends Component
     this.#containsIcon = false;
     this.#containsText = false;
 
+    this.font = options.font || font.library.system;
     if(options.text && options.icon) console.error(this.#errors.buttonTypeError);
     if(options.text) this.text = options.text;
     else if(options.icon) this.icon = options.icon;
@@ -1730,6 +1837,25 @@ class BarButton extends Component
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
     if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
     this.element.style.color = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the bar button object.
+   * @return {string} The font value of bar button object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the bar button object.
+   * @param {string} value - The font value of the bar button object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
 
   /** 
@@ -1777,9 +1903,6 @@ class BarButton extends Component
     let span = document.createElement('span');
     span.textContent = value;
     span.classList = 'back-button__label';
-    //span.style.paddingLeft = '12px';
-    //span.style.paddingRight = '4px';
-    //span.appendChild(value);
     this.element.appendChild(span);
     this.#containsText = true;
   }
@@ -1792,7 +1915,7 @@ class Button extends Component
 {
   #contentWrapper;
   #errors;
-  #textElement ;
+  #textElement;
   #textWrapper;
   #iconElement;
   #iconSide;
@@ -1807,6 +1930,7 @@ class Button extends Component
 
     this.#errors = 
     {
+      fontTypeError: 'Button Error: Expected type string for font.',
       iconColorInvalidError: 'Button Error: Invalid color value provided for icon color.',
       iconColorTypeError: 'Button Error: Expected type string for icon color.',
       iconSideInvalidSideError: 'Button Error: Invalid value provided for icon side. Accepted values are left or right',
@@ -1829,13 +1953,14 @@ class Button extends Component
 
     this.appendChild({ child: this.#contentWrapper });
 
+    this.font = options.font || font.library.system;
     if(options.text) this.text = options.text;
     if(options.textColor) this.textColor = options.textColor;
     if(options.icon) this.icon = options.icon;
     if(options.iconColor) this.iconColor = options.iconColor;
     if(options.iconSide === 'right') this.iconSide = 'right';
     else this.iconSide = 'left';
-
+    
     this.#render();  
   }
 
@@ -1854,6 +1979,25 @@ class Button extends Component
       if(this.#textWrapper) this.#contentWrapper.appendChild(this.#textWrapper);
       if(this.#iconElement) this.#contentWrapper.appendChild(this.#iconElement.element);
     }
+  }
+  
+  /** 
+   * Get property to return the font value of the button object.
+   * @return {string} The font value of button object. 
+   */
+  get font() 
+  { 
+    return this.#textWrapper.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the button object.
+   * @param {string} value - The font value of the button object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.#textWrapper.style.fontFamily = value;
   }
 
   /** 
@@ -2932,8 +3076,33 @@ class ListHeader extends Component
   {
     super({ tagName: 'ons-list-header', options: options });
 
-    this.#errors = { textTypeError: 'List Header Error: Expected type string for text.' };
+    this.#errors = 
+    { 
+      fontTypeError: 'List Header Error: Expected type string for font.',
+      textTypeError: 'List Header Error: Expected type string for text.' 
+    };
+    
+    this.font = options.font || font.library.system;
     if(options.text) this.text = options.text;
+  }
+  
+  /** 
+   * Get property to return the font value of the list header object.
+   * @return {string} The font value of the list header object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the list header object.
+   * @param {string} value - The font value of the list header object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
 
   /** 
@@ -3098,7 +3267,7 @@ class ListItem extends Component
    */
   set tappable(value) 
   {
-    if(!typechecker.check({ type: 'boolean', value: value })) throw '';
+    if(!typechecker.check({ type: 'boolean', value: value })) console.error(this.#errors.tappableTypeError);
     if(value == true) this.addModifier({ modifier: 'tappable' });
     else this.removeModifier({ modifier: 'tappable' });
     this.#tappable = value;
@@ -3120,8 +3289,33 @@ class ListTitle extends Component
   {
     super({ tagName: 'ons-list-title', options: options });
 
-    this.#errors = { textTypeError: 'List Title Error: Expected type string for text.' };
+    this.#errors = 
+    { 
+      fontTypeError: 'List Title Error: Expected type string for font.',
+      textTypeError: 'List Title Error: Expected type string for text.' 
+    };
+    
+    this.font = options.font || font.library.system;
     if(options.text) this.text = options.text;
+  }
+  
+  /** 
+   * Get property to return the font value of the list title object.
+   * @return {string} The font value of the list title object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the list title object.
+   * @param {string} value - The font value of the list title object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
 
   /** 
@@ -3431,6 +3625,7 @@ class Page extends Component
       navigationBarButtonsTypeError: 'Page Error: Expected type array for buttons when setting navigation bar buttons.',
       navigationBarColorInvalidError: 'Page Error: Invalid color provided for navigationBarColor',
       navigationBarColorTypeError: 'Page Error: Expected type string for navigationBarColor',
+      navigationBarFontTypeError: 'Page Error: Expected type string for navigationBarFont.',
       navigationTitleTypeError: 'Page Error: Expected type string for navigationBarTitle.',
       navigationBarTitleColorInvalidError: 'Page Error: Invalid color provided for navigationBarTitleColor',
       navigationBarTitleColorTypeError: 'Page Error: Expected type string for navigationBarTitleColor.',
@@ -3578,6 +3773,30 @@ class Page extends Component
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.navigationBarColorTypeError);
     if(!color.isValid({ color: value })) console.error(this.#errors.navigationBarColorInvalidError);
     if(this.#navigationBar) this.#navigationBar.style.backgroundColor = value;
+  }
+  
+  /** 
+   * Get property to return the page's navigation bar font.
+   * @return {string} The page's navigation bar font.
+   */
+  get navigationBarFont()
+  {
+    let centerDiv = this.#navigationBar.querySelector('.center');
+    return centerDiv.style.fontFamily;
+  }
+  
+  /** 
+   * Set property to change the page's navigation bar font.
+   * @param {string} value - The page's navigation bar font. 
+   */
+  set navigationBarFont(value)
+  { 
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.navigationBarFontTypeError);
+    let centerDiv = this.#navigationBar.querySelector('.center');
+    if(centerDiv) 
+    {
+      centerDiv.style.fontFamily = value;
+    }
   }
   
   /** 
@@ -4278,6 +4497,7 @@ class Searchbar extends Component
 {
   #errors;
   #maxLength;
+  #font;
   #onChange;
   #onTextChange;
   #placeholder;
@@ -4295,6 +4515,7 @@ class Searchbar extends Component
     {
       caretColorInvalidError: 'Searchbar Error: Invalid color value provided for caret color.',
       caretColorTypeError: 'Searchbar Error: Expected type string for caret color.',
+      fontTypeError: 'Searchbar Error: Expected type string for font.',
       maxLengthTypeError: 'Searchbar Error: Expected type number for max length.',
       onChangeTypeError: 'Searchbar Error: Expected type function for onChange.',
       onTextChangeTypeError: 'Searchbar Error: Expected type function for onTextChange.',
@@ -4310,6 +4531,7 @@ class Searchbar extends Component
     if(options.onTextChange) this.onTextChange = options.onTextChange;
     if(options.text) this.text = options.text;
     this.placeholder = options.placeholder || "Search...";
+    this.font = options.font || font.library.system;
     if(options.textColor) this.textColor = options.textColor;
   }
   
@@ -4331,6 +4553,30 @@ class Searchbar extends Component
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.caretColorTypeError);
     if(!color.isValid({ color: value })) console.error(this.#errors.caretColorInvalidError);
     this.style.caretColor = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the searchbar object.
+   * @return {string} The font value of the searchbar object. 
+   */
+  get font() 
+  { 
+    return this.#font;
+  }
+  
+  /** 
+   * Set property to set the font value of the searchbar object.
+   * @param {string} value - The font value of the searchbar object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError); 
+    setTimeout(() => 
+    {
+      let inner = this.element.querySelector('input');
+      if(inner) inner.style.fontFamily = value;
+      this.#font = value;
+    },1);
   }
   
   /** 
@@ -4474,6 +4720,7 @@ class Searchbar extends Component
 class SegmentedControl extends Component
 {
   #errors;
+  #font;
   #onChange;
   #segments;
   #color;
@@ -4493,12 +4740,14 @@ class SegmentedControl extends Component
       activeIndexNegativeError: 'Segmented Control Error: Index cannot be negative.',
       colorInvalidError: 'Segmented Control Error: Invalid color value provided for color.',
       colorTypeError: 'Segmented Control Error: Expected type string for color.',
+      fontTypeError: 'Segmented Control Error: Expected type string for font.',
       onChangeTypeError: 'Segmented Control Error: Expected type function for onChange.',
       segmentTypeError: 'Segmented Control Error: Expected type string for segment.',
       segmentsTypeError: 'Segmented Control Error: Expected type array for segments.'
     };
 
     this.#segments = [];
+    this.font = options.font || font.library.system;
     if(options.segments) this.segments = options.segments;
     if(options.onChange) this.onChange = options.onChange;
     this.color = options.color || '#1f8dd6';
@@ -4521,6 +4770,7 @@ class SegmentedControl extends Component
   
       let div = document.createElement("div");
       div.classList.add("segment__button");
+      div.style.fontFamily = this.#font;
       div.textContent = segment;
   
       button.appendChild(input);
@@ -4572,6 +4822,27 @@ class SegmentedControl extends Component
     this.style.setProperty('--segment-border-top', `1px solid ${value}`);
     this.style.setProperty('--segment-border-bottom', `1px solid ${value}`);
     this.#color = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the segmented control object.
+   * @return {string} The font value of the segmented control object. 
+   */
+  get font() 
+  { 
+    return this.#font; 
+  }
+  
+  /** 
+   * Set property to set the font value of the segmented control object.
+   * @param {string} value - The font value of the segmented control object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.#font = value;
+    this.element.innerHTML = '';
+    this.#render();
   }
   
   /** 
@@ -4636,6 +4907,7 @@ class SegmentedControl extends Component
 class Selector extends Component 
 {
   #errors;
+  #font;
   #onChange;
   #options;
   #underbar;
@@ -4650,6 +4922,7 @@ class Selector extends Component
 
     this.#errors = 
     {
+      fontTypeError: 'Selector Error: Expected type string for font.',
       onChangeTypeError: 'Selector Error: Expected type function for onChange.',
       optionTypeError: 'Selector Error: Expected type string for option.',
       optionsTypeError: 'Selector Error: Expected type array for options.',
@@ -4659,10 +4932,31 @@ class Selector extends Component
     };
 
     this.#options = [];
+    this.font = options.font || font.library.system;
     if(options.options) this.options = options.options;
     if(options.onChange) this.onChange = options.onChange;
     if(options.selectedOption) this.selectedOption = options.selectedOption;
     if(options.underbar) this.underbar = options.underbar;
+  }
+  
+  /** 
+   * Get property to return the font value of the selector object.
+   * @return {string} The font value of the selector object. 
+   */
+  get font() 
+  { 
+    return this.#font; 
+  }
+  
+  /** 
+   * Set property to set the font value of the selector object.
+   * @param {string} value - The font value of the selector object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.#font = value;
+    this.options = this.#options;
   }
   
   /** 
@@ -4720,7 +5014,8 @@ class Selector extends Component
       let optionElement = document.createElement('option');
       optionElement.textContent = opt;
       optionElement.value = opt;
-      selectElement.appendChild(optionElement)
+      selectElement.style.fontFamily = this.#font;
+      selectElement.appendChild(optionElement);
     });
     this.element.appendChild(selectElement);
   }
@@ -5348,6 +5643,7 @@ class Tab extends Component
 {
   #badge;
   #errors;
+  #font;
   #text;
   #icon;
   #root;
@@ -5366,6 +5662,7 @@ class Tab extends Component
       badgeTypeError: 'Tab Error: Expected type string for badge.',
       colorInvalidError: 'Tab Error: Invalid color value for color.',
       colorTypeError: 'Tab Error: Expected type string for color.',
+      fontTypeError: 'Tab Error: Expected type string for font.',
       iconTypeError: 'Tab Error: Expected type string for icon.',
       rootTypeError: 'Tab Error: Root must be a Page or Navigator component.',
       textTypeError: 'Tab Error: Expected type string for text.'
@@ -5373,6 +5670,7 @@ class Tab extends Component
     
     if(options.badge) this.badge = options.badge;
     this.color = options.color || '#1f8dd6';
+    this.font = options.font || font.library.system;
     if(options.icon) this.icon = options.icon;
     if(options.root) this.root = options.root;
     if(options.text) this.text = options.text;
@@ -5398,6 +5696,45 @@ class Tab extends Component
     this.setAttribute({ key: 'badge', value: value });
     if(value == 'none') this.removeAttribute({ key: 'badge' });
     this.#badge = value;
+  }
+  
+  /** 
+   * Get property to return the color of the tab.
+   * @return {string} The color of the tab. 
+   */
+  get color() 
+  { 
+    return this.#color; 
+  }
+  
+  /** 
+   * Set property to set the color of the tab.
+   * @param {string} value - The color of the tab.
+   */
+  set color(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
+    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
+    this.#color = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the tab object.
+   * @return {string} The font value of the tab object. 
+   */
+  get font() 
+  { 
+    return this.#font; 
+  }
+  
+  /** 
+   * Set property to set the font value of the tab object.
+   * @param {string} value - The font value of the tab object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.#font = value;
   }
   
   /** 
@@ -5457,27 +5794,6 @@ class Tab extends Component
   {
     if(!typechecker.checkMultiple({ types: [ 'page', 'navigator' ], value: value })) console.error(this.#errors.rootTypeError);
     this.#root = value;
-    //setTimeout(() => { value.element.classList.remove('ons-swiper-blocker'); }, 5)
-  }
-
-  /** 
-   * Get property to return the color of the tab.
-   * @return {string} The color of the tab. 
-   */
-  get color() 
-  { 
-    return this.#color; 
-  }
-  
-  /** 
-   * Set property to set the color of the tab.
-   * @param {string} value - The color of the tab.
-   */
-  set color(value)
-  {
-    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.colorTypeError);
-    if(!color.isValid({ color: value })) console.error(this.#errors.colorInvalidError);
-    this.#color = value;
   }
 }
 
@@ -5544,7 +5860,7 @@ class Tabbar extends Component
       let tab = this.#tabs[index];
       let isActive = (tab === selectedTab);
 
-      component.element.style.display = isActive ? "block" : "none";
+      component.element.style.display = isActive ? 'block' : 'none';
       setTimeout(() => { component.element.classList.remove('ons-swiper-blocker'); }, 5);
 
       let icon = tab.element.querySelector(".tabbar__icon ons-icon");
@@ -5552,6 +5868,7 @@ class Tabbar extends Component
   
       if(icon) icon.style.color = isActive ? tab.color : '#999';
       if(text) text.style.color = isActive ? tab.color : '#999';
+      if(text && tab.font) text.style.fontFamily = tab.font;
     });
   
     let selectedIndex = this.#tabs.indexOf(selectedTab);
@@ -5833,6 +6150,7 @@ class TextArea extends Component
       caretColorInvalidError: 'TextArea Error: Invalid color value provided for caretColor.',
       caretColorTypeError: 'TextArea Error: Expected type string for caretColor.',
       colsTypeError: 'TextArea Error: Expected type number for cols.',
+      fontTypeError: 'TextArea Error: Expected type string for font.',
       maxLengthTypeError: 'TextArea Error: Expected type number for maxLength.',
       onChangeTypeError: 'TextArea Error: Expected type function for onChange.',
       onTextChangeTypeError: 'TextArea Error: Expected type function for onTextChange.',
@@ -5846,6 +6164,7 @@ class TextArea extends Component
     
     if(options.caretColor) this.caretColor = options.caretColor;
     if(options.cols) this.cols = options.cols;
+    this.font = options.font || font.library.system;
     if(options.maxLength) this.maxLength = options.maxLength;
     if(options.onChange) this.onChange = options.onChange;
     if(options.onTextChange) this.onTextChange = options.onTextChange;
@@ -5894,6 +6213,25 @@ class TextArea extends Component
     if(!typechecker.check({ type: 'number', value: value })) console.error(this.#errors.colsTypeError);
     this.setAttribute({ key: 'cols', value: String(value) });
     this.#cols = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the text area object.
+   * @return {string} The font value of the text area object. 
+   */
+  get font() 
+  { 
+    return this.style.fontFamily; 
+  }
+  
+  /** 
+   * Set property to set the font value of the text area object.
+   * @param {string} value - The font value of the text area object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError);
+    this.style.fontFamily = value;
   }
   
   /** 
@@ -6071,6 +6409,7 @@ class Textfield extends Component
 {
   #caretColor;
   #errors;
+  #font;
   #maxLength;
   #onChange;
   #onTextChange;
@@ -6100,6 +6439,7 @@ class Textfield extends Component
     {
       caretColorInvalidError: 'Textfield Error: Invalid color value provided for caretColor.',
       caretColorTypeError: 'Textfield Error: Expected type string for caretColor.',
+      fontTypeError: 'Textfield Error: Expected type string for font.',
       maxLengthTypeError: 'Textfield Error: Expected type number for maxLength.',
       onChangeTypeError: 'Textfield Error: Expected type function for onChange.',
       onTextChangeTypeError: 'Textfield Error: Expected type function for onTextChange.',
@@ -6113,6 +6453,7 @@ class Textfield extends Component
     };
     
     if(options.caretColor) this.caretColor = options.caretColor;
+    this.font = options.font || font.library.system;
     if(options.maxLength) this.maxLength = options.maxLength;
     if(options.onChange) this.onChange = options.onChange;
     if(options.onTextChange) this.onTextChange = options.onTextChange;
@@ -6141,6 +6482,30 @@ class Textfield extends Component
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.caretColorTypeError);
     if(!color.isValid({ color: value })) console.error(this.#errors.caretColorInvalidError); 
     this.style.caretColor = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the textfield object.
+   * @return {string} The font value of the textfield object. 
+   */
+  get font() 
+  { 
+    return this.#font;
+  }
+  
+  /** 
+   * Set property to set the font value of the textfield object.
+   * @param {string} value - The font value of the textfield object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError); 
+    setTimeout(() => 
+    {
+      let inner = this.element.querySelector('input');
+      if(inner) inner.style.fontFamily = value;
+      this.#font = value;
+    },1);
   }
   
   /** 
@@ -6329,6 +6694,7 @@ class Toast extends Component
   #dismissButton;
   #dismissIcon;
   #errors;
+  #font;
   #messageElement;
   #timeout;
 
@@ -6354,6 +6720,7 @@ class Toast extends Component
       animationInvalidError: 'Toast Error: Invalid value provided for animation.',
       animationTypeError: 'Toast Error: Expected type string for animation.',
       dismissIconTypeError: 'Toast Error: Expected type string for dismissIcon.',
+      fontTypeError: 'Toast Error: Expected type string for font.',
       messageTypeError: 'Toast Error: Expected type string for message.',
       timeoutTypeError: 'Toast Error: Expected type number for timeout.'
     };
@@ -6369,6 +6736,7 @@ class Toast extends Component
     if(options.dismissIcon) this.dismissIcon = options.dismissIcon;
     if(options.message) this.message = options.message;
     if(options.timeout) this.timeout = options.timeout;
+    this.font = options.font || font.library.system;
   }
 
   /** 
@@ -6413,6 +6781,30 @@ class Toast extends Component
     this.#dismissButton.appendChild(this.#dismissIcon.element);
     this.#dismissButton.onclick = () => this.dismiss();
     this.#dismissIcon = value;
+  }
+  
+  /** 
+   * Get property to return the font value of the toast object.
+   * @return {string} The font value of the toast object. 
+   */
+  get font() 
+  { 
+    return this.#font;
+  }
+  
+  /** 
+   * Set property to set the font value of the textfield object.
+   * @param {string} value - The font value of the textfield object.
+   */
+  set font(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.fontTypeError); 
+    setTimeout(() => 
+    {
+      let inner = this.element.querySelector('.toast__message');
+      if(inner) inner.style.fontFamily = value;
+      this.#font = value;
+    },1);
   }
 
   /** 
