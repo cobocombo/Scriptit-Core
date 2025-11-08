@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////
-// CONSOLE MANAGER MODULE
+// CONSOLE MODULE
 ///////////////////////////////////////////////////////////
 
 /** Singleton class representing the main consoleManager object. */
@@ -364,7 +364,7 @@ class App
     document.body.style.backgroundColor = value;
   }
   
- /** 
+  /** 
    * Public method to present the app from the root component.
    * @param {Multiple} root - The root component of the app. Supports Navigator, Page, Splitter, Tabbar.
    */
@@ -502,6 +502,329 @@ class FontManager
   {
     if(!typechecker.check({ type: 'string', value: name })) console.error(this.#errors.nameTypeError);
     return !!this.#loaded[name];
+  }
+}
+
+///////////////////////////////////////////////////////////
+// FILES MODULE
+///////////////////////////////////////////////////////////
+
+/** Singleton class representing the main files object. */
+class FilesManager
+{
+  #errors;
+  static #instance = null;
+  #locationTypes;
+  #roots;
+  
+  #createFolderPendingResolve = null;
+  #createFolderPendingReject = null;
+  #getFolderPendingResolve = null;
+  #getFolderPendingReject = null;
+  #renameFolderPendingResolve = null;
+  #renameFolderPendingReject = null;
+  
+  #createCheckPath = null;
+  #getCheckPath = null;
+  #renameCheckPath = null;
+ 
+  /** Creates the font object. **/
+  constructor() 
+  {
+    this.#errors = 
+    {
+      absolutePathError: 'Files Manager Error: Absolute paths are not allowed.',
+      directoryTraversalError: 'Files Manager Error: Directory traversal is not allowed.',
+      excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
+      folderCouldNotBeCreatedError: (path) => `Files Manager Error: Folder could be created at the path: '${path}'`,
+      folderNameEmpty: 'Files Manager Error: Folder name empty.',
+      folderNameTypeError: 'Files Manager Error: Expected type string for folderName.',
+      folderNotFoundError: (path) => `Files Manager Error: No folder could be found at the path: '${path}'`,
+      invalidCharsError: 'Files Manager Error: Invalid char detected. The following chars are not supported: [<>:"|?*]',
+      invalidRootError: 'Files Manager Error: Invalid root detected. Valid values are in files.roots object.',
+      rootTypeError: 'Files Manager Error: Expected type string for root.',
+      singleInstanceError: 'Files Manager Error: Only one FilesManager object can exist at a time.',
+      subpathTypeError: 'Files Manager Error: Expected type string for subpath',
+      windowsSlashesError: 'Files Manager Error: Windows style slashes are not allowed.'
+    };
+
+    if(FilesManager.#instance) console.error(this.#errors.singleInstanceError);
+    else FilesManager.#instance = this;
+    
+    this.#locationTypes = 
+    {
+      file: 'file',
+      folder: 'folder',
+      partialFolder: 'partial-folder'
+    };
+    
+    this.#roots = 
+    {
+      documents: 'Documents',
+      library: 'Library',
+      temporary: 'tmp'
+    };
+  }
+  
+  /** Static method to return a new FilesManager instance. Allows for Singleton+Module pattern. */
+  static getInstance() 
+  {
+    return new FilesManager();
+  }
+  
+  /** 
+   * Get property to return the files roots object.
+   * @return {object} The supported root paths of the iOS filesystem.
+   */
+  get roots()
+  {
+    return this.#roots;
+  }
+  
+  /** 
+   * Public method to create new folder at the specified path and return that folder after it's been stored in the iOS filesystem. If the folder name already exists there then a unique counter will be added to the folder name to make it unique.
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @param {string} folderName - The desired name of the folder.
+   * @return {Promise} - Returns a promise with createFolderPendingResolve as the resolve and createFolderPendingReject as the reject. If the call is successful the method folderCreated gets called. If the call is unsuccessful and no folder is found, then the folderNotCreated method gets called.
+   */
+  createFolder({ root = this.roots.documents, subpath = '', folderName = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: folderName })) 
+    {
+      console.error(this.#errors.folderNameTypeError);
+      return;
+    }
+    
+    if(validator.isStringEmpty({ string: folderName }))
+    {
+      console.error(this.#errors.folderNameEmpty);
+      return;
+    }
+    
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#createCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#createFolderPendingResolve = resolve;
+        this.#createFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'createFolder', 
+          root: root, 
+          subpath: subpath, 
+          folderName: folderName
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been created and returned in the createFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  createdFolderFound(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#createFolderPendingResolve) 
+    {
+      this.#createFolderPendingResolve(data);
+      this.#createFolderPendingResolve = null;
+      this.#createFolderPendingReject = null;
+      this.#createCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder could not be created in the createFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be created.
+   */
+  createdFolderNotFound(error) 
+  {
+    if(this.#createFolderPendingReject) 
+    {
+      this.#createFolderPendingReject(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
+      this.#createFolderPendingResolve = null;
+      this.#createFolderPendingReject = null;
+      console.error(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
+      this.#createCheckPath = null;
+    }
+  }
+    
+  /** 
+   * Public method that gets called from swift when a folder has been found in the getFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  folderFound(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#getFolderPendingResolve) 
+    {
+      this.#getFolderPendingResolve(data);
+      this.#getFolderPendingResolve = null;
+      this.#getFolderPendingReject = null;
+      this.#getCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be found.
+   */
+  folderNotFound(error) 
+  {
+    if(this.#getFolderPendingReject) 
+    {
+      this.#getFolderPendingReject(this.#errors.folderNotFoundError(this.#getCheckPath));
+      this.#getFolderPendingResolve = null;
+      this.#getFolderPendingReject = null;
+      console.error(this.#errors.folderNotFoundError(this.#getCheckPath));
+      this.#getCheckPath = null;
+    }
+  }
+
+  /** 
+   * Public method to get and return a folder stored in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with getFolderPendingResolve as the resolve and 
+   * getFolderPendingReject as the reject. If the call is successful the method folderFound
+   * gets called. If the call is unsuccessful and no folder is found, then the folderNotFound
+   * method gets called.
+   */
+  getFolder({ root = this.roots.documents, subpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+      
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#getCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#getFolderPendingResolve = resolve;
+        this.#getFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'getFolder', root: root, subpath: subpath
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method to verify a subpath for the iOS file system. Runs the following checks:
+   *
+   * - No absolute paths
+   * - No directory traversal
+   * - No windows style slashes
+   * - Invalid chars ([<>:"|?*])
+   * - Excessive length for a segment of the subpath (255 char max typical FS limit)
+   *
+   * @param {string} subpath - The name of the font to reference that should be registered in the map.
+   * @return {boolean} - Returns if the sub path is valid or not based on the checks.
+   */
+  isValidSubPath({ subpath }) 
+  {
+    if(!typechecker.check({ type: 'string', value: subpath }))
+    {
+      console.error(this.#errors.subpathTypeError);
+      return false;
+    }
+
+    subpath = subpath.trim();
+  
+    if(subpath.startsWith("/") || subpath.startsWith("~")) 
+    {
+      console.error(this.#errors.absolutePathError);
+      return false;
+    }
+  
+    if(subpath.includes("..")) 
+    {
+      console.error(this.#errors.directoryTraversalError);
+      return false;
+    }
+  
+    if(subpath.includes("\\")) 
+    {
+      console.error(this.#errors.windowsSlashesError);
+      return false;
+    }
+
+    let invalidChars = /[<>:"|?*]/;
+    if(invalidChars.test(subpath)) 
+    {
+      console.error(this.#errors.invalidCharsError);
+      return false;
+    }
+  
+    let segments = subpath.split("/");
+    if(segments.some(seg => seg.length > 255)) 
+    {
+      console.error(this.#errors.excessiveLengthError);
+      return false;
+    }
+  
+    return true;
   }
 }
 
@@ -7595,6 +7918,7 @@ globalThis.typechecker = TypeChecker.getInstance();
 globalThis.color = ColorManager.getInstance();
 globalThis.app = App.getInstance();
 globalThis.font = FontManager.getInstance();
+globalThis.files = FilesManager.getInstance();
 globalThis.ui = UserInterface.getInstance();
 globalThis.browser = BrowserManager.getInstance();
 globalThis.device = DeviceManager.getInstance();

@@ -32,9 +32,15 @@ let package = Package(
             ]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/JohnSundell/Files", "4.3.0"..<"5.0.0")
+    ],
     targets: [
         .executableTarget(
             name: "AppModule",
+            dependencies: [
+                .product(name: "Files", package: "Files")
+            ],
             path: ".",
             resources: [
                 .process("Resources")

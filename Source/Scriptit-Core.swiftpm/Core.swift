@@ -6,6 +6,7 @@
 import UIKit
 import WebKit
 import SafariServices
+import Files
 
 //=======================================================//
 // MAIN CORE CONTROLLER
@@ -24,6 +25,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     self.router.registerHandler(ConsoleMessageManager(), forMessageName: "consoleMessageManager");
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
     self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
+    self.router.registerHandler(FilesMessageManager(), forMessageName: "filesMessageManager");
     
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
@@ -33,6 +35,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     userContentController.add(self, name: "consoleMessageManager");
     userContentController.add(self, name: "browserMessageManager");
     userContentController.add(self, name: "deviceMessageManager");
+    userContentController.add(self, name: "filesMessageManager");
     
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;
@@ -169,6 +172,221 @@ class DeviceMessageManager: JavascriptMessageManager
         let jsCallback = "device.receive(\(jsonString));"
         webView.evaluateJavaScript(jsCallback, completionHandler: nil)
       }
+  }
+}
+
+//=============================================//
+
+class FilesMessageManager: JavascriptMessageManager
+{
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView) 
+  {    
+    let dict = message.body as? [String: Any];
+    let command = dict!["command"] as? String;
+    switch command 
+    {
+      case "createFolder":
+        let folderName = dict!["folderName"] as? String;
+        self.createFolder(dict: dict!, webView: webView, folderName: folderName!);
+      case "getFolder":
+        self.getFolder(dict: dict!, webView: webView);
+      default:
+        print("FilesMessageManager Error: Unknown command '\(command!)'");
+    }
+  }
+  
+  func createFolder(dict: [String: Any], webView: WKWebView, folderName: String)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root 
+    {
+      case "Documents": base = Folder.documents;
+      case "Library": base = Folder.library;
+      case "tmp": base = Folder.temporary;
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+  
+    do 
+    {
+      let targetFolder = try Folder(path: targetPath);
+      var uniqueName = folderName;
+      var counter = 1;
+  
+      while targetFolder.containsSubfolder(named: uniqueName) 
+      {
+        uniqueName = "\(folderName)(\(counter))";
+        counter += 1;
+      }
+      
+      let createdFolder = try targetFolder.createSubfolder(named: uniqueName);
+      let folderInfo = serializeFolder(createdFolder, relativeTo: validBase!.path);
+
+      if let jsonData = try? JSONSerialization.data(withJSONObject: folderInfo), let jsonString = String(data: jsonData, encoding: .utf8)
+      {
+        let escaped = jsonString
+          .replacingOccurrences(of: "\\", with: "\\\\")
+          .replacingOccurrences(of: "'", with: "\\'")
+          .replacingOccurrences(of: "\n", with: "\\n")
+          .replacingOccurrences(of: "\r", with: "\\r");
+
+        let js = "files.createdFolderFound(JSON.parse('\(escaped)'));";
+        DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      }
+    }
+    catch 
+    {
+      print("❌ FilesMessageManager Error: Failed to create folder at \(targetPath): \(error)");
+      let js = "files.createdFolderNotFound(null);"
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+  
+  func getFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root 
+    {
+      case "Documents": base = Folder.documents;
+      case "Library": base = Folder.library;
+      case "tmp": base = Folder.temporary;
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do 
+    {
+      let resolvedFolder = try Folder(path: targetPath);
+      let folderInfo = serializeFolder(resolvedFolder, relativeTo: validBase!.path);
+      if let jsonData = try? JSONSerialization.data(withJSONObject: folderInfo), let jsonString = String(data: jsonData, encoding: .utf8) 
+      {
+        let escaped = jsonString
+          .replacingOccurrences(of: "\\", with: "\\\\")
+          .replacingOccurrences(of: "'", with: "\\'")
+          .replacingOccurrences(of: "\n", with: "\\n")
+          .replacingOccurrences(of: "\r", with: "\\r");
+        let js = "files.folderFound(JSON.parse('\(escaped)'));";
+        DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      }
+    } 
+    catch 
+    {
+      print("FilesMessageManager Error: Folder not found at \(targetPath)");
+      let js = "files.folderNotFound(null);";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+  
+  func serializeFolder(_ folder: Folder, relativeTo rootPath: String) -> [String: Any] 
+  {
+    func normalizedRootName(from path: String) -> String 
+    {
+      if path.contains("/Documents") { return "Documents" }
+      if path.contains("/Library") { return "Library" }
+      if path.contains("/tmp") { return "tmp" }
+      return "Unknown"
+    }
+    
+    let normalizedRoot = normalizedRootName(from: rootPath);
+    
+    let relativePath: String;
+    if folder.path.hasPrefix(rootPath) { relativePath = String(folder.path.dropFirst(rootPath.count)); } 
+    else { relativePath = folder.path; }
+  
+    var folderInfo: [String: Any] = [
+      "name": folder.name,
+      "relativePath": relativePath,
+      "root": normalizedRoot
+    ];
+  
+    if let parent = folder.parent 
+    {
+      let parentRelativePath: String;
+      if parent.path.hasPrefix(rootPath) { parentRelativePath = String(parent.path.dropFirst(rootPath.count)); }
+      else { parentRelativePath = "none"; }
+      folderInfo["parentFolder"] = [
+        "name": parent.name,
+        "relativePath": parentRelativePath,
+        "root": normalizedRoot
+      ];
+    } 
+    else { folderInfo["parentFolder"] = NSNull(); }
+  
+    let subfolderArray: [[String: Any]] = folder.subfolders.map 
+    { 
+      sub in
+      let subRelativePath: String;
+      if sub.path.hasPrefix(rootPath) { subRelativePath = String(sub.path.dropFirst(rootPath.count)); } 
+      else { subRelativePath = sub.path; }
+      return [
+        "name": sub.name,
+        "relativePath": subRelativePath,
+        "root": normalizedRoot
+      ]
+    }
+    
+    folderInfo["subfolders"] = subfolderArray;
+     
+    let fileArray: [[String: Any]] = folder.files.map 
+    { 
+      file in
+      let fileRelativePath: String;
+      if file.path.hasPrefix(rootPath) { fileRelativePath = String(file.path.dropFirst(rootPath.count)) }
+      else { fileRelativePath = file.path }
+  
+      var fileInfo: [String: Any] = [
+        "extension": file.extension as Any,
+        "name": file.name,
+        "nameExcludingExtension": file.nameExcludingExtension,
+        "relativePath": fileRelativePath,
+        "root": normalizedRoot
+      ]
+  
+      if let parent = file.parent 
+      {
+        let parentRelativePath: String;
+        if parent.path.hasPrefix(rootPath) { parentRelativePath = String(parent.path.dropFirst(rootPath.count)) }
+        else { parentRelativePath = parent.path }
+  
+        fileInfo["parentFolder"] = [
+          "name": parent.name,
+          "relativePath": parentRelativePath,
+          "root": normalizedRoot
+        ]
+      } 
+      else { fileInfo["parentFolder"] = NSNull(); }
+      return fileInfo
+    }
+    
+    folderInfo["files"] = fileArray;
+  
+    return folderInfo
+  }
+  
+  func createTestFiles() 
+  {
+    do 
+    {
+      let docs = Folder.documents;
+      let inputFile = try docs!.createFileIfNeeded(withName: "input.txt");
+      let outputFile = try docs!.createFileIfNeeded(withName: "output.txt");
+      try inputFile.write("This is a test input file created by FilesMessageManager.");
+      try outputFile.write("This is a test output file created by FilesMessageManager.");
+    } 
+    catch 
+    {
+      print("❌ FilesMessageManager Error: Failed to create test files: \(error)")
+    }
   }
 }
 
