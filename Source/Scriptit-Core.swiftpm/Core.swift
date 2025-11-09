@@ -188,8 +188,13 @@ class FilesMessageManager: JavascriptMessageManager
       case "createFolder":
         let folderName = dict!["folderName"] as? String;
         self.createFolder(dict: dict!, webView: webView, folderName: folderName!);
+      case "deleteFolder":
+        self.deleteFolder(dict: dict!, webView: webView);
       case "getFolder":
         self.getFolder(dict: dict!, webView: webView);
+      case "renameFolder":
+        let folderName = dict!["folderName"] as? String;
+        self.renameFolder(dict: dict!, webView: webView, folderName: folderName!);
       default:
         print("FilesMessageManager Error: Unknown command '\(command!)'");
     }
@@ -235,14 +240,46 @@ class FilesMessageManager: JavascriptMessageManager
           .replacingOccurrences(of: "\n", with: "\\n")
           .replacingOccurrences(of: "\r", with: "\\r");
 
-        let js = "files.createdFolderFound(JSON.parse('\(escaped)'));";
+        let js = "files._createdFolderFound(JSON.parse('\(escaped)'));";
         DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
       }
     }
     catch 
     {
       print("❌ FilesMessageManager Error: Failed to create folder at \(targetPath): \(error)");
-      let js = "files.createdFolderNotFound(null);"
+      let js = "files._createdFolderNotFound(null);"
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+  
+  func deleteFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root 
+    {
+      case "Documents": base = Folder.documents;
+      case "Library": base = Folder.library;
+      case "tmp": base = Folder.temporary;
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do 
+    {
+      let targetFolder = try! Folder(path: targetPath);
+      try targetFolder.delete();
+      let js = "files._folderDeleted();";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); } 
+    }
+    catch 
+    {
+      print("❌ FilesMessageManager Error: Failed to rename folder at \(targetPath): \(error)");
+      let js = "files._folderNotDeleted(null);"
       DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
     }
   }
@@ -275,14 +312,69 @@ class FilesMessageManager: JavascriptMessageManager
           .replacingOccurrences(of: "'", with: "\\'")
           .replacingOccurrences(of: "\n", with: "\\n")
           .replacingOccurrences(of: "\r", with: "\\r");
-        let js = "files.folderFound(JSON.parse('\(escaped)'));";
+        let js = "files._folderFound(JSON.parse('\(escaped)'));";
         DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
       }
     } 
     catch 
     {
       print("FilesMessageManager Error: Folder not found at \(targetPath)");
-      let js = "files.folderNotFound(null);";
+      let js = "files._folderNotFound(null);";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+  
+  func renameFolder(dict: [String: Any], webView: WKWebView, folderName: String)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root 
+    {
+      case "Documents": base = Folder.documents;
+      case "Library": base = Folder.library;
+      case "tmp": base = Folder.temporary;
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do 
+    {
+      let targetFolder = try! Folder(path: targetPath);
+      let parentFolder = targetFolder.parent;
+      var uniqueName = folderName;
+      var counter = 1;
+      while parentFolder!.containsSubfolder(named: uniqueName) 
+      {
+        uniqueName = "\(folderName)(\(counter))";
+        counter += 1;
+      }
+      
+      let oldPath = targetFolder.path;
+      let newPath = parentFolder!.path + uniqueName + "/";
+      try FileManager.default.moveItem(atPath: oldPath, toPath: newPath);
+      let renamedFolder = try Folder(path: parentFolder!.path + uniqueName + "/");
+      let folderInfo = serializeFolder(renamedFolder, relativeTo: validBase!.path);
+      
+      if let jsonData = try? JSONSerialization.data(withJSONObject: folderInfo), let jsonString = String(data: jsonData, encoding: .utf8)
+      {
+        let escaped = jsonString
+          .replacingOccurrences(of: "\\", with: "\\\\")
+          .replacingOccurrences(of: "'", with: "\\'")
+          .replacingOccurrences(of: "\n", with: "\\n")
+          .replacingOccurrences(of: "\r", with: "\\r");
+
+        let js = "files._renamedFolderFound(JSON.parse('\(escaped)'));";
+        DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      } 
+    }
+    catch 
+    {
+      print("❌ FilesMessageManager Error: Failed to rename folder at \(targetPath): \(error)");
+      let js = "files._renamedFolderNotFound(null);"
       DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
     }
   }

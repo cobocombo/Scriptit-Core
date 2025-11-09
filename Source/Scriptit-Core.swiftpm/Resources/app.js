@@ -6,18 +6,18 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.navigationBarFont = font.library.menlo;
     
-    // files.getFolder({ root: files.roots.documents, subpath: '' }).then(folder => 
+    // files.deleteFolder({ root: files.roots.documents, subpath: 'Music/' }).then(() => 
     // {      
-    //   for(let sub of folder.subfolders)
-    //   {
-    //     console.log(sub.name);
-    //   }
-    // })
-    // .catch(error => {
-    //   console.error(error);
+    //   files.getFolder({ root: files.roots.documents, subpath: '' }).then(folder => 
+    //   {      
+    //     for(let sub of folder.subfolders)
+    //     {
+    //       console.log(sub.name);
+    //     }
+    //   });
     // });
     
-    // files.createFolder({ root: files.roots.documents, subpath: '', folderName: 'New' }).then(folder => 
+    // files.renameFolder({ root: files.roots.documents, subpath: 'Videos/', folderName: 'Pictures' }).then(folder => 
     // {
     //   console.log(folder);
     // })

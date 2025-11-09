@@ -519,12 +519,15 @@ class FilesManager
   
   #createFolderPendingResolve = null;
   #createFolderPendingReject = null;
+  #deleteFolderPendingResolve = null;
+  #deleteFolderPendingReject = null;
   #getFolderPendingResolve = null;
   #getFolderPendingReject = null;
   #renameFolderPendingResolve = null;
   #renameFolderPendingReject = null;
   
   #createCheckPath = null;
+  #deleteCheckPath = null;
   #getCheckPath = null;
   #renameCheckPath = null;
  
@@ -536,7 +539,9 @@ class FilesManager
       absolutePathError: 'Files Manager Error: Absolute paths are not allowed.',
       directoryTraversalError: 'Files Manager Error: Directory traversal is not allowed.',
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
-      folderCouldNotBeCreatedError: (path) => `Files Manager Error: Folder could be created at the path: '${path}'`,
+      folderCouldNotBeCreatedError: (path) => `Files Manager Error: Folder could not be created at the path: '${path}'`,
+      folderCouldNotBeDeletedError: (path) => `Files Manager Error: Folder could not be deleted at the path: '${path}'`,
+      folderCouldNotBeRenamedError: (path) => `Files Manager Error: Folder could not be renamed at the path: '${path}'`,
       folderNameEmpty: 'Files Manager Error: Folder name empty.',
       folderNameTypeError: 'Files Manager Error: Expected type string for folderName.',
       folderNotFoundError: (path) => `Files Manager Error: No folder could be found at the path: '${path}'`,
@@ -586,7 +591,7 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string} folderName - The desired name of the folder.
-   * @return {Promise} - Returns a promise with createFolderPendingResolve as the resolve and createFolderPendingReject as the reject. If the call is successful the method folderCreated gets called. If the call is unsuccessful and no folder is found, then the folderNotCreated method gets called.
+   * @return {Promise} - Returns a promise with createFolderPendingResolve as the resolve and createFolderPendingReject as the reject. If the call is successful the method createdFolderFound gets called. If the call is unsuccessful and no folder is found, then the createdFolderNotFound method gets called.
    */
   createFolder({ root = this.roots.documents, subpath = '', folderName = '' })
   {
@@ -632,107 +637,39 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a folder has been created and returned in the createFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
+   * Public method to delete a folder stored in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with deleteFolderPendingResolve as the resolve and deleteFolderPendingReject as the reject. If the call is successful the method folderDeleted gets called. If the call is unsuccessful then folderNotDeleted is called.
    */
-  createdFolderFound(data)
+  deleteFolder({ root = this.roots.documents, subpath = '' })
   {
-    data.type = this.#locationTypes.folder;
-    
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
+    if(!typechecker.check({ type: 'string', value: root }))
     {
-      for(let sub of data.subfolders) 
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+      
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#deleteCheckPath = subpath;
+      return new Promise((resolve, reject) => 
       {
-        sub.type = this.#locationTypes.partialFolder;
-      }
-    }
-    
-    if(data.files.length !== 0) 
-    {
-      for(let file of data.files) 
-      {
-        file.type = this.#locationTypes.file;
-        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
-      }
-    }
-    
-    if(this.#createFolderPendingResolve) 
-    {
-      this.#createFolderPendingResolve(data);
-      this.#createFolderPendingResolve = null;
-      this.#createFolderPendingReject = null;
-      this.#createCheckPath = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a folder could not be created in the createFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be created.
-   */
-  createdFolderNotFound(error) 
-  {
-    if(this.#createFolderPendingReject) 
-    {
-      this.#createFolderPendingReject(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
-      this.#createFolderPendingResolve = null;
-      this.#createFolderPendingReject = null;
-      console.error(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
-      this.#createCheckPath = null;
+        this.#deleteFolderPendingResolve = resolve;
+        this.#deleteFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'deleteFolder', root: root, subpath: subpath
+        });
+      });
     }
   }
     
-  /** 
-   * Public method that gets called from swift when a folder has been found in the getFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
-   */
-  folderFound(data)
-  {
-    data.type = this.#locationTypes.folder;
-    
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
-    {
-      for(let sub of data.subfolders) 
-      {
-        sub.type = this.#locationTypes.partialFolder;
-      }
-    }
-    
-    if(data.files.length !== 0) 
-    {
-      for(let file of data.files) 
-      {
-        file.type = this.#locationTypes.file;
-        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
-      }
-    }
-    
-    if(this.#getFolderPendingResolve) 
-    {
-      this.#getFolderPendingResolve(data);
-      this.#getFolderPendingResolve = null;
-      this.#getFolderPendingReject = null;
-      this.#getCheckPath = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be found.
-   */
-  folderNotFound(error) 
-  {
-    if(this.#getFolderPendingReject) 
-    {
-      this.#getFolderPendingReject(this.#errors.folderNotFoundError(this.#getCheckPath));
-      this.#getFolderPendingResolve = null;
-      this.#getFolderPendingReject = null;
-      console.error(this.#errors.folderNotFoundError(this.#getCheckPath));
-      this.#getCheckPath = null;
-    }
-  }
-
   /** 
    * Public method to get and return a folder stored in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
@@ -825,6 +762,237 @@ class FilesManager
     }
   
     return true;
+  }
+  
+  /** 
+   * Public method to rename an existing folder at the specified path and return that modified folder in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @param {string} folderName - The desired name of the folder.
+   * @return {Promise} - Returns a promise with renameFolderPendingResolve as the resolve and renameFolderPendingReject as the reject. If the call is successful the method renamedFolderFound gets called. If the call is unsuccessful and no folder is found, then the renamedFolderNotFound method gets called.
+   */
+  renameFolder({ root = this.roots.documents, subpath = '', folderName = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: folderName })) 
+    {
+      console.error(this.#errors.folderNameTypeError);
+      return;
+    }
+    
+    if(validator.isStringEmpty({ string: folderName }))
+    {
+      console.error(this.#errors.folderNameEmpty);
+      return;
+    }
+    
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#renameCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#renameFolderPendingResolve = resolve;
+        this.#renameFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'renameFolder', 
+          root: root, 
+          subpath: subpath, 
+          folderName: folderName
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been created and returned in the createFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  _createdFolderFound(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#createFolderPendingResolve) 
+    {
+      this.#createFolderPendingResolve(data);
+      this.#createFolderPendingResolve = null;
+      this.#createFolderPendingReject = null;
+      this.#createCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder could not be created in the createFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be created.
+   */
+  _createdFolderNotFound(error) 
+  {
+    if(this.#createFolderPendingReject) 
+    {
+      this.#createFolderPendingReject(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
+      this.#createFolderPendingResolve = null;
+      this.#createFolderPendingReject = null;
+      console.error(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
+      this.#createCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been deleted successfully in the deleteFolder method within the files module. 
+   */
+  _folderDeleted()
+  {
+    if(this.#deleteFolderPendingResolve) 
+    {
+      this.#deleteFolderPendingResolve();
+      this.#deleteFolderPendingResolve = null;
+      this.#deleteFolderPendingReject = null;
+      this.#deleteCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has not been deleted successfully in the deleteFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be deleted.
+   */
+  _folderNotDeleted(error)
+  {
+    if(this.#deleteFolderPendingReject) 
+    {
+      this.#deleteFolderPendingReject(this.#errors.folderCouldNotBeDeletedError(this.#deleteCheckPath));
+      this.#deleteFolderPendingResolve = null;
+      this.#deleteFolderPendingReject = null;
+      this.#deleteCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been found in the getFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  _folderFound(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#getFolderPendingResolve) 
+    {
+      this.#getFolderPendingResolve(data);
+      this.#getFolderPendingResolve = null;
+      this.#getFolderPendingReject = null;
+      this.#getCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be found.
+   */
+  _folderNotFound(error) 
+  {
+    if(this.#getFolderPendingReject) 
+    {
+      this.#getFolderPendingReject(this.#errors.folderNotFoundError(this.#getCheckPath));
+      this.#getFolderPendingResolve = null;
+      this.#getFolderPendingReject = null;
+      console.error(this.#errors.folderNotFoundError(this.#getCheckPath));
+      this.#getCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been renamed and returned in the renameFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  _renamedFolderFound(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#renameFolderPendingResolve) 
+    {
+      this.#renameFolderPendingResolve(data);
+      this.#renameFolderPendingResolve = null;
+      this.#renameFolderPendingReject = null;
+      this.#renameCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder could not be renamed in the renameFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be created.
+   */
+  _renamedFolderNotFound(error) 
+  {
+    if(this.#renameFolderPendingReject) 
+    {
+      this.#renameFolderPendingReject(this.#errors.folderCouldNotBeRenamedError(this.#renameCheckPath));
+      this.#renameFolderPendingResolve = null;
+      this.#renameFolderPendingReject = null;
+      this.#renameCheckPath = null;
+    }
   }
 }
 
