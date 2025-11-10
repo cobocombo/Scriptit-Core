@@ -22,12 +22,22 @@ class HomePage extends ui.Page
     //   console.log(folder.name);
     // });
     
-    // files.getFolder({ subpath: 'Apps/' }).then(folder => 
+    // files.createFile({ subpath: '', fileName: 'user.trz' }).then(file => 
     // {      
-    //   for(let sub of folder.subfolders)
+    //   console.log(file);
+    // });
+    
+    // files.getFolder({ subpath: '' }).then(folder => 
+    // {      
+    //   for(let file of folder.files)
     //   {
-    //     console.log(sub.name);
+    //     console.log(file.name);
     //   }
+    // });
+    
+    // files.getFile({ subpath: 'input.txt' }).then(file => 
+    // {      
+    //   console.log(file);
     // });
     
     // files.moveFolder({ oldSubpath: 'Scriptit/', newSubpath: 'Apps/' }).then(folder => 

@@ -514,13 +514,18 @@ class FilesManager
 {
   #errors;
   static #instance = null;
+  #fileExtensions;
   #locationTypes;
   #roots;
   
+  #createFilePendingResolve = null;
+  #createFilePendingReject = null;
   #createFolderPendingResolve = null;
   #createFolderPendingReject = null;
   #deleteFolderPendingResolve = null;
   #deleteFolderPendingReject = null;
+  #getFilePendingResolve = null;
+  #getFilePendingReject = null;
   #getFolderPendingResolve = null;
   #getFolderPendingReject = null;
   #moveFolderPendingResolve = null;
@@ -528,8 +533,10 @@ class FilesManager
   #renameFolderPendingResolve = null;
   #renameFolderPendingReject = null;
   
+  #createFileCheckPath = null;
   #createFolderCheckPath = null;
   #deleteFolderCheckPath = null;
+  #getFileCheckPath = null;
   #getFolderCheckPath = null;
   #moveFolderCheckPath = null;
   #renameFolderCheckPath = null;
@@ -542,6 +549,10 @@ class FilesManager
       absolutePathError: 'Files Manager Error: Absolute paths are not allowed.',
       directoryTraversalError: 'Files Manager Error: Directory traversal is not allowed.',
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
+      fileCouldNotBeCreatedError: (path) => `Files Manager Error: File could not be created at the path: '${path}'`,
+      fileNameEmpty: 'Files Manager Error: File name empty.',
+      fileNameTypeError: 'Files Manager Error: Expected type string for fileName.',
+      fileNotFoundError: (path) => `Files Manager Error: No file could be found at the path: '${path}'`,
       folderCouldNotBeCreatedError: (path) => `Files Manager Error: Folder could not be created at the path: '${path}'`,
       folderCouldNotBeDeletedError: (path) => `Files Manager Error: Folder could not be deleted at the path: '${path}'`,
       folderCouldNotBeMovedError: (path) => `Files Manager Error: Folder could not be moved at the path: '${path}'`,
@@ -559,6 +570,20 @@ class FilesManager
 
     if(FilesManager.#instance) console.error(this.#errors.singleInstanceError);
     else FilesManager.#instance = this;
+    
+    this.#fileExtensions = 
+    {
+      css: '.css',
+      csv: '.csv',
+      html: '.html',
+      javascript: '.js',
+      json: '.json',
+      log: '.log',
+      markdown: '.md',
+      text: '.txt',
+      swift: '.swift',
+      xml: '.xml'
+    };
     
     this.#locationTypes = 
     {
@@ -588,6 +613,64 @@ class FilesManager
   get roots()
   {
     return this.#roots;
+  }
+  
+  /** 
+   * Public method to create new file at the specified path and return that file after it's been stored in the iOS filesystem. If the file name already exists there then a unique counter will be added to the file name to make it unique.
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @param {string} fileName - The desired name of the file. If no valid extension is given then the extension will be .txt.
+   * @return {Promise} - Returns a promise with createFilePendingResolve as the resolve and createFilePendingReject as the reject. If the call is successful the method _createdFileFound gets called. If the call is unsuccessful and no folder is found, then the _createdFileNotFound method gets called.
+   */
+  createFile({ root = this.roots.documents, subpath = '', fileName = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: fileName })) 
+    {
+      console.error(this.#errors.fileNameTypeError);
+      return;
+    }
+    
+    if(validator.isStringEmpty({ string: fileName }))
+    {
+      console.error(this.#errors.fileNameEmpty);
+      return;
+    }
+    
+    let extensions = Object.values(this.#fileExtensions).map(ext => ext.slice(1)).join('|');
+    let regex = new RegExp(`\\.(${extensions})$`, 'i');
+    if(!regex.test(fileName)) 
+    {
+      fileName = fileName.replace(/\.+$/, '');
+      fileName += '.txt';
+    }
+    
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#createFileCheckPath = subpath + fileName;
+      return new Promise((resolve, reject) => 
+      {
+        this.#createFilePendingResolve = resolve;
+        this.#createFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'createFile', 
+          root: root, 
+          subpath: subpath, 
+          fileName: fileName
+        });
+      });
+    }
   }
   
   /** 
@@ -669,6 +752,40 @@ class FilesManager
         this.#deleteFolderPendingReject = reject;
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
           command: 'deleteFolder', root: root, subpath: subpath
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method to get and return a file stored in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with getFilePendingResolve as the resolve and getFilePendingReject as the reject. If the call is successful the method _fileFound gets called. If the call is unsuccessful and no folder is found, then the _fileNotFound method gets called.
+   */
+  getFile({ root = this.roots.documents, subpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+      
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#getFileCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#getFilePendingResolve = resolve;
+        this.#getFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'getFile', root: root, subpath: subpath
         });
       });
     }
@@ -871,6 +988,39 @@ class FilesManager
   }
   
   /** 
+   * Public method that gets called from swift when a file has been created and returned in the createFile method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _createdFileFound(data)
+  {
+    data.type = this.#locationTypes.file;
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+  
+    if(this.#createFilePendingResolve) 
+    {
+      this.#createFilePendingResolve(data);
+      this.#createFilePendingResolve = null;
+      this.#createFilePendingReject = null;
+      this.#createFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file could not be created in the createFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be created.
+   */
+  _createdFileNotFound(error) 
+  {
+    if(this.#createFilePendingReject) 
+    {
+      this.#createFilePendingReject(this.#errors.fileCouldNotBeCreatedError(this.#createFileCheckPath));
+      this.#createFilePendingResolve = null;
+      this.#createFilePendingReject = null;
+      this.#createFileCheckPath = null;
+    }
+  }
+  
+  /** 
    * Public method that gets called from swift when a folder has been created and returned in the createFolder method within the files module. 
    * @param {object} data - Object returned that conforms to the Folder data type.
    */
@@ -947,6 +1097,39 @@ class FilesManager
       this.#deleteFolderPendingResolve = null;
       this.#deleteFolderPendingReject = null;
       this.#deleteFolderCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has been found in the getFile method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _fileFound(data)
+  {
+    data.type = this.#locationTypes.file;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;  
+    if(this.#getFilePendingResolve) 
+    {
+      this.#getFilePendingResolve(data);
+      this.#getFilePendingResolve = null;
+      this.#getFilePendingReject = null;
+      this.#getFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be found.
+   */
+  _fileNotFound(error) 
+  {
+    if(this.#getFilePendingReject) 
+    {
+      this.#getFilePendingReject(this.#errors.fileNotFoundError(this.#getFileCheckPath));
+      this.#getFilePendingResolve = null;
+      this.#getFilePendingReject = null;
+      this.#getFileCheckPath = null;
     }
   }
   

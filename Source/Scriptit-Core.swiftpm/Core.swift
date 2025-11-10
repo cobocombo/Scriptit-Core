@@ -185,11 +185,16 @@ class FilesMessageManager: JavascriptMessageManager
     let command = dict!["command"] as? String;
     switch command 
     {
+      case "createFile":
+        let fileName = dict!["fileName"] as? String;
+        self.createFile(dict: dict!, webView: webView, fileName: fileName!);
       case "createFolder":
         let folderName = dict!["folderName"] as? String;
         self.createFolder(dict: dict!, webView: webView, folderName: folderName!);
       case "deleteFolder":
         self.deleteFolder(dict: dict!, webView: webView);
+      case "getFile":
+        self.getFile(dict: dict!, webView: webView);
       case "getFolder":
         self.getFolder(dict: dict!, webView: webView);
       case "moveFolder":
@@ -202,6 +207,57 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  func createFile(dict: [String: Any], webView: WKWebView, fileName: String) 
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+  
+    switch root 
+    {
+      case "Documents": base = Folder.documents
+      case "Library": base = Folder.library
+      case "tmp": base = Folder.temporary
+      default: base = nil
+    }
+  
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+  
+    do 
+    {
+      let targetFolder = try Folder(path: targetPath);
+      var uniqueName = fileName;
+      var counter = 1;
+      while targetFolder.containsFile(named: uniqueName) 
+      {
+        uniqueName = "\(fileName)(\(counter))";
+        counter += 1;
+      }
+  
+      let createdFile = try targetFolder.createFile(named: uniqueName);
+      let fileInfo = serializeFile(createdFile, relativeTo: validBase!.path);
+  
+      if let jsonData = try? JSONSerialization.data(withJSONObject: fileInfo), let jsonString = String(data: jsonData, encoding: .utf8) 
+      {
+        let escaped = jsonString
+          .replacingOccurrences(of: "\\", with: "\\\\")
+          .replacingOccurrences(of: "'", with: "\\'")
+          .replacingOccurrences(of: "\n", with: "\\n")
+          .replacingOccurrences(of: "\r", with: "\\r");
+  
+        let js = "files._createdFileFound(JSON.parse('\(escaped)'));";
+        DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      }
+    } 
+    catch 
+    {
+      print("❌ FilesMessageManager Error: Failed to create file at \(targetPath): \(error)");
+      let js = "files._createdFileNotFound(null);"
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+
   func createFolder(dict: [String: Any], webView: WKWebView, folderName: String)
   {
     let root = dict["root"] as? String;
@@ -286,6 +342,52 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  func getFile(dict: [String: Any], webView: WKWebView)
+  {
+    let root = dict["root"] as? String
+    let subpath = dict["subpath"] as? String
+    let base: Folder?
+    
+    switch root
+    {
+      case "Documents": base = Folder.documents
+      case "Library": base = Folder.library
+      case "tmp": base = Folder.temporary
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!
+    
+    do
+    {
+      let resolvedFile = try File(path: targetPath)
+      let fileInfo = serializeFile(resolvedFile, relativeTo: validBase!.path)
+      
+      if let jsonData = try? JSONSerialization.data(withJSONObject: fileInfo), let jsonString = String(data: jsonData, encoding: .utf8)
+      {
+        let escaped = jsonString
+          .replacingOccurrences(of: "\\", with: "\\\\")
+          .replacingOccurrences(of: "'", with: "\\'")
+          .replacingOccurrences(of: "\n", with: "\\n")
+          .replacingOccurrences(of: "\r", with: "\\r")
+        
+        let js = "files._fileFound(JSON.parse('\(escaped)'));"
+        DispatchQueue.main.async {
+          webView.evaluateJavaScript(js, completionHandler: nil)
+        }
+      }
+    }
+    catch
+    {
+      print("FilesMessageManager Error: File not found at \(targetPath)")
+      let js = "files._fileNotFound(null);"
+      DispatchQueue.main.async {
+        webView.evaluateJavaScript(js, completionHandler: nil)
+      }
+    }
+  }
+
   func getFolder(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String;
@@ -452,6 +554,62 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  func serializeFile(_ file: File, relativeTo rootPath: String) -> [String: Any]
+  {
+    func normalizedRootName(from path: String) -> String
+    {
+      if path.contains("/Documents") { return "Documents" }
+      if path.contains("/Library") { return "Library" }
+      if path.contains("/tmp") { return "tmp" }
+      return "Unknown"
+    }
+    
+    let normalizedRoot = normalizedRootName(from: rootPath)
+    
+    let relativePath: String
+    if file.path.hasPrefix(rootPath)
+    {
+      relativePath = String(file.path.dropFirst(rootPath.count))
+    }
+    else
+    {
+      relativePath = file.path
+    }
+    
+    var fileInfo: [String: Any] = [
+      "name": file.name,
+      "nameExcludingExtension": file.nameExcludingExtension,
+      "extension": file.extension as Any,
+      "relativePath": relativePath,
+      "root": normalizedRoot
+    ]
+    
+    if let parent = file.parent
+    {
+      let parentRelativePath: String
+      if parent.path.hasPrefix(rootPath)
+      {
+        parentRelativePath = String(parent.path.dropFirst(rootPath.count))
+      }
+      else
+      {
+        parentRelativePath = parent.path
+      }
+      
+      fileInfo["parentFolder"] = [
+        "name": parent.name,
+        "relativePath": parentRelativePath,
+        "root": normalizedRoot
+      ]
+    }
+    else
+    {
+      fileInfo["parentFolder"] = NSNull()
+    }
+    
+    return fileInfo
+  }
+
   func serializeFolder(_ folder: Folder, relativeTo rootPath: String) -> [String: Any] 
   {
     func normalizedRootName(from path: String) -> String 
