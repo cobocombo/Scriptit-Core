@@ -530,6 +530,8 @@ class FilesManager
   #getFolderPendingReject = null;
   #moveFolderPendingResolve = null;
   #moveFolderPendingReject = null;
+  #renameFilePendingResolve = null;
+  #renameFilePendingReject = null;
   #renameFolderPendingResolve = null;
   #renameFolderPendingReject = null;
   
@@ -539,9 +541,10 @@ class FilesManager
   #getFileCheckPath = null;
   #getFolderCheckPath = null;
   #moveFolderCheckPath = null;
+  #renameFileCheckPath = null;
   #renameFolderCheckPath = null;
  
-  /** Creates the font object. **/
+  /** Creates the files object. **/
   constructor() 
   {
     this.#errors = 

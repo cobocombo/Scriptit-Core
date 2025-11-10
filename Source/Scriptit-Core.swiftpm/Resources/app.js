@@ -29,9 +29,9 @@ class HomePage extends ui.Page
     
     // files.getFolder({ subpath: '' }).then(folder => 
     // {      
-    //   for(let file of folder.files)
+    //   for(let sub of folder.subfolders)
     //   {
-    //     console.log(file.name);
+    //     console.log(sub.name);
     //   }
     // });
     
@@ -45,10 +45,10 @@ class HomePage extends ui.Page
     //   console.log(folder);
     // });
     
-    // files.renameFolder({ oldSubpath: 'Videos/', folderName: 'Pictures' }).then(folder => 
-    // {
-    //   console.log(folder);
-    // })
+    files.renameFolder({ subpath: 'Photos/', folderName: 'Videos' }).then(folder => 
+    {
+      console.log(folder);
+    })
     // .catch(error => {
     //   console.error(error);
     // });

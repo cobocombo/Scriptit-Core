@@ -531,20 +531,31 @@ class FilesMessageManager: JavascriptMessageManager
       let oldPath = targetFolder.path;
       let newPath = parentFolder!.path + uniqueName + "/";
       try FileManager.default.moveItem(atPath: oldPath, toPath: newPath);
-      let renamedFolder = try Folder(path: parentFolder!.path + uniqueName + "/");
-      let folderInfo = serializeFolder(renamedFolder, relativeTo: validBase!.path);
       
-      if let jsonData = try? JSONSerialization.data(withJSONObject: folderInfo), let jsonString = String(data: jsonData, encoding: .utf8)
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) 
       {
-        let escaped = jsonString
-          .replacingOccurrences(of: "\\", with: "\\\\")
-          .replacingOccurrences(of: "'", with: "\\'")
-          .replacingOccurrences(of: "\n", with: "\\n")
-          .replacingOccurrences(of: "\r", with: "\\r");
-
-        let js = "files._renamedFolderFound(JSON.parse('\(escaped)'));";
-        DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
-      } 
+        do
+        {
+          let renamedFolder = try Folder(path: parentFolder!.path + uniqueName + "/");
+          let folderInfo = self.serializeFolder(renamedFolder, relativeTo: validBase!.path);
+          
+          if let jsonData = try? JSONSerialization.data(withJSONObject: folderInfo), let jsonString = String(data: jsonData, encoding: .utf8)
+          {
+            let escaped = jsonString
+              .replacingOccurrences(of: "\\", with: "\\\\")
+              .replacingOccurrences(of: "'", with: "\\'")
+              .replacingOccurrences(of: "\n", with: "\\n")
+              .replacingOccurrences(of: "\r", with: "\\r");
+    
+            let js = "files._renamedFolderFound(JSON.parse('\(escaped)'));";
+            DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+          } 
+        }
+        catch
+        {
+          print("❌ FilesMessageManager Error: Could not verify renamed folder at \(error)");
+        }
+      }
     }
     catch 
     {
