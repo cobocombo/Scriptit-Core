@@ -192,6 +192,8 @@ class FilesMessageManager: JavascriptMessageManager
         self.deleteFolder(dict: dict!, webView: webView);
       case "getFolder":
         self.getFolder(dict: dict!, webView: webView);
+      case "moveFolder":
+        self.moveFolder(dict: dict!, webView: webView);
       case "renameFolder":
         let folderName = dict!["folderName"] as? String;
         self.renameFolder(dict: dict!, webView: webView, folderName: folderName!);
@@ -321,6 +323,77 @@ class FilesMessageManager: JavascriptMessageManager
       print("FilesMessageManager Error: Folder not found at \(targetPath)");
       let js = "files._folderNotFound(null);";
       DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+  
+  func moveFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let oldRoot = dict["oldRoot"] as? String;
+    let newRoot = dict["newRoot"] as? String;
+    let oldSubpath = dict["oldSubpath"] as? String;
+    let newSubpath = dict["newSubpath"] as? String;
+    
+    func baseFolder(for root: String) -> Folder? 
+    {
+      switch root {
+        case "Documents": return Folder.documents
+        case "Library":   return Folder.library
+        case "tmp":       return Folder.temporary
+        default:          return nil
+      }
+    }
+    
+    let oldBase = baseFolder(for: oldRoot!);
+    let newBase = baseFolder(for: newRoot!);
+    let oldPath = oldSubpath!.isEmpty ? oldBase!.path : oldBase!.path + oldSubpath!;
+    let newParentPath = newSubpath!.isEmpty ? newBase!.path : newBase!.path + newSubpath!;
+    
+    do 
+    {
+      let sourceFolder = try Folder(path: oldPath);
+      let destinationParent = try Folder(path: newParentPath);
+  
+      var uniqueName = sourceFolder.name;
+      var counter = 1;
+      while destinationParent.containsSubfolder(named: uniqueName) 
+      {
+        uniqueName = "\(sourceFolder.name)(\(counter))";
+        counter += 1;
+      }
+  
+      let destinationPath = destinationParent.path + uniqueName + "/";
+      try FileManager.default.moveItem(atPath: sourceFolder.path, toPath: destinationPath);
+      
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) 
+      {
+        do 
+        {
+          let movedFolder = try Folder(path: destinationPath);
+          let folderInfo = self.serializeFolder(movedFolder, relativeTo: newBase!.path);
+  
+          if let jsonData = try? JSONSerialization.data(withJSONObject: folderInfo),let jsonString = String(data: jsonData, encoding: .utf8)
+          {
+            let escaped = jsonString
+              .replacingOccurrences(of: "\\", with: "\\\\")
+              .replacingOccurrences(of: "'", with: "\\'")
+              .replacingOccurrences(of: "\n", with: "\\n")
+              .replacingOccurrences(of: "\r", with: "\\r");
+  
+            let js = "files._movedFolderFound(JSON.parse('\(escaped)'));";
+            webView.evaluateJavaScript(js, completionHandler: nil);
+          }
+        } 
+        catch 
+        {
+          print("❌ FilesMessageManager Error: Could not verify moved folder at \(destinationPath): \(error)");
+        }
+      }
+    }
+    catch 
+    {
+      print("❌ FilesMessageManager Error: Failed to move folder from \(oldPath) to \(newParentPath): \(error)");
+      let js = "files._movedFolderNotFound(null);";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil) };
     }
   }
   

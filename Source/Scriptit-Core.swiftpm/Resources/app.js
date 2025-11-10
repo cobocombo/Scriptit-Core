@@ -17,7 +17,25 @@ class HomePage extends ui.Page
     //   });
     // });
     
-    // files.renameFolder({ root: files.roots.documents, subpath: 'Videos/', folderName: 'Pictures' }).then(folder => 
+    // files.createFolder({ subpath: '', folderName: 'Apps' }).then(folder => 
+    // {      
+    //   console.log(folder.name);
+    // });
+    
+    // files.getFolder({ subpath: 'Apps/' }).then(folder => 
+    // {      
+    //   for(let sub of folder.subfolders)
+    //   {
+    //     console.log(sub.name);
+    //   }
+    // });
+    
+    // files.moveFolder({ oldSubpath: 'Scriptit/', newSubpath: 'Apps/' }).then(folder => 
+    // {      
+    //   console.log(folder);
+    // });
+    
+    // files.renameFolder({ oldSubpath: 'Videos/', folderName: 'Pictures' }).then(folder => 
     // {
     //   console.log(folder);
     // })

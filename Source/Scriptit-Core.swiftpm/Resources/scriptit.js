@@ -523,13 +523,16 @@ class FilesManager
   #deleteFolderPendingReject = null;
   #getFolderPendingResolve = null;
   #getFolderPendingReject = null;
+  #moveFolderPendingResolve = null;
+  #moveFolderPendingReject = null;
   #renameFolderPendingResolve = null;
   #renameFolderPendingReject = null;
   
-  #createCheckPath = null;
-  #deleteCheckPath = null;
-  #getCheckPath = null;
-  #renameCheckPath = null;
+  #createFolderCheckPath = null;
+  #deleteFolderCheckPath = null;
+  #getFolderCheckPath = null;
+  #moveFolderCheckPath = null;
+  #renameFolderCheckPath = null;
  
   /** Creates the font object. **/
   constructor() 
@@ -541,6 +544,7 @@ class FilesManager
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
       folderCouldNotBeCreatedError: (path) => `Files Manager Error: Folder could not be created at the path: '${path}'`,
       folderCouldNotBeDeletedError: (path) => `Files Manager Error: Folder could not be deleted at the path: '${path}'`,
+      folderCouldNotBeMovedError: (path) => `Files Manager Error: Folder could not be moved at the path: '${path}'`,
       folderCouldNotBeRenamedError: (path) => `Files Manager Error: Folder could not be renamed at the path: '${path}'`,
       folderNameEmpty: 'Files Manager Error: Folder name empty.',
       folderNameTypeError: 'Files Manager Error: Expected type string for folderName.',
@@ -621,7 +625,7 @@ class FilesManager
     
     if(this.isValidSubPath({ subpath: subpath }))
     {
-      this.#createCheckPath = subpath;
+      this.#createFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#createFolderPendingResolve = resolve;
@@ -658,7 +662,7 @@ class FilesManager
       
     if(this.isValidSubPath({ subpath: subpath }))
     {
-      this.#deleteCheckPath = subpath;
+      this.#deleteFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#deleteFolderPendingResolve = resolve;
@@ -695,7 +699,7 @@ class FilesManager
       
     if(this.isValidSubPath({ subpath: subpath }))
     {
-      this.#getCheckPath = subpath;
+      this.#getFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#getFolderPendingResolve = resolve;
@@ -765,6 +769,58 @@ class FilesManager
   }
   
   /** 
+   * Public method to move an existing folder at the specified path to another folder in the iOS filesystem. 
+   * @param {string} oldRoot - The root path filesystem type of the folder to moved.
+   * @param {string} newRoot - The root path filesystem type of the folder we intend to the move to.
+   * @param {string} oldSubpath - The subpath to be added to the oldRootPath.
+   * @param {string} newSubpath - The subpath to be added to the newRootPath.
+   * @return {Promise} - Returns a promise with moveFolderPendingResolve as the resolve and moveFolderPendingReject as the reject. If the call is successful the method _movedFolderFound gets called. If the call is unsuccessful and no folder is found, then the _movedFolderNotFound method gets called.
+   */
+  moveFolder({ oldRoot = this.roots.documents, newRoot = this.roots.documents, oldSubpath = '', newSubpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: oldRoot }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(oldRoot))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: newRoot }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(newRoot))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(this.isValidSubPath({ subpath: oldSubpath }) && this.isValidSubPath({ subpath: newSubpath }))
+    {
+      this.#moveFolderCheckPath = oldSubpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#moveFolderPendingResolve = resolve;
+        this.#moveFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'moveFolder', 
+          oldRoot: oldRoot,
+          newRoot: newRoot, 
+          oldSubpath: oldSubpath,
+          newSubpath: newSubpath
+        });
+      });
+    }
+  }
+  
+  /** 
    * Public method to rename an existing folder at the specified path and return that modified folder in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
@@ -799,7 +855,7 @@ class FilesManager
     
     if(this.isValidSubPath({ subpath: subpath }))
     {
-      this.#renameCheckPath = subpath;
+      this.#renameFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#renameFolderPendingResolve = resolve;
@@ -845,7 +901,7 @@ class FilesManager
       this.#createFolderPendingResolve(data);
       this.#createFolderPendingResolve = null;
       this.#createFolderPendingReject = null;
-      this.#createCheckPath = null;
+      this.#createFolderCheckPath = null;
     }
   }
   
@@ -857,11 +913,11 @@ class FilesManager
   {
     if(this.#createFolderPendingReject) 
     {
-      this.#createFolderPendingReject(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
+      this.#createFolderPendingReject(this.#errors.folderCouldNotBeCreatedError(this.#createFolderCheckPath));
       this.#createFolderPendingResolve = null;
       this.#createFolderPendingReject = null;
-      console.error(this.#errors.folderCouldNotBeCreatedError(this.#createCheckPath));
-      this.#createCheckPath = null;
+      console.error(this.#errors.folderCouldNotBeCreatedError(this.#createFolderCheckPath));
+      this.#createFolderCheckPath = null;
     }
   }
   
@@ -875,7 +931,7 @@ class FilesManager
       this.#deleteFolderPendingResolve();
       this.#deleteFolderPendingResolve = null;
       this.#deleteFolderPendingReject = null;
-      this.#deleteCheckPath = null;
+      this.#deleteFolderCheckPath = null;
     }
   }
   
@@ -887,10 +943,10 @@ class FilesManager
   {
     if(this.#deleteFolderPendingReject) 
     {
-      this.#deleteFolderPendingReject(this.#errors.folderCouldNotBeDeletedError(this.#deleteCheckPath));
+      this.#deleteFolderPendingReject(this.#errors.folderCouldNotBeDeletedError(this.#deleteFolderCheckPath));
       this.#deleteFolderPendingResolve = null;
       this.#deleteFolderPendingReject = null;
-      this.#deleteCheckPath = null;
+      this.#deleteFolderCheckPath = null;
     }
   }
   
@@ -925,7 +981,7 @@ class FilesManager
       this.#getFolderPendingResolve(data);
       this.#getFolderPendingResolve = null;
       this.#getFolderPendingReject = null;
-      this.#getCheckPath = null;
+      this.#getFolderCheckPath = null;
     }
   }
   
@@ -937,11 +993,61 @@ class FilesManager
   {
     if(this.#getFolderPendingReject) 
     {
-      this.#getFolderPendingReject(this.#errors.folderNotFoundError(this.#getCheckPath));
+      this.#getFolderPendingReject(this.#errors.folderNotFoundError(this.#getFolderCheckPath));
       this.#getFolderPendingResolve = null;
       this.#getFolderPendingReject = null;
-      console.error(this.#errors.folderNotFoundError(this.#getCheckPath));
-      this.#getCheckPath = null;
+      console.error(this.#errors.folderNotFoundError(this.#getFolderCheckPath));
+      this.#getFolderCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been moved and returned in the moveFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  _movedFolderFound(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#moveFolderPendingResolve) 
+    {
+      this.#moveFolderPendingResolve(data);
+      this.#moveFolderPendingResolve = null;
+      this.#moveFolderPendingReject = null;
+      this.#moveFolderCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder could not be moved in the moveFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be moved.
+   */
+  _movedFolderNotFound(error) 
+  {
+    if(this.#moveFolderPendingReject) 
+    {
+      this.#moveFolderPendingReject(this.#errors.folderCouldNotBeMovedError(this.#moveFolderCheckPath));
+      this.#moveFolderPendingResolve = null;
+      this.#moveFolderPendingReject = null;
+      this.#moveFolderCheckPath = null;
     }
   }
   
@@ -976,7 +1082,7 @@ class FilesManager
       this.#renameFolderPendingResolve(data);
       this.#renameFolderPendingResolve = null;
       this.#renameFolderPendingReject = null;
-      this.#renameCheckPath = null;
+      this.#renameFolderCheckPath = null;
     }
   }
   
@@ -988,10 +1094,10 @@ class FilesManager
   {
     if(this.#renameFolderPendingReject) 
     {
-      this.#renameFolderPendingReject(this.#errors.folderCouldNotBeRenamedError(this.#renameCheckPath));
+      this.#renameFolderPendingReject(this.#errors.folderCouldNotBeRenamedError(this.#renameFolderCheckPath));
       this.#renameFolderPendingResolve = null;
       this.#renameFolderPendingReject = null;
-      this.#renameCheckPath = null;
+      this.#renameFolderCheckPath = null;
     }
   }
 }
