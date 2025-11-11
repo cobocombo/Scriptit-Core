@@ -17,6 +17,17 @@ class HomePage extends ui.Page
     //   });
     // });
     
+    // files.deleteFile({ subpath: 'log.txt' }).then(() => 
+    // {      
+    //   files.getFolder({ subpath: '' }).then(folder => 
+    //   {      
+    //     for(let file of folder.files)
+    //     {
+    //       console.log(file.name);
+    //     }
+    //   });
+    // });
+    
     // files.createFolder({ subpath: '', folderName: 'Apps' }).then(folder => 
     // {      
     //   console.log(folder.name);
@@ -33,25 +44,39 @@ class HomePage extends ui.Page
     //   {
     //     console.log(sub.name);
     //   }
+    //   for(let file of folder.files)
+    //   {
+    //     console.log(file.name);
+    //   }
     // });
+    
+    files.writeToFile({ subpath: 'settings.txt', content: 'Replaced text', replace: true }).then(() => 
+    {      
+      console.log('File written to...');
+    });
     
     // files.getFile({ subpath: 'input.txt' }).then(file => 
     // {      
     //   console.log(file);
     // });
     
-    // files.moveFolder({ oldSubpath: 'Scriptit/', newSubpath: 'Apps/' }).then(folder => 
+    // files.moveFile({ oldSubpath: 'input.txt', newSubpath: 'Apps/' }).then(file => 
     // {      
-    //   console.log(folder);
+    //   console.log(file);
     // });
     
-    files.renameFolder({ subpath: 'Photos/', folderName: 'Videos' }).then(folder => 
-    {
-      console.log(folder);
-    })
+    // files.renameFolder({ subpath: 'Photos/', folderName: 'Videos' }).then(folder => 
+    // {
+    //   console.log(folder);
+    // })
     // .catch(error => {
     //   console.error(error);
     // });
+    
+    // files.renameFile({ subpath: 'user.trz.txt', fileName: 'log.txt' }).then(file => 
+    // {
+    //   console.log(file);
+    // })
   }
 }
 

@@ -522,27 +522,36 @@ class FilesManager
   #createFilePendingReject = null;
   #createFolderPendingResolve = null;
   #createFolderPendingReject = null;
+  #deleteFilePendingResolve = null;
+  #deleteFilePendingReject = null;
   #deleteFolderPendingResolve = null;
   #deleteFolderPendingReject = null;
   #getFilePendingResolve = null;
   #getFilePendingReject = null;
   #getFolderPendingResolve = null;
   #getFolderPendingReject = null;
+  #moveFilePendingResolve = null;
+  #moveFilePendingReject = null;
   #moveFolderPendingResolve = null;
   #moveFolderPendingReject = null;
   #renameFilePendingResolve = null;
   #renameFilePendingReject = null;
   #renameFolderPendingResolve = null;
   #renameFolderPendingReject = null;
+  #writeToFilePendingResolve = null;
+  #writeToFilePendingReject = null;
   
   #createFileCheckPath = null;
   #createFolderCheckPath = null;
+  #deleteFileCheckPath = null;
   #deleteFolderCheckPath = null;
   #getFileCheckPath = null;
   #getFolderCheckPath = null;
+  #moveFileCheckPath = null;
   #moveFolderCheckPath = null;
   #renameFileCheckPath = null;
   #renameFolderCheckPath = null;
+  #writeToFileCheckPath = null;
  
   /** Creates the files object. **/
   constructor() 
@@ -550,9 +559,15 @@ class FilesManager
     this.#errors = 
     {
       absolutePathError: 'Files Manager Error: Absolute paths are not allowed.',
+      contentEmpty: 'Files Manager Error: Content empty.',
+      contentTypeError: 'Files Manager Error: Expected type string for content.',
       directoryTraversalError: 'Files Manager Error: Directory traversal is not allowed.',
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
       fileCouldNotBeCreatedError: (path) => `Files Manager Error: File could not be created at the path: '${path}'`,
+      fileCouldNotBeDeletedError: (path) => `Files Manager Error: File could not be deleted at the path: '${path}'`,
+      fileCouldNotBeMovedError: (path) => `Files Manager Error: File could not be moved at the path: '${path}'`,
+      fileCouldNotBeRenamedError: (path) => `Files Manager Error: File could not be renamed at the path: '${path}'`,
+      fileCouldNotBeWrittenToError: (path) => `Files Manager Error: File could not be written to at the path: '${path}'`,
       fileNameEmpty: 'Files Manager Error: File name empty.',
       fileNameTypeError: 'Files Manager Error: Expected type string for fileName.',
       fileNotFoundError: (path) => `Files Manager Error: No file could be found at the path: '${path}'`,
@@ -565,6 +580,8 @@ class FilesManager
       folderNotFoundError: (path) => `Files Manager Error: No folder could be found at the path: '${path}'`,
       invalidCharsError: 'Files Manager Error: Invalid char detected. The following chars are not supported: [<>:"|?*]',
       invalidRootError: 'Files Manager Error: Invalid root detected. Valid values are in files.roots object.',
+      newlineTypeError: 'Files Manager Error: Expected type boolean for newline.',
+      replaceTypeError: 'Files Manager Error: Expected type boolean for replace.',
       rootTypeError: 'Files Manager Error: Expected type string for root.',
       singleInstanceError: 'Files Manager Error: Only one FilesManager object can exist at a time.',
       subpathTypeError: 'Files Manager Error: Expected type string for subpath',
@@ -721,6 +738,40 @@ class FilesManager
           root: root, 
           subpath: subpath, 
           folderName: folderName
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method to delete a file stored in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with deleteFilePendingResolve as the resolve and deleteFilePendingReject as the reject. If the call is successful the method _fileDeleted gets called. If the call is unsuccessful then _fileNotDeleted is called.
+   */
+  deleteFile({ root = this.roots.documents, subpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+      
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#deleteFileCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#deleteFilePendingResolve = resolve;
+        this.#deleteFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'deleteFile', root: root, subpath: subpath
         });
       });
     }
@@ -889,6 +940,58 @@ class FilesManager
   }
   
   /** 
+   * Public method to move an existing file at the specified path to another folder in the iOS filesystem. 
+   * @param {string} oldRoot - The root path filesystem type of the file to moved.
+   * @param {string} newRoot - The root path filesystem type of the folder we intend to the move to.
+   * @param {string} oldSubpath - The subpath to be added to the oldRootPath.
+   * @param {string} newSubpath - The subpath to be added to the newRootPath.
+   * @return {Promise} - Returns a promise with moveFilePendingResolve as the resolve and moveFilePendingReject as the reject. If the call is successful the method _movedFileFound gets called. If the call is unsuccessful and no folder is found, then the _movedFileNotFound method gets called.
+   */
+  moveFile({ oldRoot = this.roots.documents, newRoot = this.roots.documents, oldSubpath = '', newSubpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: oldRoot }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(oldRoot))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: newRoot }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(newRoot))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(this.isValidSubPath({ subpath: oldSubpath }) && this.isValidSubPath({ subpath: newSubpath }))
+    {
+      this.#moveFileCheckPath = oldSubpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#moveFilePendingResolve = resolve;
+        this.#moveFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'moveFile', 
+          oldRoot: oldRoot,
+          newRoot: newRoot, 
+          oldSubpath: oldSubpath,
+          newSubpath: newSubpath
+        });
+      });
+    }
+  }
+  
+  /** 
    * Public method to move an existing folder at the specified path to another folder in the iOS filesystem. 
    * @param {string} oldRoot - The root path filesystem type of the folder to moved.
    * @param {string} newRoot - The root path filesystem type of the folder we intend to the move to.
@@ -941,6 +1044,64 @@ class FilesManager
   }
   
   /** 
+   * Public method to rename an existing file at the specified path and return that modified file in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @param {string} folderName - The desired name of the file.
+   * @return {Promise} - Returns a promise with renameFilePendingResolve as the resolve and renameFilePendingReject as the reject. If the call is successful the method _renamedFileFound gets called. If the call is unsuccessful and no file is found, then the _renamedFileNotFound method gets called.
+   */
+  renameFile({ root = this.roots.documents, subpath = '', fileName = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: fileName })) 
+    {
+      console.error(this.#errors.fileNameTypeError);
+      return;
+    }
+    
+    if(validator.isStringEmpty({ string: fileName }))
+    {
+      console.error(this.#errors.fileNameEmpty);
+      return;
+    }
+    
+    let extensions = Object.values(this.#fileExtensions).map(ext => ext.slice(1)).join('|');
+    let regex = new RegExp(`\\.(${extensions})$`, 'i');
+    if(!regex.test(fileName)) 
+    {
+      fileName = fileName.replace(/\.+$/, '');
+      fileName += '.txt';
+    }
+    
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#renameFileCheckPath = subpath + fileName;
+      return new Promise((resolve, reject) => 
+      {
+        this.#renameFilePendingResolve = resolve;
+        this.#renameFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'renameFile', 
+          root: root, 
+          subpath: subpath, 
+          fileName: fileName
+        });
+      });
+    }
+  }
+  
+  /** 
    * Public method to rename an existing folder at the specified path and return that modified folder in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
@@ -985,6 +1146,72 @@ class FilesManager
           root: root, 
           subpath: subpath, 
           folderName: folderName
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method to write string content to a text based file in the iOS file system. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @param {string} content - The content to be written to the file.
+   * @param {boolean} replace - Boolean flag determining if the current content in the file should be cleared before writing the new content.
+   * @param {boolean} newline - TBoolean flag determining if the content should be written to a newline in the file.
+   * @return {Promise} - Returns a promise with writeToFilePendingResolve as the resolve and writeToFilePendingReject as the reject. If the call is successful the _fileWrittenTo method gets called. If the call is unsuccessful and the writing was not performed, then the _fileNotWrittenTo method gets called.
+   */
+  writeToFile({ root = this.roots.documents, subpath = '', content = '', replace = false, newline = true })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: content })) 
+    {
+      console.error(this.#errors.contentTypeError);
+      return;
+    }
+    
+    if(validator.isStringEmpty({ string: content }))
+    {
+      console.error(this.#errors.contentEmpty);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'boolean', value: replace }))
+    {
+      console.error(this.#errors.replaceTypeError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'boolean', value: newline }))
+    {
+      console.error(this.#errors.newlineTypeError);
+      return;
+    }
+    
+    if(this.isValidSubPath({ subpath: subpath }))
+    {
+      this.#writeToFileCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#writeToFilePendingResolve = resolve;
+        this.#writeToFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'writeToFile', 
+          root: root, 
+          subpath: subpath,
+          content: content, 
+          replace: replace,
+          newline: newline
         });
       });
     }
@@ -1071,6 +1298,35 @@ class FilesManager
       this.#createFolderPendingReject = null;
       console.error(this.#errors.folderCouldNotBeCreatedError(this.#createFolderCheckPath));
       this.#createFolderCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has been deleted successfully in the deleteFile method within the files module. 
+   */
+  _fileDeleted()
+  {
+    if(this.#deleteFilePendingResolve) 
+    {
+      this.#deleteFilePendingResolve();
+      this.#deleteFilePendingResolve = null;
+      this.#deleteFilePendingReject = null;
+      this.#deleteFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has not been deleted successfully in the deleteFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be deleted.
+   */
+  _fileNotDeleted(error)
+  {
+    if(this.#deleteFilePendingReject) 
+    {
+      this.#deleteFilePendingReject(this.#errors.fileCouldNotBeDeletedError(this.#deleteFileCheckPath));
+      this.#deleteFilePendingResolve = null;
+      this.#deleteFilePendingReject = null;
+      this.#deleteFileCheckPath = null;
     }
   }
   
@@ -1188,6 +1444,68 @@ class FilesManager
   }
   
   /** 
+   * Public method that gets called from swift when a file has been successfully written to in the writeToFile method within the files module. 
+   */
+  _fileWrittenTo()
+  {
+    if(this.#writeToFilePendingResolve) 
+    {
+      this.#writeToFilePendingResolve();
+      this.#writeToFilePendingResolve = null;
+      this.#writeToFilePendingReject = null;
+      this.#writeToFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has not been successfully written to in the writeToFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be written to.
+   */
+  _fileNotWrittenTo(error)
+  {
+    if(this.#writeToFilePendingReject) 
+    {
+      this.#writeToFilePendingReject(this.#errors.fileCouldNotBeWrittenToError(this.#writeToFileCheckPath));
+      this.#writeToFilePendingResolve = null;
+      this.#writeToFilePendingReject = null;
+      this.#writeToFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has been moved and returned in the moveFile method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _movedFileFound(data)
+  {
+    data.type = this.#locationTypes.file;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(this.#moveFilePendingResolve) 
+    {
+      this.#moveFilePendingResolve(data);
+      this.#moveFilePendingResolve = null;
+      this.#moveFilePendingReject = null;
+      this.#moveFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file could not be moved in the moveFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be moved.
+   */
+  _movedFileNotFound(error) 
+  {
+    if(this.#moveFilePendingReject) 
+    {
+      this.#moveFilePendingReject(this.#errors.fileCouldNotBeMovedError(this.#moveFileCheckPath));
+      this.#moveFilePendingResolve = null;
+      this.#moveFilePendingReject = null;
+      this.#moveFileCheckPath = null;
+    }
+  }
+  
+  /** 
    * Public method that gets called from swift when a folder has been moved and returned in the moveFolder method within the files module. 
    * @param {object} data - Object returned that conforms to the Folder data type.
    */
@@ -1234,6 +1552,39 @@ class FilesManager
       this.#moveFolderPendingResolve = null;
       this.#moveFolderPendingReject = null;
       this.#moveFolderCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has been renamed and returned in the renameFile method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _renamedFileFound(data)
+  {
+    data.type = this.#locationTypes.file;
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    if(this.#renameFilePendingResolve) 
+    {
+      this.#renameFilePendingResolve(data);
+      this.#renameFilePendingResolve = null;
+      this.#renameFilePendingReject = null;
+      this.#renameFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file could not be renamed in the renameFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be created.
+   */
+  _renamedFileNotFound(error) 
+  {
+    if(this.#renameFilePendingReject) 
+    {
+      this.#renameFilePendingReject(this.#errors.fileCouldNotBeRenamedError(this.#renameFileCheckPath));
+      this.#renameFilePendingResolve = null;
+      this.#renameFilePendingReject = null;
+      this.#renameFileCheckPath = null;
     }
   }
   

@@ -191,17 +191,26 @@ class FilesMessageManager: JavascriptMessageManager
       case "createFolder":
         let folderName = dict!["folderName"] as? String;
         self.createFolder(dict: dict!, webView: webView, folderName: folderName!);
+      case "deleteFile":
+        self.deleteFile(dict: dict!, webView: webView);
       case "deleteFolder":
         self.deleteFolder(dict: dict!, webView: webView);
       case "getFile":
         self.getFile(dict: dict!, webView: webView);
       case "getFolder":
         self.getFolder(dict: dict!, webView: webView);
+      case "moveFile":
+        self.moveFile(dict: dict!, webView: webView);
       case "moveFolder":
         self.moveFolder(dict: dict!, webView: webView);
+      case "renameFile":
+        let fileName = dict!["fileName"] as? String;
+        self.renameFile(dict: dict!, webView: webView, fileName: fileName!);
       case "renameFolder":
         let folderName = dict!["folderName"] as? String;
         self.renameFolder(dict: dict!, webView: webView, folderName: folderName!);
+      case "writeToFile":
+        self.writeToFile(dict: dict!, webView: webView);
       default:
         print("FilesMessageManager Error: Unknown command '\(command!)'");
     }
@@ -309,6 +318,39 @@ class FilesMessageManager: JavascriptMessageManager
       DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
     }
   }
+  
+  func deleteFile(dict: [String: Any], webView: WKWebView)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root
+    {
+      case "Documents": base = Folder.documents
+      case "Library": base = Folder.library
+      case "tmp": base = Folder.temporary
+      default: base = nil
+    }
+    
+    let validBase = base; 
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do
+    {
+      let targetFile = try File(path: targetPath);
+      try targetFile.delete();
+      let js = "files._fileDeleted();";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); };
+    }
+    catch
+    {
+      print("❌ FilesMessageManager Error: Failed to delete file at \(targetPath): \(error)");
+      let js = "files._fileNotDeleted(null);";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+
   
   func deleteFolder(dict: [String: Any], webView: WKWebView)
   {
@@ -428,6 +470,77 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  func moveFile(dict: [String: Any], webView: WKWebView)
+  {
+    let oldRoot = dict["oldRoot"] as? String;
+    let newRoot = dict["newRoot"] as? String;
+    let oldSubpath = dict["oldSubpath"] as? String;
+    let newSubpath = dict["newSubpath"] as? String;
+    
+    func baseFolder(for root: String) -> Folder?
+    {
+      switch root {
+        case "Documents": return Folder.documents
+        case "Library":   return Folder.library
+        case "tmp":       return Folder.temporary
+        default:          return nil
+      }
+    }
+    
+    let oldBase = baseFolder(for: oldRoot!);
+    let newBase = baseFolder(for: newRoot!);
+    let oldPath = oldSubpath!.isEmpty ? oldBase!.path : oldBase!.path + oldSubpath!;
+    let newParentPath = newSubpath!.isEmpty ? newBase!.path : newBase!.path + newSubpath!;
+    
+    do
+    {
+      let sourceFile = try File(path: oldPath);
+      let destinationParent = try Folder(path: newParentPath);
+      
+      var uniqueName = sourceFile.name;
+      let fileExtension = sourceFile.extension ?? "";
+      let baseName = fileExtension.isEmpty ? uniqueName : String(uniqueName.dropLast(fileExtension.count + 1));
+      var counter = 1;
+      
+      while destinationParent.containsFile(named: uniqueName)
+      {
+        uniqueName = fileExtension.isEmpty ? "\(baseName)(\(counter))" : "\(baseName)(\(counter)).\(fileExtension)";
+        counter += 1;
+      }
+      
+      let destinationPath = destinationParent.path + uniqueName;
+      try FileManager.default.moveItem(atPath: sourceFile.path, toPath: destinationPath);
+      
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)
+      {
+        do
+        {
+          let movedFile = try File(path: destinationPath);
+          let fileInfo = self.serializeFile(movedFile, relativeTo: newBase!.path);
+          let jsonData = try? JSONSerialization.data(withJSONObject: fileInfo);
+          let jsonString = String(data: jsonData!, encoding: .utf8);
+          let escaped = jsonString!
+              .replacingOccurrences(of: "\\", with: "\\\\")
+              .replacingOccurrences(of: "'", with: "\\'")
+              .replacingOccurrences(of: "\n", with: "\\n")
+              .replacingOccurrences(of: "\r", with: "\\r");
+          let js = "files._movedFileFound(JSON.parse('\(escaped)'));";
+          webView.evaluateJavaScript(js, completionHandler: nil);
+        }
+        catch
+        {
+          print("❌ FilesMessageManager Error: Could not verify moved file at \(destinationPath): \(error)");
+        }
+      }
+    }
+    catch
+    {
+      print("❌ FilesMessageManager Error: Failed to move file from \(oldPath) to \(newParentPath): \(error)")
+      let js = "files._movedFileNotFound(null);"
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil) }
+    }
+  }
+
   func moveFolder(dict: [String: Any], webView: WKWebView)
   {
     let oldRoot = dict["oldRoot"] as? String;
@@ -499,6 +612,72 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  func renameFile(dict: [String: Any], webView: WKWebView, fileName: String)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root 
+    {
+      case "Documents": base = Folder.documents
+      case "Library": base = Folder.library
+      case "tmp": base = Folder.temporary
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do 
+    {
+      let targetFile = try File(path: targetPath);
+      let parentFolder = targetFile.parent;
+      
+      var uniqueName = fileName;
+      var counter = 1;
+      while parentFolder!.containsFile(named: uniqueName)
+      {
+        uniqueName = "\(fileName)(\(counter))";
+        counter += 1;
+      }
+      
+      let oldPath = targetFile.path;
+      let newPath = parentFolder!.path + uniqueName;
+      try FileManager.default.moveItem(atPath: oldPath, toPath: newPath);
+      
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)
+      {
+        do
+        {
+          let renamedFile = try File(path: newPath);
+          let fileInfo = self.serializeFile(renamedFile, relativeTo: validBase!.path);
+          let jsonData = try? JSONSerialization.data(withJSONObject: fileInfo);
+          let jsonString = String(data: jsonData!, encoding: .utf8);
+    
+          let escaped = jsonString!
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r");
+          
+          let js = "files._renamedFileFound(JSON.parse('\(escaped)'));";
+          DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+        }
+        catch
+        {
+          print("❌ FilesMessageManager Error: Could not verify renamed file at \(error)");
+        }
+      }
+    }
+    catch
+    {
+      print("❌ FilesMessageManager Error: Failed to rename file at \(targetPath): \(error)");
+      let js = "files._renamedFileNotFound(null);";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+
   func renameFolder(dict: [String: Any], webView: WKWebView, folderName: String)
   {
     let root = dict["root"] as? String;
@@ -707,19 +886,55 @@ class FilesMessageManager: JavascriptMessageManager
     return folderInfo
   }
   
-  func createTestFiles() 
+  func writeToFile(dict: [String: Any], webView: WKWebView)
   {
-    do 
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let content = dict["content"] as? String;
+    let replace = dict["replace"] as? Bool ?? false;
+    let newline = dict["newline"] as? Bool ?? true;
+    let base: Folder?;
+    
+    switch root 
     {
-      let docs = Folder.documents;
-      let inputFile = try docs!.createFileIfNeeded(withName: "input.txt");
-      let outputFile = try docs!.createFileIfNeeded(withName: "output.txt");
-      try inputFile.write("This is a test input file created by FilesMessageManager.");
-      try outputFile.write("This is a test output file created by FilesMessageManager.");
-    } 
-    catch 
+      case "Documents": base = Folder.documents
+      case "Library": base = Folder.library
+      case "tmp": base = Folder.temporary
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do
     {
-      print("❌ FilesMessageManager Error: Failed to create test files: \(error)")
+      let filePathURL = URL(fileURLWithPath: targetPath);
+      let parentFolderPath = filePathURL.deletingLastPathComponent().path;
+      let fileName = filePathURL.lastPathComponent;
+      let parentFolder = try Folder(path: parentFolderPath);  
+      let file: File;
+      if parentFolder.containsFile(named: fileName) { file = try parentFolder.file(named: fileName)} 
+      else { file = try parentFolder.createFile(named: fileName); }
+  
+      var finalContent = "";
+      if replace { finalContent = content ?? ""; } 
+      else 
+      {
+        var existingContent = try file.readAsString()
+        if newline && !existingContent.isEmpty { existingContent.append("\n"); }
+        existingContent.append(content ?? "");
+        finalContent = existingContent;
+      }
+      
+      try file.write(finalContent);
+      let js = "files._fileWrittenTo();"
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+    catch
+    {
+      print("❌ FilesMessageManager Error: Failed to write to file at \(targetPath): \(error)");
+      let js = "files._fileNotWrittenTo(null);";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
     }
   }
 }
