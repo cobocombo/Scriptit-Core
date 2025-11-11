@@ -534,6 +534,8 @@ class FilesManager
   #moveFilePendingReject = null;
   #moveFolderPendingResolve = null;
   #moveFolderPendingReject = null;
+  #readFilePendingResolve = null;
+  #readFilePendingReject = null;
   #renameFilePendingResolve = null;
   #renameFilePendingReject = null;
   #renameFolderPendingResolve = null;
@@ -549,6 +551,7 @@ class FilesManager
   #getFolderCheckPath = null;
   #moveFileCheckPath = null;
   #moveFolderCheckPath = null;
+  #readFileCheckPath = null;
   #renameFileCheckPath = null;
   #renameFolderCheckPath = null;
   #writeToFileCheckPath = null;
@@ -566,6 +569,7 @@ class FilesManager
       fileCouldNotBeCreatedError: (path) => `Files Manager Error: File could not be created at the path: '${path}'`,
       fileCouldNotBeDeletedError: (path) => `Files Manager Error: File could not be deleted at the path: '${path}'`,
       fileCouldNotBeMovedError: (path) => `Files Manager Error: File could not be moved at the path: '${path}'`,
+      fileCouldNotBeReadError: (path) => `Files Manager Error: File could not be read at the path: '${path}'`,
       fileCouldNotBeRenamedError: (path) => `Files Manager Error: File could not be renamed at the path: '${path}'`,
       fileCouldNotBeWrittenToError: (path) => `Files Manager Error: File could not be written to at the path: '${path}'`,
       fileNameEmpty: 'Files Manager Error: File name empty.',
@@ -627,6 +631,15 @@ class FilesManager
   }
   
   /** 
+   * Get property to return the files fileExtensions object.
+   * @return {object} The supported fileExtensions of the files module.
+   */
+  get fileExtensions()
+  {
+    return this.#fileExtensions;
+  }
+  
+  /** 
    * Get property to return the files roots object.
    * @return {object} The supported root paths of the iOS filesystem.
    */
@@ -676,7 +689,7 @@ class FilesManager
       fileName += '.txt';
     }
     
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#createFileCheckPath = subpath + fileName;
       return new Promise((resolve, reject) => 
@@ -726,7 +739,7 @@ class FilesManager
       return;
     }
     
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#createFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -763,7 +776,7 @@ class FilesManager
       return;
     }
       
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#deleteFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -797,7 +810,7 @@ class FilesManager
       return;
     }
       
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#deleteFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -831,7 +844,7 @@ class FilesManager
       return;
     }
       
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#getFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -868,7 +881,7 @@ class FilesManager
       return;
     }
       
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#getFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -894,7 +907,7 @@ class FilesManager
    * @param {string} subpath - The name of the font to reference that should be registered in the map.
    * @return {boolean} - Returns if the sub path is valid or not based on the checks.
    */
-  isValidSubPath({ subpath }) 
+  isValidSubpath({ subpath }) 
   {
     if(!typechecker.check({ type: 'string', value: subpath }))
     {
@@ -973,7 +986,7 @@ class FilesManager
       return;
     }
     
-    if(this.isValidSubPath({ subpath: oldSubpath }) && this.isValidSubPath({ subpath: newSubpath }))
+    if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
       this.#moveFileCheckPath = oldSubpath;
       return new Promise((resolve, reject) => 
@@ -1025,7 +1038,7 @@ class FilesManager
       return;
     }
     
-    if(this.isValidSubPath({ subpath: oldSubpath }) && this.isValidSubPath({ subpath: newSubpath }))
+    if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
       this.#moveFolderCheckPath = oldSubpath;
       return new Promise((resolve, reject) => 
@@ -1038,6 +1051,40 @@ class FilesManager
           newRoot: newRoot, 
           oldSubpath: oldSubpath,
           newSubpath: newSubpath
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method to get and return content stored in a file in the iOS filesystem. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with readFilePendingResolve as the resolve and readFilePendingReject as the reject. If the call is successful the method _fileRead gets called. If the call is unsuccessful and no file is found, then the _fileNotRead method gets called.
+   */
+  readFile({ root = this.roots.documents, subpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+      
+    if(this.isValidSubpath({ subpath: subpath }))
+    {
+      this.#readFileCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#readFilePendingResolve = resolve;
+        this.#readFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'readFile', root: root, subpath: subpath
         });
       });
     }
@@ -1084,7 +1131,7 @@ class FilesManager
       fileName += '.txt';
     }
     
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#renameFileCheckPath = subpath + fileName;
       return new Promise((resolve, reject) => 
@@ -1134,7 +1181,7 @@ class FilesManager
       return;
     }
     
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#renameFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -1198,7 +1245,7 @@ class FilesManager
       return;
     }
     
-    if(this.isValidSubPath({ subpath: subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       this.#writeToFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
@@ -1440,6 +1487,36 @@ class FilesManager
       this.#getFolderPendingReject = null;
       console.error(this.#errors.folderNotFoundError(this.#getFolderCheckPath));
       this.#getFolderCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has been read in the readFile method within the files module. 
+   * @param {object} data - The contents of the file as a string.
+   */
+  _fileRead(data)
+  {  
+    if(this.#readFilePendingResolve) 
+    {
+      this.#readFilePendingResolve(data);
+      this.#readFilePendingResolve = null;
+      this.#readFilePendingReject = null;
+      this.#readFileCheckPath = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file could not been read successfully in the readFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be read.
+   */
+  _fileNotRead(error) 
+  {
+    if(this.#readFilePendingReject) 
+    {
+      this.#readFilePendingReject(this.#errors.fileCouldNotBeReadError(this.#readFileCheckPath));
+      this.#readFilePendingResolve = null;
+      this.#readFilePendingReject = null;
+      this.#readFileCheckPath = null;
     }
   }
   

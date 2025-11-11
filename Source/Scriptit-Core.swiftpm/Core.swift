@@ -203,6 +203,8 @@ class FilesMessageManager: JavascriptMessageManager
         self.moveFile(dict: dict!, webView: webView);
       case "moveFolder":
         self.moveFolder(dict: dict!, webView: webView);
+      case "readFile":
+        self.readFile(dict: dict!, webView: webView);
       case "renameFile":
         let fileName = dict!["fileName"] as? String;
         self.renameFile(dict: dict!, webView: webView, fileName: fileName!);
@@ -612,6 +614,46 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  func readFile(dict: [String: Any], webView: WKWebView)
+  {
+    let root = dict["root"] as? String;
+    let subpath = dict["subpath"] as? String;
+    let base: Folder?;
+    
+    switch root
+    {
+      case "Documents": base = Folder.documents
+      case "Library": base = Folder.library
+      case "tmp": base = Folder.temporary
+      default: base = nil
+    }
+    
+    let validBase = base;
+    let targetPath = subpath!.isEmpty ? validBase!.path : validBase!.path + subpath!;
+    
+    do
+    {
+      let file = try File(path: targetPath);
+      let content = try file.readAsString();
+      
+      let escapedContent = content
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "'", with: "\\'")
+        .replacingOccurrences(of: "\n", with: "\\n")
+        .replacingOccurrences(of: "\r", with: "\\r");
+      
+      let js = "files._fileRead('\(escapedContent)');";
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+    catch
+    {
+      print("❌ FilesMessageManager Error: Failed to read file at \(targetPath): \(error)");
+      let js = "files._fileNotRead(null);"
+      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    }
+  }
+
+  
   func renameFile(dict: [String: Any], webView: WKWebView, fileName: String)
   {
     let root = dict["root"] as? String;
@@ -912,9 +954,7 @@ class FilesMessageManager: JavascriptMessageManager
       let parentFolderPath = filePathURL.deletingLastPathComponent().path;
       let fileName = filePathURL.lastPathComponent;
       let parentFolder = try Folder(path: parentFolderPath);  
-      let file: File;
-      if parentFolder.containsFile(named: fileName) { file = try parentFolder.file(named: fileName)} 
-      else { file = try parentFolder.createFile(named: fileName); }
+      let file = try parentFolder.file(named: fileName); 
   
       var finalContent = "";
       if replace { finalContent = content ?? ""; } 

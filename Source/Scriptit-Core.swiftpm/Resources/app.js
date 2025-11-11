@@ -6,6 +6,11 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.navigationBarFont = font.library.menlo;
     
+    // Built in file roots:
+    files.roots.documents // 
+    files.roots.library
+    files.roots.temporary
+    
     // files.deleteFolder({ root: files.roots.documents, subpath: 'Music/' }).then(() => 
     // {      
     //   files.getFolder({ root: files.roots.documents, subpath: '' }).then(folder => 
@@ -50,10 +55,23 @@ class HomePage extends ui.Page
     //   }
     // });
     
-    files.writeToFile({ subpath: 'settings.txt', content: 'Replaced text', replace: true }).then(() => 
-    {      
-      console.log('File written to...');
-    });
+    // files.writeToFile({ subpath: 'settings.txt', content: 'New line...', replace: false }).then(() => 
+    // {      
+    //   files.readFile({ subpath: 'settings.txt' }).then(content => 
+    //   {      
+    //     console.log(content);
+    //   });
+    // });
+    
+    //files.writeToFile({ subpath: 'settings.txt', content: 'Another new line...', replace: false });
+    
+    // setTimeout(() => 
+    // {
+    //   files.readFile({ subpath: 'settings.txt' }).then(content => 
+    //   {      
+    //     console.log(content);
+    //   });
+    // }, 2000)
     
     // files.getFile({ subpath: 'input.txt' }).then(file => 
     // {      
