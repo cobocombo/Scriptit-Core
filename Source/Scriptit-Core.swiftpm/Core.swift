@@ -26,6 +26,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
     self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
     self.router.registerHandler(FilesMessageManager(), forMessageName: "filesMessageManager");
+    self.router.registerHandler(HudMessageManager(), forMessageName: "hudMessageManager");
     
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
@@ -36,6 +37,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     userContentController.add(self, name: "browserMessageManager");
     userContentController.add(self, name: "deviceMessageManager");
     userContentController.add(self, name: "filesMessageManager");
+    userContentController.add(self, name: "hudMessageManager");
     
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;
@@ -976,6 +978,16 @@ class FilesMessageManager: JavascriptMessageManager
       let js = "files._fileNotWrittenTo(null);";
       DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
     }
+  }
+}
+
+//=============================================//
+
+class HudMessageManager: JavascriptMessageManager
+{
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+  {
+    if let messageBody = message.body as? String { print(messageBody); }
   }
 }
 

@@ -1717,6 +1717,35 @@ class FilesManager
 }
 
 ///////////////////////////////////////////////////////////
+// HUD MODULE
+///////////////////////////////////////////////////////////
+
+/** Singleton class representing the main hud object. */
+class HudManager
+{
+  #errors;
+  static #instance = null;
+
+  /** Creates the hud object. **/
+  constructor() 
+  {
+    this.#errors = 
+    {
+      singleInstanceError: 'Hud Manager Error: Only one HudManager object can exist at a time.',
+    };
+
+    if(HudManager.#instance) console.error(this.#errors.singleInstanceError);
+    else HudManager.#instance = this;
+  }
+
+  /** Static method to return a new HudManager instance. Allows for Singleton+Module pattern. */
+  static getInstance() 
+  {
+    return new HudManager();
+  }  
+}
+
+///////////////////////////////////////////////////////////
 // UI MODULE
 ///////////////////////////////////////////////////////////
 
@@ -8807,6 +8836,7 @@ globalThis.color = ColorManager.getInstance();
 globalThis.app = App.getInstance();
 globalThis.font = FontManager.getInstance();
 globalThis.files = FilesManager.getInstance();
+globalThis.hud = HudManager.getInstance();
 globalThis.ui = UserInterface.getInstance();
 globalThis.browser = BrowserManager.getInstance();
 globalThis.device = DeviceManager.getInstance();
