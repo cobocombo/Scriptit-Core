@@ -7,6 +7,7 @@ import UIKit
 import WebKit
 import SafariServices
 import Files
+import ProgressHUD
 
 //=======================================================//
 // MAIN CORE CONTROLLER
@@ -655,7 +656,6 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
-  
   func renameFile(dict: [String: Any], webView: WKWebView, fileName: String)
   {
     let root = dict["root"] as? String;
@@ -983,12 +983,36 @@ class FilesMessageManager: JavascriptMessageManager
 
 //=============================================//
 
-class HudMessageManager: JavascriptMessageManager
-{
-  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+class HudMessageManager: JavascriptMessageManager {
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView) 
   {
-    if let messageBody = message.body as? String { print(messageBody); }
+    let dict = message.body as? [String: Any];
+    let command = dict!["command"] as? String;
+    let hudMessage = dict!["message"] as? String;
+    let delay = dict!["timeout"] as? Double;
+
+    switch command 
+    {
+      case "added":
+        if let msg = hudMessage { delay! > 0 ? ProgressHUD.added(msg, delay: delay) : ProgressHUD.added(msg) } 
+        else { delay! > 0 ? ProgressHUD.added(delay: delay) : ProgressHUD.added() }
+      case "failed":
+        if let msg = hudMessage { delay! > 0 ? ProgressHUD.failed(msg, delay: delay) : ProgressHUD.failed(msg) } 
+        else { delay! > 0 ? ProgressHUD.failed(delay: delay) : ProgressHUD.failed() }
+      case "loading":
+        if let msg = hudMessage { ProgressHUD.animate(msg) } 
+        else { ProgressHUD.animate() }
+      case "succeed":
+        if let msg = hudMessage { delay! > 0 ? ProgressHUD.succeed(msg, delay: delay) : ProgressHUD.succeed(msg)} 
+        else { delay! > 0 ? ProgressHUD.succeed(delay: delay) : ProgressHUD.succeed() }
+      case "dismiss":
+        ProgressHUD.dismiss()
+      default:
+        print("❌ HudMessageManager Error: Unknown command");
+        return;
+    }
   }
 }
+
 
 //=======================================================//
