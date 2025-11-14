@@ -6,7 +6,11 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.navigationBarFont = font.library.menlo;
     
-    setTimeout(() => { hud.loading({ message: 'Please wait...' }); }, 1000);
+    let divider = new ui.Divider({ height: '1px' });
+    divider.style.marginLeft = '10px';
+    divider.style.marginRight = '10px';
+    
+    this.addComponents({ components: [ divider ] });
   }
 }
 
