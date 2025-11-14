@@ -4003,6 +4003,7 @@ class Divider extends Component
     this.style.border = 'none';
     this.style.margin = '0';
     this.color = options.color || '#999';
+    this.height = '2px';
   }
 
   /** 

@@ -6,9 +6,11 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.navigationBarFont = font.library.menlo;
     
-    let divider = new ui.Divider({ height: '1px' });
-    divider.style.marginLeft = '10px';
-    divider.style.marginRight = '10px';
+    let divider = new ui.Divider();
+    divider.color = 'red';
+    divider.height = '3px';
+    divider.marginLeft = '20px';
+    divider.marginRight = '20px';
     
     this.addComponents({ components: [ divider ] });
   }
