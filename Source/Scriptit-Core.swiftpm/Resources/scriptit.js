@@ -172,7 +172,7 @@ class TypeChecker
   {
     return new TypeChecker();
   }
-
+  
   /** 
    * Public method to check if a value is a specific type. This could be a base type or a previously registered type.
    * @param {string} type - The type the value should be compared with.
@@ -197,14 +197,13 @@ class TypeChecker
   }
   
   /** 
-   * Public method to register a new custom type. 
-   * @param {array} name - The name to reference the type with.
-   * @param {Multiple} constructor - The class constructor to reference when doing the comparisons.
-   */
+  * Public method to register a new custom type. 
+  * @param {array} name - The name to reference the type with. 
+  * @param {Multiple} constructor - The class constructor to reference when doing the comparisons. */ 
   register({ name, constructor }) 
-  {
+  { 
     if(typeof name !== "string" || !(constructor instanceof Function)) console.error(this.#errors.registrationOfNewTypeError);
-    this.#types[name] = (x) => x instanceof constructor;
+    this.#types[name] = (x) => x instanceof constructor; 
   }
 }
 
@@ -1856,13 +1855,253 @@ class UserInterface
     {
       UserInterface.#instance = this;
       this.#registry = new Map();
-    }
+    }  
   }
 
   /** Static method to return a new UserInterface instance. Allows for Singleton+Module pattern. */
   static getInstance() 
   {
     return new UserInterface();
+  }
+    
+  /** Get property to return a new instance of ActionSheet. */
+  get ActionSheet() 
+  {
+    return _ActionSheet_;
+  }
+  
+  /** Get property to return a new instance of ActionSheetButton. */
+  get ActionSheetButton() 
+  {
+    return _ActionSheetButton_;
+  }
+  
+  /** Get property to return a new instance of AlertDialog. */
+  get AlertDialog() 
+  {
+    return _AlertDialog_;
+  }
+  
+  /** Get property to return a new instance of AlertDialogButton. */
+  get AlertDialogButton() 
+  {
+    return _AlertDialogButton_;
+  }
+  
+  /** Get property to return a new instance of BackBarButton. */
+  get BackBarButton() 
+  {
+    return_BackBarButton_;
+  }
+  
+  /** Get property to return a new instance of BarButton. */
+  get BarButton() 
+  {
+    return _BarButton_;
+  }
+  
+  /** Get property to return a new instance of Button. */
+  get Button() 
+  {
+    return _Button_;
+  }
+  
+  /** Get property to return a new instance of Card. */
+  get Card() 
+  {
+    return _Card_;
+  }
+  
+  /** Get property to return a new instance of CircularProgress. */
+  get CircularProgress() 
+  {
+    return _CircularProgress_;
+  }
+  
+  /** Get property to return a new instance of ColorPicker. */
+  get ColorPicker() 
+  {
+    return _ColorPicker_;
+  }
+  
+  /** Get property to return a new instance of Column. */
+  get Column() 
+  {
+    return _Column_;
+  }
+  
+  /** Get property to return a new instance of Dialog. */
+  get Dialog() 
+  {
+    return _Dialog_;
+  }
+  
+  /** Get property to return a new instance of Divider. */
+  get Divider() 
+  {
+    return _Divider_;
+  }
+  
+  /** Get property to return a new instance of FabButton. */
+  get FabButton() 
+  {
+    return _FabButton_;
+  }
+  
+  /** Get property to return a new instance of Icon. */
+  get Icon() 
+  {
+    return _Icon_;
+  }
+  
+  /** Get property to return a new instance of Img. */
+  get Img() 
+  {
+    return _Img_;
+  }
+  
+  /** Get property to return a new instance of List. */
+  get List() 
+  {
+    return _List_;
+  }
+  
+  /** Get property to return a new instance of ListHeader. */
+  get ListHeader() 
+  {
+    return _ListHeader_;
+  }
+  
+  /** Get property to return a new instance of ListItem. */
+  get ListItem() 
+  {
+    return _ListItem_;
+  }
+  
+  /** Get property to return a new instance of ListTitle. */
+  get ListTitle() 
+  {
+    return _ListTitle_;
+  }
+  
+  /** Get property to return a new instance of Modal. */
+  get Modal() 
+  {
+    return _Modal_;
+  }
+  
+  /** Get property to return a new instance of Navigator. */
+  get Navigator() 
+  {
+    return _Navigator_;
+  }
+  
+  /** Get property to return a new instance of Page. */
+  get Page() 
+  {
+    return _Page_;
+  }
+  
+  /** Get property to return a new instance of PhaserGame. */
+  get PhaserGame() 
+  {
+    return _PhaserGame_;
+  }
+  
+  /** Get property to return a new instance of Popover. */
+  get Popover() 
+  {
+    return _Popover_;
+  }
+  
+  /** Get property to return a new instance of ProgressBar. */
+  get ProgressBar() 
+  {
+    return _ProgressBar_;
+  }
+  
+  /** Get property to return a new instance of Row. */
+  get Row() 
+  {
+    return _Row_;
+  }
+  
+  /** Get property to return a new instance of Searchbar. */
+  get Searchbar() 
+  {
+    return _Searchbar_;
+  }
+  
+  /** Get property to return a new instance of SegmentedControl. */
+  get SegmentedControl() 
+  {
+    return _SegmentedControl_;
+  }
+  
+  /** Get property to return a new instance of Selector. */
+  get Selector() 
+  {
+    return _Selector_;
+  }
+  
+  /** Get property to return a new instance of Slider. */
+  get Slider() 
+  {
+    return _Slider_;
+  }
+  
+  /** Get property to return a new instance of Splitter. */
+  get Splitter() 
+  {
+    return _Splitter_;
+  }
+  
+  /** Get property to return a new instance of SplitterMenu. */
+  get SplitterMenu() 
+  {
+    return _SplitterMenu_;
+  }
+  
+  /** Get property to return a new instance of Switch. */
+  get Switch() 
+  {
+    return _Switch_;
+  }
+  
+  /** Get property to return a new instance of Tab. */
+  get Tab() 
+  {
+    return _Tab_;
+  }
+  
+  /** Get property to return a new instance of Tabbar. */
+  get Tabbar() 
+  {
+    return _Tabbar_;
+  }
+  
+  /** Get property to return a new instance of Text. */
+  get Text() 
+  {
+    return _Text_;
+  }
+  
+  /** Get property to return a new instance of TextArea. */
+  get TextArea() 
+  {
+    return _TextArea_;
+  }
+  
+  /** Get property to return a new instance of Textfield. */
+  get Textfield() 
+  {
+    return _Textfield_;
+  }
+  
+  /** Get property to return a new instance of Toast. */
+  get Toast() 
+  {
+    return _Toast_;
   }
 
   /** 
@@ -2428,7 +2667,7 @@ class Component
 /////////////////////////////////////////////////
 
 /** Class representing the action sheet component. */
-class ActionSheet extends Component 
+class _ActionSheet_ extends Component 
 {
   #buttons;
   #cancelTextColor;
@@ -2494,7 +2733,7 @@ class ActionSheet extends Component
       this.#cancelButton = null;
     }
 
-    let cancelButton = new ActionSheetButton({ text: 'Cancel', textColor: this.cancelTextColor, font: this.font });
+    let cancelButton = new ui.ActionSheetButton({ text: 'Cancel', textColor: this.cancelTextColor, font: this.font });
     cancelButton.addEventListener({ event: "click", handler: () => 
     {
       let animated = this.getAttribute({ key: 'animation' }) === 'default';
@@ -2615,7 +2854,7 @@ class ActionSheet extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the action sheet button component. */
-class ActionSheetButton extends Component 
+class _ActionSheetButton_ extends Component 
 {
   #errors;
 
@@ -2702,7 +2941,7 @@ class ActionSheetButton extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the alert dialog component. */
-class AlertDialog extends Component 
+class _AlertDialog_ extends Component 
 {
   #errors;
   #buttons;
@@ -2926,7 +3165,7 @@ class AlertDialog extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the alert dialog button component. */
-class AlertDialogButton extends Component
+class _AlertDialogButton_ extends Component
 {
   #errors;
 
@@ -3013,7 +3252,7 @@ class AlertDialogButton extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the BarBackButton component. */
-class BackBarButton extends Component 
+class _BackBarButton_ extends Component 
 {  
   #errors;
 
@@ -3109,7 +3348,7 @@ class BackBarButton extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the BarButton component. */
-class BarButton extends Component
+class _BarButton_ extends Component
 {
   #containsIcon;
   #containsText;
@@ -3200,7 +3439,7 @@ class BarButton extends Component
   {
     if(this.#containsText == true) console.error(this.#errors.buttonTypeError);
     if(this.#iconElement) this.element.innerHTML = '';
-    if(typechecker.check({ type: 'string', value: value })) this.#iconElement = new Icon({ icon: value });
+    if(typechecker.check({ type: 'string', value: value })) this.#iconElement = new ui.Icon({ icon: value });
     else if(typechecker.check({ type: 'icon', value: value })) this.#iconElement = value;
     else console.error(this.#errors.iconTypeError);
     this.appendChild({ child: this.#iconElement.element });
@@ -3236,7 +3475,7 @@ class BarButton extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the back button component. Supported modifiers: outline, light, quiet, large */
-class Button extends Component 
+class _Button_ extends Component 
 {
   #contentWrapper;
   #errors;
@@ -3342,7 +3581,7 @@ class Button extends Component
   {
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.iconTypeError);
     if(this.#iconElement) this.#iconElement.icon = value;
-    else this.#iconElement = new Icon({ icon: value });
+    else this.#iconElement = new ui.Icon({ icon: value });
     this.#render();
   }
 
@@ -3432,7 +3671,7 @@ class Button extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the card component. */
-class Card extends Component
+class _Card_ extends Component
 {
   #errors;
 
@@ -3471,7 +3710,7 @@ class Card extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the circular progress component. */
-class CircularProgress extends Component
+class _CircularProgress_ extends Component
 {
   #errors;
   #color;
@@ -3646,7 +3885,7 @@ class CircularProgress extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the color picker component. */
-class ColorPicker extends Component 
+class _ColorPicker_ extends Component 
 {
   #errors;
   #onChange;
@@ -3720,7 +3959,7 @@ class ColorPicker extends Component
 /////////////////////////////////////////////////
 
 /** Class representing a column component. */
-class Column extends Component 
+class _Column_ extends Component 
 { 
   #errors;
   #width;
@@ -3798,7 +4037,7 @@ class Column extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the dialog component. */
-class Dialog extends Component
+class _Dialog_ extends Component
 {
   #cancelable;
   #errors;
@@ -3981,13 +4220,12 @@ class Dialog extends Component
 
 /////////////////////////////////////////////////
 
-/** Class representing the divider component. */
-class Divider extends Component
+class _Divider_ extends Component
 {
   #errors;
   
   /**
-   * Creates the fab button object.
+   * Creates the divider object.
    * @param {object} options - Custom options object to init properties from the constructor.
    */
   constructor(options = {})
@@ -4030,7 +4268,7 @@ class Divider extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the fab button component. */
-class FabButton extends Component 
+class _FabButton_ extends Component 
 {
   #errors;
   #iconElement;
@@ -4076,7 +4314,7 @@ class FabButton extends Component
     if(this.#iconElement) this.element.innerHTML = '';
     if(typechecker.check({ type: 'string', value: value }))
     {
-      this.#iconElement = new Icon({ icon: value, size: '28px' });
+      this.#iconElement = new ui.Icon({ icon: value, size: '28px' });
       this.#iconElement.transform = 'translateY(-4px)';
     }
     else if(typechecker.check({ type: 'icon', value: value })) this.#iconElement = value;
@@ -4139,7 +4377,7 @@ class FabButton extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the icon component. */
-class Icon extends Component
+class _Icon_ extends Component
 {
   #errors;
   #icon;
@@ -4254,7 +4492,7 @@ class Icon extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the image component. */
-class Img extends Component
+class _Img_ extends Component
 {
   #errors;
 
@@ -4318,7 +4556,7 @@ class Img extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the list component. */
-class List extends Component 
+class _List_ extends Component 
 {
   #errors;
   #inset;
@@ -4437,7 +4675,7 @@ class List extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the list header component. */
-class ListHeader extends Component 
+class _ListHeader_ extends Component 
 {
   #errors;
 
@@ -4501,7 +4739,7 @@ class ListHeader extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the list item component. */
-class ListItem extends Component 
+class _ListItem_ extends Component 
 {
   #center;
   #errors;
@@ -4650,7 +4888,7 @@ class ListItem extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the list title component. */
-class ListTitle extends Component 
+class _ListTitle_ extends Component 
 {
   #errors;
 
@@ -4714,7 +4952,7 @@ class ListTitle extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the modal component. */
-class Modal extends Component
+class _Modal_ extends Component
 {
   #errors;
   #root;
@@ -4794,7 +5032,7 @@ class Modal extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the navigator component. */
-class Navigator 
+class _Navigator_ 
 {
   #errors;
   #container;
@@ -4963,7 +5201,7 @@ class Navigator
 /////////////////////////////////////////////////
 
 /** Class representing the page component. */
-class Page extends Component
+class _Page_ extends Component
 {
   #errors;
   #toolbar;
@@ -5535,7 +5773,7 @@ class Page extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the popover component. */
-class Popover extends Component 
+class _Popover_ extends Component 
 {
   #errors;
   #cancelable;
@@ -5664,7 +5902,7 @@ class Popover extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the progress bar component. */
-class ProgressBar extends Component
+class _ProgressBar_ extends Component
 {
   #errors;
   #indeterminate;
@@ -5834,7 +6072,7 @@ class Rectangle extends Component
 /////////////////////////////////////////////////
 
 /** Class representing a Row component. */
-class Row extends Component 
+class _Row_ extends Component 
 {
   #errors;
 
@@ -5866,7 +6104,7 @@ class Row extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the search bar component. */
-class Searchbar extends Component 
+class _Searchbar_ extends Component 
 {
   #errors;
   #maxLength;
@@ -6090,7 +6328,7 @@ class Searchbar extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the segment component. */
-class SegmentedControl extends Component
+class _SegmentedControl_ extends Component
 {
   #errors;
   #font;
@@ -6277,7 +6515,7 @@ class SegmentedControl extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the selector component. */
-class Selector extends Component 
+class _Selector_ extends Component 
 {
   #errors;
   #font;
@@ -6438,7 +6676,7 @@ class Selector extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the slider component. */
-class Slider extends Component
+class _Slider_ extends Component
 {
   #errors;
   #max;
@@ -6607,7 +6845,7 @@ class Slider extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the splitter component. */
-class Splitter extends Component 
+class _Splitter_ extends Component 
 {
   #detail;
   #errors;
@@ -6707,7 +6945,7 @@ class Splitter extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the splitter menu component. */
-class SplitterMenu extends Component
+class _SplitterMenu_ extends Component
 {
   #errors;
   #mode;
@@ -6883,7 +7121,7 @@ class SplitterMenu extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the switch component. */
-class Switch extends Component 
+class _Switch_ extends Component 
 {
   #checked;
   #errors;
@@ -7012,7 +7250,7 @@ class Switch extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the tab component. */
-class Tab extends Component 
+class _Tab_ extends Component 
 {
   #badge;
   #errors;
@@ -7173,7 +7411,7 @@ class Tab extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the tabbar component. */
-class Tabbar extends Component 
+class _Tabbar_ extends Component 
 {
   #activetab;
   #errors;
@@ -7312,7 +7550,7 @@ class Tabbar extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the text component. */
-class Text extends Component 
+class _Text_ extends Component 
 {
   #errors;
   #rawText;
@@ -7498,7 +7736,7 @@ class Text extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the textarea component. */
-class TextArea extends Component 
+class _TextArea_ extends Component 
 {
   #caretColor;
   #cols;
@@ -7778,7 +8016,7 @@ class TextArea extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the Textfield component. */
-class Textfield extends Component
+class _Textfield_ extends Component
 {
   #caretColor;
   #errors;
@@ -8060,7 +8298,7 @@ class Textfield extends Component
 /////////////////////////////////////////////////
 
 /** Class representing the Toast component. */
-class Toast extends Component
+class _Toast_ extends Component
 {
   #animation;
   #animationTypes;
@@ -8150,7 +8388,7 @@ class Toast extends Component
   {
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.dismissIconTypeError);
     if(this.#dismissIcon) this.#dismissButton.innerHTML = '';
-    this.#dismissIcon = new Icon({ icon: value, size: '22px' });
+    this.#dismissIcon = new ui.Icon({ icon: value, size: '22px' });
     this.#dismissButton.appendChild(this.#dismissIcon.element);
     this.#dismissButton.onclick = () => this.dismiss();
     this.#dismissIcon = value;
@@ -8929,7 +9167,7 @@ class ValidationManager
 ///////////////////////////////////////////////////////////
 
 /** Class representing the PhaserGame component. */
-class PhaserGame extends Component 
+class _PhaserGame_ extends Component 
 {
   #game;
 
@@ -8976,89 +9214,46 @@ globalThis.device = DeviceManager.getInstance();
 globalThis.confetti = ConfettiManager.getInstance();
 globalThis.validator = ValidationManager.getInstance();
 
-typechecker.register({ name: 'action-sheet', constructor: ActionSheet });
-typechecker.register({ name: 'action-sheet-button', constructor: ActionSheetButton });
-typechecker.register({ name: 'alert-dialog', constructor: AlertDialog });
-typechecker.register({ name: 'alert-dialog-button', constructor: AlertDialogButton });
-typechecker.register({ name: 'back-bar-button', constructor: BackBarButton });
-typechecker.register({ name: 'bar-button', constructor: BarButton });
-typechecker.register({ name: 'button', constructor: Button });
-typechecker.register({ name: 'card', constructor: Card });
-typechecker.register({ name: 'circular-progress', constructor: CircularProgress });  
-typechecker.register({ name: 'color-picker', constructor: ColorPicker });
-typechecker.register({ name: 'column', constructor: Column }); 
+typechecker.register({ name: 'action-sheet', constructor: _ActionSheet_ });
+typechecker.register({ name: 'action-sheet-button', constructor: _ActionSheetButton_ });
+typechecker.register({ name: 'alert-dialog', constructor: _AlertDialog_ });
+typechecker.register({ name: 'alert-dialog-button', constructor: _AlertDialogButton_ });
+typechecker.register({ name: 'back-bar-button', constructor: _BackBarButton_ });
+typechecker.register({ name: 'bar-button', constructor: _BarButton_ });
+typechecker.register({ name: 'button', constructor: _Button_ });
+typechecker.register({ name: 'card', constructor: _Card_ });
+typechecker.register({ name: 'circular-progress', constructor: _CircularProgress_ });  
+typechecker.register({ name: 'color-picker', constructor: _ColorPicker_ });
+typechecker.register({ name: 'column', constructor: _Column_ }); 
 typechecker.register({ name: 'component', constructor: Component });
-typechecker.register({ name: 'dialog', constructor: Dialog });
-typechecker.register({ name: 'fab-button', constructor: FabButton });
-typechecker.register({ name: 'icon', constructor: Icon });
-typechecker.register({ name: 'img', constructor: Img });
-typechecker.register({ name: 'list', constructor: List }); 
-typechecker.register({ name: 'list-header', constructor: ListHeader });
-typechecker.register({ name: 'list-item', constructor: ListItem });
-typechecker.register({ name: 'list-title', constructor: ListTitle });   
-typechecker.register({ name: 'modal', constructor: Modal });
-typechecker.register({ name: 'navigator', constructor: Navigator });
-typechecker.register({ name: 'page', constructor: Page });
-typechecker.register({ name: 'phaser-scene', constructor: PhaserGame });
-typechecker.register({ name: 'popover', constructor: Popover });
-typechecker.register({ name: 'progress-bar', constructor: ProgressBar });
-typechecker.register({ name: 'rectangle', constructor: Rectangle });
-typechecker.register({ name: 'row', constructor: Row });
-typechecker.register({ name: 'searchbar', constructor: Searchbar });
-typechecker.register({ name: 'segmented-control', constructor: SegmentedControl });
-typechecker.register({ name: 'selector', constructor: Selector });
-typechecker.register({ name: 'slider', constructor: Slider });
-typechecker.register({ name: 'splitter', constructor: Splitter });
-typechecker.register({ name: 'splitter-menu', constructor: SplitterMenu });
-typechecker.register({ name: 'switch', constructor: Switch });
-typechecker.register({ name: 'tab', constructor: Tab }); 
-typechecker.register({ name: 'tabbar', constructor: Tabbar });
-typechecker.register({ name: 'text', constructor: Text }); 
-typechecker.register({ name: 'text-area', constructor: TextArea }); 
-typechecker.register({ name: 'textfield', constructor: Textfield }); 
-typechecker.register({ name: 'toast', constructor: Toast }); 
- 
-ui.register({ name: 'ActionSheet', constructor: ActionSheet });
-ui.register({ name: 'ActionSheetButton', constructor: ActionSheetButton });
-ui.register({ name: 'AlertDialog', constructor: AlertDialog });
-ui.register({ name: 'AlertDialogButton', constructor: AlertDialogButton });
-ui.register({ name: 'BackBarButton', constructor: BackBarButton });
-ui.register({ name: 'BarButton', constructor: BarButton });
-ui.register({ name: 'Button', constructor: Button });
-ui.register({ name: 'Card', constructor: Card });
-ui.register({ name: 'CircularProgress', constructor: CircularProgress });
-ui.register({ name: 'ColorPicker', constructor: ColorPicker });
-ui.register({ name: 'Column', constructor: Column });
+typechecker.register({ name: 'dialog', constructor: _Dialog_ });
+typechecker.register({ name: 'fab-button', constructor: _FabButton_ });
+typechecker.register({ name: 'icon', constructor: _Icon_ });
+typechecker.register({ name: 'img', constructor: _Img_ });
+typechecker.register({ name: 'list', constructor: _List_ }); 
+typechecker.register({ name: 'list-header', constructor: _ListHeader_ });
+typechecker.register({ name: 'list-item', constructor: _ListItem_ });
+typechecker.register({ name: 'list-title', constructor: _ListTitle_ });   
+typechecker.register({ name: 'modal', constructor: _Modal_ });
+typechecker.register({ name: 'navigator', constructor: _Navigator_ });
+typechecker.register({ name: 'page', constructor: _Page_ });
+typechecker.register({ name: 'phaser-scene', constructor: _PhaserGame_ });
+typechecker.register({ name: 'popover', constructor: _Popover_ });
+typechecker.register({ name: 'progress-bar', constructor: _ProgressBar_ });
+typechecker.register({ name: 'row', constructor: _Row_ });
+typechecker.register({ name: 'searchbar', constructor: _Searchbar_ });
+typechecker.register({ name: 'segmented-control', constructor: _SegmentedControl_ });
+typechecker.register({ name: 'selector', constructor: _Selector_ });
+typechecker.register({ name: 'slider', constructor: _Slider_ });
+typechecker.register({ name: 'splitter', constructor: _Splitter_ });
+typechecker.register({ name: 'splitter-menu', constructor: _SplitterMenu_ });
+typechecker.register({ name: 'switch', constructor: _Switch_ });
+typechecker.register({ name: 'tab', constructor: _Tab_ }); 
+typechecker.register({ name: 'tabbar', constructor: _Tabbar_ });
+typechecker.register({ name: 'text', constructor: _Text_ }); 
+typechecker.register({ name: 'text-area', constructor: _TextArea_ }); 
+typechecker.register({ name: 'textfield', constructor: _Textfield_ }); 
+typechecker.register({ name: 'toast', constructor: _Toast_ }); 
 ui.register({ name: 'Component', constructor: Component });
-ui.register({ name: 'Dialog', constructor: Dialog });
-ui.register({ name: 'Divider', constructor: Divider });
-ui.register({ name: 'FabButton', constructor: FabButton });
-ui.register({ name: 'Icon', constructor: Icon });
-ui.register({ name: 'Img', constructor: Img });
-ui.register({ name: 'List', constructor: List });
-ui.register({ name: 'ListHeader', constructor: ListHeader });
-ui.register({ name: 'ListItem', constructor: ListItem });
-ui.register({ name: 'ListTitle', constructor: ListTitle });
-ui.register({ name: 'Modal', constructor: Modal });
-ui.register({ name: 'Navigator', constructor: Navigator });
-ui.register({ name: 'Page', constructor: Page });
-ui.register({ name: 'PhaserGame', constructor: PhaserGame });
-ui.register({ name: 'Popover', constructor: Popover });
-ui.register({ name: 'ProgressBar', constructor: ProgressBar });
-ui.register({ name: 'Rectangle', constructor: Rectangle });
-ui.register({ name: 'Row', constructor: Row });
-ui.register({ name: 'Searchbar', constructor: Searchbar });
-ui.register({ name: 'SegmentedControl', constructor: SegmentedControl });
-ui.register({ name: 'Selector', constructor: Selector });
-ui.register({ name: 'Slider', constructor: Slider });
-ui.register({ name: 'Splitter', constructor: Splitter });
-ui.register({ name: 'SplitterMenu', constructor: SplitterMenu });
-ui.register({ name: 'Switch', constructor: Switch });
-ui.register({ name: 'Tab', constructor: Tab });
-ui.register({ name: 'Tabbar', constructor: Tabbar });
-ui.register({ name: 'Text', constructor: Text });
-ui.register({ name: 'TextArea', constructor: TextArea });
-ui.register({ name: 'Textfield', constructor: Textfield });
-ui.register({ name: 'Toast', constructor: Toast });
 
 ///////////////////////////////////////////////////////////
