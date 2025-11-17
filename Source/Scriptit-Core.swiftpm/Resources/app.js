@@ -10,9 +10,17 @@ class HomePage extends ui.Page
     //let button = ui.ListTitle();
 
     
-    let ex = new ui.Popover();
+    let box = new ui.Checkbox({ checked: false });
+    box.inputId = 'save-checkbox';
+    box.color = 'red';
     
-    //this.addComponents({ components: [ ex ] });
+    let item = new ui.ListItem();
+    item.left = box;
+    
+    let list = new ui.List();
+    list.addItem({ item: item });
+    
+    this.addComponents({ components: [ list ] });
   }
 }
 
