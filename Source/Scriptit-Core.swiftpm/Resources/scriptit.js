@@ -7530,7 +7530,7 @@ class _Switch_ extends Component
    */
   set onChange(value)
   {
-    if(!typechecker.check({ type: 'function', value: value })) throw '';
+    if(!typechecker.check({ type: 'function', value: value })) console.error(this.#errors.onChangeTypeError);
   
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
     let handler = (event) => value(event.target.checked);

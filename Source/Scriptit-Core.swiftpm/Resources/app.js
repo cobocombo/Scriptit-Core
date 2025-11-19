@@ -13,9 +13,7 @@ class HomePage extends ui.Page
     let label = new ui.Label();
     label.text = 'Apple';
     label.inputId = 'save-checkbox';
-    label.font = font.library.menlo;
     label.color = 'red';
-    label.fontSize = '24px';
     
     let item = new ui.ListItem();
     item.tappable = true;
