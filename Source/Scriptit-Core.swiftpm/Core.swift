@@ -13,15 +13,18 @@ import ProgressHUD
 // MAIN CORE CONTROLLER
 //=======================================================//
 
+/** Class representing the main scriptit core controller object that manages the main webview of the app. */
 class ScriptitCoreController: UIViewController, WKScriptMessageHandler
 {
   var webView: WKWebView!
   var router: JavascriptMessageRouter!
   
+  /** Method called when the main view is loaded in the controller. */
   override func viewDidLoad()
   {
     super.viewDidLoad();
     
+    // Setup custom Javascript message router and register message manager classes.
     self.router = JavascriptMessageRouter();
     self.router.registerHandler(ConsoleMessageManager(), forMessageName: "consoleMessageManager");
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
@@ -29,10 +32,12 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     self.router.registerHandler(FilesMessageManager(), forMessageName: "filesMessageManager");
     self.router.registerHandler(HudMessageManager(), forMessageName: "hudMessageManager");
     
+    // Setup webkit preferences.
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
     preferences.setValue(true, forKey: "allowFileAccessFromFileURLs");
     
+    // Setup webkit content controller with each message manager.
     let userContentController = WKUserContentController();
     userContentController.add(self, name: "consoleMessageManager");
     userContentController.add(self, name: "browserMessageManager");
@@ -40,15 +45,18 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     userContentController.add(self, name: "filesMessageManager");
     userContentController.add(self, name: "hudMessageManager");
     
+    // Setup webview configuration with preferences and content controller.
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;
     webViewConfiguration.allowsInlineMediaPlayback = true;
     webViewConfiguration.mediaTypesRequiringUserActionForPlayback = [];
     webViewConfiguration.userContentController = userContentController;
     
+    // Create and configure webview.
     self.webView = WKWebView(frame: view.bounds, configuration: webViewConfiguration);
     self.webView.autoresizingMask = [ .flexibleWidth, .flexibleHeight];
     
+    // Load app.html file and load in webview.
     if let htmlPath = Bundle.main.path(forResource: "app", ofType: "html")
     {
       let fileURL = URL(fileURLWithPath: htmlPath);
@@ -58,6 +66,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     }
   }
   
+  /** Method called when a message is recieved from the webview and routes it to the correct message manager. */
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage)
   {
     self.router.routeMessage(message, webView: self.webView);
@@ -68,20 +77,24 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
 // MESSAGE MANAGER / ROUTER
 //=======================================================//
 
+/** Protocol representing what functionality a Javascript message manager should have. */
 protocol JavascriptMessageManager
 {
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
 }
 
+/** Class representing the object that routes messages to the correct Javascript message manager. */
 class JavascriptMessageRouter
 {
   private var handlers: [String: JavascriptMessageManager] = [:]
   
+  /** Method called to register a new handler for a message manager.*/
   func registerHandler(_ handler: JavascriptMessageManager, forMessageName name: String)
   {
     handlers[name] = handler;
   }
   
+  /** Method to route the message to the correct Javascript message manager. */
   func routeMessage(_ message: WKScriptMessage, webView: WKWebView )
   {
     if let handler = handlers[message.name] { handler.handleMessage(message, webView: webView); }
@@ -93,8 +106,10 @@ class JavascriptMessageRouter
 // MESSAGE MANAGERS
 //=======================================================//
 
+/** Class that manages messages from the console module. */
 class ConsoleMessageManager: JavascriptMessageManager
 {
+  /** Method to handle messages for the console module. */
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
   {
     if let messageBody = message.body as? String { print(messageBody); }
@@ -103,8 +118,10 @@ class ConsoleMessageManager: JavascriptMessageManager
 
 //=============================================//
 
+/** Class that manages messages from the browser module. */
 class BrowserMessageManager: NSObject, JavascriptMessageManager
 {
+  /** Method to handle messages for the browser module. */
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
   {
     let dict = message.body as? [String: Any];
@@ -128,8 +145,10 @@ class BrowserMessageManager: NSObject, JavascriptMessageManager
 
 //=============================================//
 
+/** Class that manages messages the device module. */
 class DeviceMessageManager: JavascriptMessageManager
 {
+  /** Method to handle messages for the device module. */
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
   {
     UIDevice.current.isBatteryMonitoringEnabled = true;
@@ -180,8 +199,10 @@ class DeviceMessageManager: JavascriptMessageManager
 
 //=============================================//
 
+/** Class that manages messages the files module. */
 class FilesMessageManager: JavascriptMessageManager
 {
+  /** Method to handle messages for the files module. Calls the the correct file method as needed. */
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView) 
   {    
     let dict = message.body as? [String: Any];
@@ -221,6 +242,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to create a new file at the specified path. */
   func createFile(dict: [String: Any], webView: WKWebView, fileName: String) 
   {
     let root = dict["root"] as? String;
@@ -272,6 +294,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
+  /** Method to create a new folder at the specified path. */
   func createFolder(dict: [String: Any], webView: WKWebView, folderName: String)
   {
     let root = dict["root"] as? String;
@@ -324,6 +347,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to delete a file at the specified path. */
   func deleteFile(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String;
@@ -356,7 +380,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
-  
+  /** Method to delete a folder at the specified path. */
   func deleteFolder(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String;
@@ -389,6 +413,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to return a file at the specified path. */
   func getFile(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String
@@ -435,6 +460,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
+  /** Method to return a folder at the specified path. */
   func getFolder(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String;
@@ -475,6 +501,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to move a file from the old path to new path. */
   func moveFile(dict: [String: Any], webView: WKWebView)
   {
     let oldRoot = dict["oldRoot"] as? String;
@@ -546,6 +573,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
+  /** Method to move a folder from the old path to new path. */
   func moveFolder(dict: [String: Any], webView: WKWebView)
   {
     let oldRoot = dict["oldRoot"] as? String;
@@ -617,6 +645,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to read the string data from a file at the specified path. */
   func readFile(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String;
@@ -656,6 +685,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
+  /** Method to rename a file at the specified path. */
   func renameFile(dict: [String: Any], webView: WKWebView, fileName: String)
   {
     let root = dict["root"] as? String;
@@ -722,6 +752,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
 
+  /** Method to rename a folder at the specified path. */
   func renameFolder(dict: [String: Any], webView: WKWebView, folderName: String)
   {
     let root = dict["root"] as? String;
@@ -788,6 +819,7 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to serialize a file from a specified path and return it as a File model. */
   func serializeFile(_ file: File, relativeTo rootPath: String) -> [String: Any]
   {
     func normalizedRootName(from path: String) -> String
@@ -844,6 +876,7 @@ class FilesMessageManager: JavascriptMessageManager
     return fileInfo
   }
 
+  /** Method to serialize a folder from a specified path and return it as a Folder model. */
   func serializeFolder(_ folder: Folder, relativeTo rootPath: String) -> [String: Any] 
   {
     func normalizedRootName(from path: String) -> String 
@@ -930,6 +963,7 @@ class FilesMessageManager: JavascriptMessageManager
     return folderInfo
   }
   
+  /** Method to write string data to a file at a specified path. */
   func writeToFile(dict: [String: Any], webView: WKWebView)
   {
     let root = dict["root"] as? String;
@@ -983,7 +1017,10 @@ class FilesMessageManager: JavascriptMessageManager
 
 //=============================================//
 
-class HudMessageManager: JavascriptMessageManager {
+/** Class that manages messages the hud module. */
+class HudMessageManager: JavascriptMessageManager 
+{
+  /** Method to handle messages for the hud module. Calls the the correct hud method as needed. */
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView) 
   {
     let dict = message.body as? [String: Any];
