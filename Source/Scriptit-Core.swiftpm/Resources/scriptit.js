@@ -4979,6 +4979,29 @@ class _List_ extends Component
     if(!typechecker.check({ type: 'array', value: items })) console.error(this.#errors.itemsTypeError);
     items.forEach(item => { this.addItem({ item: item }) });
   }
+  
+  /**
+   * Public method to add a single item into the list at a specific index.
+   * @param {number} index - Index at which to insert the item.
+   * @param {Component} item - Item to be inserted. Must be ListItem, ListTitle or ListHeader.
+   */
+  addItemAtIndex({ index, item } = {}) 
+  {
+    if(!typechecker.check({ type: 'number', value: index })) console.error(this.#errors.indexTypeError);
+    if(!typechecker.checkMultiple({ types: [ 'list-item', 'list-title', 'list-header' ], value: item })) console.error(this.#errors.itemTypeError);
+  
+    let length = this.element.children.length;
+    if(index < 0 || index > length) console.error(this.#errors.indexOutOfBoundsError);
+    
+    if(index === length) 
+    {
+      this.appendChild({ child: item });
+      return;
+    }
+  
+    let beforeNode = this.element.children[index];
+    this.element.insertBefore(item.element, beforeNode);
+  }
 
   /** 
    * Public method to remove an item from the list from a specific index.
