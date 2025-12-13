@@ -284,7 +284,7 @@ class App
       idTypeError: 'App Error: Expected type string for parameter id while trying to retrieve a component.',
       noIdComponentRegistrationError: 'App Error: Cannot register component without an id.',
       noRootComponentError: 'App Error: No root component was found',
-      rootComponentTypeError: 'App Error: Root was detected as an unsupported type. Supported types are: Navigator, Page, Splitter, and Tabbar.',
+      rootComponentTypeError: 'App Error: Root was detected as an unsupported type. Supported types are: Navigator, Page, Splitter, Tabbar, & PhaserGame.',
       singleInstanceError: 'App Error: Only one App object can exist at a time.',
       statusBarColorInvalidError: 'Text Error: Invalid color value for color.',
       statusBarColorTypeError: 'Text Error: Expected type string for color.'
@@ -371,7 +371,7 @@ class App
   {
     if(!root) console.error(this.#errors.noRootComponentError);
 
-    if(typechecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar', 'phaser-scene' ], value: root })) this.#root = root;
+    if(typechecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar', 'phaser-game' ], value: root })) this.#root = root;
     else console.error(this.#errors.rootComponentTypeError);
     
     if(this.#isPresented == true)  console.error(this.#errors.appAlreadyPresentedError);
@@ -5378,7 +5378,7 @@ class _Navigator_
 
   /**
    * Creates the navigator object.
-   * @param {Page} root - First page to be shown in the navigation stack.
+   * @param {Multiple} root - First page to be shown in the navigation stack.
    */
   constructor({ root, id } = {}) 
   {
@@ -5388,7 +5388,7 @@ class _Navigator_
       indexTypeError: 'Navigator Error: Expected type number for index when switching to another page.',
       lastPagePopError: 'Navigator Error: Cannot pop the last page of the stack.',
       noRootComponentError: 'Navigator Error: A root page is required when creating a navigator.',
-      pageTypeError: 'Navigator Error: Expected type Page for page when calling push.',
+      rootTypeError: 'Navigator Error: Root was detected as an unsupported type. Supported types are: Page, Splitter, Tabbar, & PhaserGame.',
       pushAnimationTypeError: 'Navigator Error: Expected type boolean for animated when pushing a new page.',
       popAnimationTypeError: 'Navigator Error: Expected type boolean for animated when popping the top page.',
       stackOutOfBoundsError: 'Navigator Error: Stack index out of bounds.',
@@ -5398,7 +5398,7 @@ class _Navigator_
     this.#container = document.createElement('div');
     this.#stack = [];
     
-    if(root) this.push({ page: root, animated: false });
+    if(root) this.push({ root: root, animated: false });
     else console.error(this.#errors.noRootComponentError);
     if(id) this.id = id;
   }
@@ -5434,32 +5434,33 @@ class _Navigator_
 
   /**
    * Public method to push a new page onto the navigation stack.
-   * @param {Page} page - Page to be pushed onto the navigation stack.
+   * @param {Multiple} root - Root component to be pushed onto the navigation stack.
    * @param {boolean} animated - Boolean value to determine if the page should be pushed with animation or not.
    */
-  push({ page, animated = true } = {}) 
+  push({ root, animated = true } = {}) 
   {
-    if(!typechecker.check({ type: 'page', value: page })) console.error(this.#errors.pageTypeError);
+    
+    if(!typechecker.checkMultiple({ types: [ 'page', 'splitter', 'tabbar', 'phaser-game' ], value: root })) console.error(this.#errors.rootTypeError);
     if(!typechecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.pushAnimationTypeError);
     
     if(this.#stack.length === 0) 
     {
-      this.#stack.push(page);
-      this.#container.appendChild(page.element);
+      this.#stack.push(root);
+      this.#container.appendChild(root.element);
       return;
     }
 
     let currentPage = this.#stack[this.#stack.length - 1];
     setTimeout(() => { currentPage.element.style.display = 'none'; }, 300);
 
-    this.#stack.push(page);
-    this.#container.appendChild(page.element);
+    this.#stack.push(root);
+    this.#container.appendChild(root.element);
 
     if(animated) 
     {
-      page.element.style.transform = 'translateX(100%)';
-      page.element.style.transition = 'transform 0.3s ease-in-out';
-      setTimeout(() => { page.element.style.transform = 'translateX(0)'; }, 0);
+      root.element.style.transform = 'translateX(100%)';
+      root.element.style.transition = 'transform 0.3s ease-in-out';
+      setTimeout(() => { root.element.style.transform = 'translateX(0)'; }, 0);
     }
   }
 
@@ -7865,7 +7866,7 @@ class _Tabbar_ extends Component
 
       value.forEach(tab => { if(!typechecker.check({ type: 'tab', value: tab })) console.error(this.#errors.tabTypeError); });
       this.#tabs = value;
-      let ghostTab = new Tab({ text: '', icon: '', root: new Page(), color: 'transparent' });
+      let ghostTab = new ui.Tab({ text: '', icon: '', root: new ui.Page(), color: 'transparent' });
       ghostTab.element.style.display = 'none';
       ghostTab.root.element.style.display = 'none';
     
@@ -9577,7 +9578,7 @@ typechecker.register({ name: 'list-title', constructor: _ListTitle_ });
 typechecker.register({ name: 'modal', constructor: _Modal_ });
 typechecker.register({ name: 'navigator', constructor: _Navigator_ });
 typechecker.register({ name: 'page', constructor: _Page_ });
-typechecker.register({ name: 'phaser-scene', constructor: _PhaserGame_ });
+typechecker.register({ name: 'phaser-game', constructor: _PhaserGame_ });
 typechecker.register({ name: 'popover', constructor: _Popover_ });
 typechecker.register({ name: 'progress-bar', constructor: _ProgressBar_ });
 typechecker.register({ name: 'row', constructor: _Row_ });
