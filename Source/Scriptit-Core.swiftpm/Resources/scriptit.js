@@ -297,8 +297,8 @@ class App
       this.#componentsById = new Map();
       this.#isPresented = false;
       this.statusBarColor = 'black';
-      this.#coreVersion = '1.6';
-      this.#coreReleaseDate = '12/13/25';
+      this.#coreVersion = '1.7';
+      this.#coreReleaseDate = 'TBD';
     }    
   }
   
@@ -529,6 +529,8 @@ class FilesManager
   #getFilePendingReject = null;
   #getFolderPendingResolve = null;
   #getFolderPendingReject = null;
+  #importFilePendingResolve = null;
+  #importFilePendingReject = null;
   #moveFilePendingResolve = null;
   #moveFilePendingReject = null;
   #moveFolderPendingResolve = null;
@@ -548,6 +550,7 @@ class FilesManager
   #deleteFolderCheckPath = null;
   #getFileCheckPath = null;
   #getFolderCheckPath = null;
+  #importFileCheckPath = null;
   #moveFileCheckPath = null;
   #moveFolderCheckPath = null;
   #readFileCheckPath = null;
@@ -567,6 +570,7 @@ class FilesManager
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
       fileCouldNotBeCreatedError: (path) => `Files Manager Error: File could not be created at the path: '${path}'`,
       fileCouldNotBeDeletedError: (path) => `Files Manager Error: File could not be deleted at the path: '${path}'`,
+      fileCouldNotBeImportedError: (path) => `Files Manager Error: File could not be imported to the path: '${path}'`,
       fileCouldNotBeMovedError: (path) => `Files Manager Error: File could not be moved at the path: '${path}'`,
       fileCouldNotBeReadError: (path) => `Files Manager Error: File could not be read at the path: '${path}'`,
       fileCouldNotBeRenamedError: (path) => `Files Manager Error: File could not be renamed at the path: '${path}'`,
@@ -892,6 +896,41 @@ class FilesManager
         });
       });
     }
+  }
+  
+  /** 
+   * Public method to import a file to the iOS filesystem and return it. 
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with importFilePendingResolve as the resolve and importFilePendingReject as the reject. If the call is successful the method _fileImported gets called. If the call is unsuccessful and no file is imported, then the _fileNotImported method gets called.
+   */
+  importFile({ root = this.roots.documents, subpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+      
+    if(this.isValidSubpath({ subpath: subpath }))
+    {
+      this.#importFileCheckPath = subpath;
+      return new Promise((resolve, reject) => 
+      {
+        this.#importFilePendingResolve = resolve;
+        this.#importFilePendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'importFile', root: root, subpath: subpath
+        });
+      });
+    }
+    
   }
   
   /** 
@@ -1486,6 +1525,33 @@ class FilesManager
       this.#getFolderPendingReject = null;
       console.error(this.#errors.folderNotFoundError(this.#getFolderCheckPath));
       this.#getFolderCheckPath = null;
+    }
+  }
+  
+  _fileImported(data)
+  {
+    console.log('File imported!');
+    data.type = this.#locationTypes.file;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;  
+    if(this.#importFilePendingResolve) 
+    {
+      this.#importFilePendingResolve(data);
+      this.#importFilePendingResolve = null;
+      this.#importFilePendingReject = null;
+      this.#importFileCheckPath = null;
+    }
+  }
+  
+  _fileNotImported(error)
+  {
+    console.log('File not imported!');
+    if(this.#importFilePendingReject) 
+    {
+      this.#importFilePendingReject(this.#errors.fileNotImportedError(this.#importFileCheckPath));
+      this.#importFilePendingResolve = null;
+      this.#importFilePendingReject = null;
+      this.#importFileCheckPath = null;
     }
   }
   

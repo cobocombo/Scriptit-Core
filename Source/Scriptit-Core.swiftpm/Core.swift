@@ -1,6 +1,6 @@
 //=======================================================//
-// CORE VERSION: 1.6
-// RELEASE DATE: 12/13/25
+// CORE VERSION: 1.7
+// RELEASE DATE: TBD
 //=======================================================//
 
 import UIKit
@@ -8,6 +8,7 @@ import WebKit
 import SafariServices
 import Files
 import ProgressHUD
+import UniformTypeIdentifiers
 
 //=======================================================//
 // MAIN CORE CONTROLLER
@@ -24,20 +25,21 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
   {
     super.viewDidLoad();
     
-    // Setup custom Javascript message router and register message manager classes.
+    let filesMessageManager = FilesMessageManager();
+    filesMessageManager.presentingController = self;
+    filesMessageManager.webView = self.webView;
+    
     self.router = JavascriptMessageRouter();
     self.router.registerHandler(ConsoleMessageManager(), forMessageName: "consoleMessageManager");
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
     self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
-    self.router.registerHandler(FilesMessageManager(), forMessageName: "filesMessageManager");
+    self.router.registerHandler(filesMessageManager, forMessageName: "filesMessageManager");
     self.router.registerHandler(HudMessageManager(), forMessageName: "hudMessageManager");
     
-    // Setup webkit preferences.
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
     preferences.setValue(true, forKey: "allowFileAccessFromFileURLs");
     
-    // Setup webkit content controller with each message manager.
     let userContentController = WKUserContentController();
     userContentController.add(self, name: "consoleMessageManager");
     userContentController.add(self, name: "browserMessageManager");
@@ -45,18 +47,15 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     userContentController.add(self, name: "filesMessageManager");
     userContentController.add(self, name: "hudMessageManager");
     
-    // Setup webview configuration with preferences and content controller.
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;
     webViewConfiguration.allowsInlineMediaPlayback = true;
     webViewConfiguration.mediaTypesRequiringUserActionForPlayback = [];
     webViewConfiguration.userContentController = userContentController;
     
-    // Create and configure webview.
     self.webView = WKWebView(frame: view.bounds, configuration: webViewConfiguration);
     self.webView.autoresizingMask = [ .flexibleWidth, .flexibleHeight];
     
-    // Load app.html file and load in webview.
     if let htmlPath = Bundle.main.path(forResource: "app", ofType: "html")
     {
       let fileURL = URL(fileURLWithPath: htmlPath);
@@ -200,8 +199,12 @@ class DeviceMessageManager: JavascriptMessageManager
 //=============================================//
 
 /** Class that manages messages the files module. */
-class FilesMessageManager: JavascriptMessageManager
+class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerDelegate
 {
+  weak var presentingController: UIViewController?
+  weak var webView: WKWebView?
+  private var importDestinationSubpath: String?
+  
   /** Method to handle messages for the files module. Calls the the correct file method as needed. */
   func handleMessage(_ message: WKScriptMessage, webView: WKWebView) 
   {    
@@ -223,6 +226,8 @@ class FilesMessageManager: JavascriptMessageManager
         self.getFile(dict: dict!, webView: webView);
       case "getFolder":
         self.getFolder(dict: dict!, webView: webView);
+      case "importFile":
+        self.importFile(dict: dict!, webView: webView);
       case "moveFile":
         self.moveFile(dict: dict!, webView: webView);
       case "moveFolder":
@@ -501,6 +506,84 @@ class FilesMessageManager: JavascriptMessageManager
     }
   }
   
+  /** Method to import a file. */
+  func importFile(dict: [String: Any], webView: WKWebView)
+  {
+    guard let controller = presentingController else { return }
+    guard let subpath = dict["subpath"] as? String else { return }
+    
+    self.webView = webView;
+    self.importDestinationSubpath = subpath;
+  
+    let javascriptType = UTType(filenameExtension: "js")!
+    let picker = UIDocumentPickerViewController(
+      forOpeningContentTypes: [
+        .plainText,
+        .json,
+        javascriptType
+      ],
+      asCopy: true
+    )
+  
+    picker.delegate = self;
+    picker.allowsMultipleSelection = false;
+    picker.modalPresentationStyle = .formSheet;
+  
+    controller.present(picker, animated: true);
+  }
+  
+  func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
+  {
+    guard let webView = self.webView else { return }
+    guard let subpath = self.importDestinationSubpath else { return }  
+    let destinationRoot = Folder.documents!.path + subpath;
+
+    do
+    {
+      let destinationFolder = try Folder(path: destinationRoot)
+      var importedFiles: [[String: Any]] = []
+  
+      for url in urls
+      {
+        print("Checking urls...!");
+        let ext = url.pathExtension.lowercased()
+        guard ["js", "json", "txt"].contains(ext) else { continue }
+  
+        let baseName = url.deletingPathExtension().lastPathComponent
+        let finalName = "\(baseName).\(ext)"
+  
+        let destinationURL = URL(
+          fileURLWithPath: destinationFolder.path + finalName
+        )
+  
+        try? FileManager.default.removeItem(at: destinationURL)
+        try FileManager.default.copyItem(at: url, to: destinationURL)
+  
+        let file = try File(path: destinationURL.path)
+        let info = serializeFile(file, relativeTo: Folder.documents!.path)
+        importedFiles.append(info)
+      }
+  
+      let jsonData = try JSONSerialization.data(withJSONObject: importedFiles)
+      let jsonString = String(data: jsonData, encoding: .utf8)!
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "'", with: "\\'")
+        .replacingOccurrences(of: "\n", with: "\\n")
+        
+      print("Evaluating...!");
+  
+      let js = "files._fileImported(JSON.parse('\(jsonString)'));"
+      webView.evaluateJavaScript(js)
+    }
+    catch
+    {
+      let js = "files._fileNotImported(null);"
+      webView.evaluateJavaScript(js)
+    }
+  
+    self.importDestinationSubpath = nil;
+  }
+  
   /** Method to move a file from the old path to new path. */
   func moveFile(dict: [String: Any], webView: WKWebView)
   {
@@ -511,7 +594,8 @@ class FilesMessageManager: JavascriptMessageManager
     
     func baseFolder(for root: String) -> Folder?
     {
-      switch root {
+      switch root 
+      {
         case "Documents": return Folder.documents
         case "Library":   return Folder.library
         case "tmp":       return Folder.temporary

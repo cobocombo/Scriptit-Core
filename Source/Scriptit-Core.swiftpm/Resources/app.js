@@ -1,13 +1,41 @@
+///////////////////////////////////////////////////////////
+
 class HomePage extends ui.Page
 {
   onInit()
   {    
     this.backgroundColor = 'red';
+    setTimeout(() => { this.import(); }, 3000)
+  }
+  
+  import()
+  {
+    // files.importFile({ subpath: '' })
+    // .then(file => 
+    // { 
+    //   console.log(file);
+    //   files.getFolder({ subpath: '' })
+    //   .then(folder => 
+    //   {      
+    //     for(let file of folder.files)
+    //     {
+    //       console.log(file.name);
+    //     }
+    //   })
+    // })
+    // .catch(error => 
+    // { 
+    //   console.log(error); 
+    // })
     
-    let list = new ui.List();
-    list.addItemAtIndex({ index: 1, item: new ui.ListHeader({ text: 'Head'}) });
-    
-    this.addComponents({ components: [ list ] });
+    files.getFolder({ subpath: '' })
+      .then(folder => 
+      {      
+        for(let file of folder.files)
+        {
+          console.log(file.name);
+        }
+      })
   }
 }
 
