@@ -544,20 +544,6 @@ class FilesManager
   #writeToFilePendingResolve = null;
   #writeToFilePendingReject = null;
   
-  #createFileCheckPath = null;
-  #createFolderCheckPath = null;
-  #deleteFileCheckPath = null;
-  #deleteFolderCheckPath = null;
-  #getFileCheckPath = null;
-  #getFolderCheckPath = null;
-  #importFileCheckPath = null;
-  #moveFileCheckPath = null;
-  #moveFolderCheckPath = null;
-  #readFileCheckPath = null;
-  #renameFileCheckPath = null;
-  #renameFolderCheckPath = null;
-  #writeToFileCheckPath = null;
- 
   /** Creates the files object. **/
   constructor() 
   {
@@ -568,19 +554,8 @@ class FilesManager
       contentTypeError: 'Files Manager Error: Expected type string for content.',
       directoryTraversalError: 'Files Manager Error: Directory traversal is not allowed.',
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
-      fileCouldNotBeCreatedError: (path) => `Files Manager Error: File could not be created at the path: '${path}'`,
-      fileCouldNotBeDeletedError: (path) => `Files Manager Error: File could not be deleted at the path: '${path}'`,
-      fileCouldNotBeImportedError: (path) => `Files Manager Error: File could not be imported to the path: '${path}'`,
-      fileCouldNotBeMovedError: (path) => `Files Manager Error: File could not be moved at the path: '${path}'`,
-      fileCouldNotBeReadError: (path) => `Files Manager Error: File could not be read at the path: '${path}'`,
-      fileCouldNotBeRenamedError: (path) => `Files Manager Error: File could not be renamed at the path: '${path}'`,
-      fileCouldNotBeWrittenToError: (path) => `Files Manager Error: File could not be written to at the path: '${path}'`,
       fileNameEmpty: 'Files Manager Error: File name empty.',
       fileNameTypeError: 'Files Manager Error: Expected type string for fileName.',
-      fileNotFoundError: (path) => `Files Manager Error: No file could be found at the path: '${path}'`,
-      folderCouldNotBeCreatedError: (path) => `Files Manager Error: Folder could not be created at the path: '${path}'`,
-      folderCouldNotBeDeletedError: (path) => `Files Manager Error: Folder could not be deleted at the path: '${path}'`,
-      folderCouldNotBeMovedError: (path) => `Files Manager Error: Folder could not be moved at the path: '${path}'`,
       folderCouldNotBeRenamedError: (path) => `Files Manager Error: Folder could not be renamed at the path: '${path}'`,
       folderNameEmpty: 'Files Manager Error: Folder name empty.',
       folderNameTypeError: 'Files Manager Error: Expected type string for folderName.',
@@ -656,7 +631,7 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string} fileName - The desired name of the file. If no valid extension is given then the extension will be .txt.
-   * @return {Promise} - Returns a promise with createFilePendingResolve as the resolve and createFilePendingReject as the reject. If the call is successful the method _createdFileFound gets called. If the call is unsuccessful and no folder is found, then the _createdFileNotFound method gets called.
+   * @return {Promise} - Returns a promise with createFilePendingResolve as the resolve and createFilePendingReject as the reject. If the call is successful the method _createFileSuccess gets called. If the call is unsuccessful and no folder is found, then the _createFileFail method gets called.
    */
   createFile({ root = this.roots.documents, subpath = '', fileName = '' })
   {
@@ -694,7 +669,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#createFileCheckPath = subpath + fileName;
       return new Promise((resolve, reject) => 
       {
         this.#createFilePendingResolve = resolve;
@@ -714,7 +688,7 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string} folderName - The desired name of the folder.
-   * @return {Promise} - Returns a promise with createFolderPendingResolve as the resolve and createFolderPendingReject as the reject. If the call is successful the method createdFolderFound gets called. If the call is unsuccessful and no folder is found, then the createdFolderNotFound method gets called.
+   * @return {Promise} - Returns a promise with createFolderPendingResolve as the resolve and createFolderPendingReject as the reject. If the call is successful the method _createFolderSuccess gets called. If the call is unsuccessful and no folder is found, then the _createFolderFail method gets called.
    */
   createFolder({ root = this.roots.documents, subpath = '', folderName = '' })
   {
@@ -744,7 +718,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#createFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#createFolderPendingResolve = resolve;
@@ -781,7 +754,6 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#deleteFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#deleteFilePendingResolve = resolve;
@@ -815,7 +787,6 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#deleteFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#deleteFolderPendingResolve = resolve;
@@ -831,7 +802,7 @@ class FilesManager
    * Public method to get and return a file stored in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
-   * @return {Promise} - Returns a promise with getFilePendingResolve as the resolve and getFilePendingReject as the reject. If the call is successful the method _fileFound gets called. If the call is unsuccessful and no folder is found, then the _fileNotFound method gets called.
+   * @return {Promise} - Returns a promise with getFilePendingResolve as the resolve and getFilePendingReject as the reject. If the call is successful the method _getFileSuccess gets called. If the call is unsuccessful and no folder is found, then the _getFileFail method gets called.
    */
   getFile({ root = this.roots.documents, subpath = '' })
   {
@@ -849,7 +820,6 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#getFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#getFilePendingResolve = resolve;
@@ -886,7 +856,6 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#getFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#getFolderPendingResolve = resolve;
@@ -898,39 +867,62 @@ class FilesManager
     }
   }
   
-  /** 
+   /**
    * Public method to import a file to the iOS filesystem and return it. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
-   * @return {Promise} - Returns a promise with importFilePendingResolve as the resolve and importFilePendingReject as the reject. If the call is successful the method _fileImported gets called. If the call is unsuccessful and no file is imported, then the _fileNotImported method gets called.
+   * @param {string[]} fileExtensions - Allowed file extensions (with dots, e.g. ".js")
+   * @return {Promise}
    */
-  importFile({ root = this.roots.documents, subpath = '' })
+  importFile({ root = this.roots.documents, subpath = '', fileExtensions = Object.values(this.fileExtensions) })
   {
     if(!typechecker.check({ type: 'string', value: root }))
     {
       console.error(this.#errors.rootTypeError);
       return;
     }
-   
+  
     if(!Object.values(this.#roots).includes(root))
     {
       console.error(this.#errors.invalidRootError);
       return;
     }
-      
-    if(this.isValidSubpath({ subpath: subpath }))
+  
+    if(!Array.isArray(fileExtensions))
     {
-      this.#importFileCheckPath = subpath;
-      return new Promise((resolve, reject) => 
+      console.error(this.#errors.fileExtensionsTypeError);
+      return;
+    }
+  
+    const normalizedExtensions = fileExtensions.map(ext =>
+    {
+      if(!typechecker.check({ type: 'string', value: ext }))
+      {
+        console.erro(this.#errors.fileExtensionsTypeError);
+        return;
+      }
+  
+      return ext
+        .trim()
+        .toLowerCase()
+        .replace(/^\./, '');
+    });
+  
+    if(this.isValidSubpath({ subpath }))
+    {
+      return new Promise((resolve, reject) =>
       {
         this.#importFilePendingResolve = resolve;
         this.#importFilePendingReject = reject;
+  
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'importFile', root: root, subpath: subpath
+          command: 'importFile',
+          root: root,
+          subpath: subpath,
+          fileExtensions: normalizedExtensions
         });
       });
     }
-    
   }
   
   /** 
@@ -1026,7 +1018,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
-      this.#moveFileCheckPath = oldSubpath;
       return new Promise((resolve, reject) => 
       {
         this.#moveFilePendingResolve = resolve;
@@ -1048,7 +1039,7 @@ class FilesManager
    * @param {string} newRoot - The root path filesystem type of the folder we intend to the move to.
    * @param {string} oldSubpath - The subpath to be added to the oldRootPath.
    * @param {string} newSubpath - The subpath to be added to the newRootPath.
-   * @return {Promise} - Returns a promise with moveFolderPendingResolve as the resolve and moveFolderPendingReject as the reject. If the call is successful the method _movedFolderFound gets called. If the call is unsuccessful and no folder is found, then the _movedFolderNotFound method gets called.
+   * @return {Promise} - Returns a promise with moveFolderPendingResolve as the resolve and moveFolderPendingReject as the reject. If the call is successful the method _moveFolderSuccess gets called. If the call is unsuccessful and no folder is found, then the _moveFolderFail method gets called.
    */
   moveFolder({ oldRoot = this.roots.documents, newRoot = this.roots.documents, oldSubpath = '', newSubpath = '' })
   {
@@ -1078,7 +1069,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
-      this.#moveFolderCheckPath = oldSubpath;
       return new Promise((resolve, reject) => 
       {
         this.#moveFolderPendingResolve = resolve;
@@ -1116,7 +1106,6 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#readFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#readFilePendingResolve = resolve;
@@ -1133,7 +1122,7 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string} folderName - The desired name of the file.
-   * @return {Promise} - Returns a promise with renameFilePendingResolve as the resolve and renameFilePendingReject as the reject. If the call is successful the method _renamedFileFound gets called. If the call is unsuccessful and no file is found, then the _renamedFileNotFound method gets called.
+   * @return {Promise} - Returns a promise with renameFilePendingResolve as the resolve and renameFilePendingReject as the reject. If the call is successful the method _renameFileSuccess gets called. If the call is unsuccessful and no file is found, then the _renameFileFail method gets called.
    */
   renameFile({ root = this.roots.documents, subpath = '', fileName = '' })
   {
@@ -1171,7 +1160,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#renameFileCheckPath = subpath + fileName;
       return new Promise((resolve, reject) => 
       {
         this.#renameFilePendingResolve = resolve;
@@ -1221,7 +1209,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#renameFolderCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#renameFolderPendingResolve = resolve;
@@ -1285,7 +1272,6 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      this.#writeToFileCheckPath = subpath;
       return new Promise((resolve, reject) => 
       {
         this.#writeToFilePendingResolve = resolve;
@@ -1306,7 +1292,7 @@ class FilesManager
    * Public method that gets called from swift when a file has been created and returned in the createFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
-  _createdFileFound(data)
+  _createFileSuccess(data)
   {
     data.type = this.#locationTypes.file;
     if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
@@ -1316,7 +1302,6 @@ class FilesManager
       this.#createFilePendingResolve(data);
       this.#createFilePendingResolve = null;
       this.#createFilePendingReject = null;
-      this.#createFileCheckPath = null;
     }
   }
   
@@ -1324,14 +1309,13 @@ class FilesManager
    * Public method that gets called from swift when a file could not be created in the createFile method within the files module. 
    * @param {object} error - The error returned on why the file could not be created.
    */
-  _createdFileNotFound(error) 
+  _createFileFail(error) 
   {
     if(this.#createFilePendingReject) 
     {
-      this.#createFilePendingReject(this.#errors.fileCouldNotBeCreatedError(this.#createFileCheckPath));
+      this.#createFilePendingReject(error);
       this.#createFilePendingResolve = null;
       this.#createFilePendingReject = null;
-      this.#createFileCheckPath = null;
     }
   }
   
@@ -1339,7 +1323,7 @@ class FilesManager
    * Public method that gets called from swift when a folder has been created and returned in the createFolder method within the files module. 
    * @param {object} data - Object returned that conforms to the Folder data type.
    */
-  _createdFolderFound(data)
+  _createFolderSuccess(data)
   {
     data.type = this.#locationTypes.folder;
     
@@ -1366,7 +1350,6 @@ class FilesManager
       this.#createFolderPendingResolve(data);
       this.#createFolderPendingResolve = null;
       this.#createFolderPendingReject = null;
-      this.#createFolderCheckPath = null;
     }
   }
   
@@ -1374,29 +1357,26 @@ class FilesManager
    * Public method that gets called from swift when a folder could not be created in the createFolder method within the files module. 
    * @param {object} error - The error returned on why the folder could not be created.
    */
-  _createdFolderNotFound(error) 
+  _createFolderFail(error) 
   {
     if(this.#createFolderPendingReject) 
     {
-      this.#createFolderPendingReject(this.#errors.folderCouldNotBeCreatedError(this.#createFolderCheckPath));
+      this.#createFolderPendingReject(error);
       this.#createFolderPendingResolve = null;
       this.#createFolderPendingReject = null;
-      console.error(this.#errors.folderCouldNotBeCreatedError(this.#createFolderCheckPath));
-      this.#createFolderCheckPath = null;
     }
   }
   
   /** 
    * Public method that gets called from swift when a file has been deleted successfully in the deleteFile method within the files module. 
    */
-  _fileDeleted()
+  _deleteFileSuccess()
   {
     if(this.#deleteFilePendingResolve) 
     {
       this.#deleteFilePendingResolve();
       this.#deleteFilePendingResolve = null;
       this.#deleteFilePendingReject = null;
-      this.#deleteFileCheckPath = null;
     }
   }
   
@@ -1404,28 +1384,26 @@ class FilesManager
    * Public method that gets called from swift when a file has not been deleted successfully in the deleteFile method within the files module. 
    * @param {object} error - The error returned on why the file could not be deleted.
    */
-  _fileNotDeleted(error)
+  _deleteFileFail(error)
   {
     if(this.#deleteFilePendingReject) 
     {
-      this.#deleteFilePendingReject(this.#errors.fileCouldNotBeDeletedError(this.#deleteFileCheckPath));
+      this.#deleteFilePendingReject(error);
       this.#deleteFilePendingResolve = null;
       this.#deleteFilePendingReject = null;
-      this.#deleteFileCheckPath = null;
     }
   }
   
   /** 
    * Public method that gets called from swift when a folder has been deleted successfully in the deleteFolder method within the files module. 
    */
-  _folderDeleted()
+  _deleteFolderSuccess()
   {
     if(this.#deleteFolderPendingResolve) 
     {
       this.#deleteFolderPendingResolve();
       this.#deleteFolderPendingResolve = null;
       this.#deleteFolderPendingReject = null;
-      this.#deleteFolderCheckPath = null;
     }
   }
   
@@ -1433,47 +1411,44 @@ class FilesManager
    * Public method that gets called from swift when a folder has not been deleted successfully in the deleteFolder method within the files module. 
    * @param {object} error - The error returned on why the folder could not be deleted.
    */
-  _folderNotDeleted(error)
+  _deleteFolderFail(error)
   {
     if(this.#deleteFolderPendingReject) 
     {
-      this.#deleteFolderPendingReject(this.#errors.folderCouldNotBeDeletedError(this.#deleteFolderCheckPath));
+      this.#deleteFolderPendingReject(error);
       this.#deleteFolderPendingResolve = null;
       this.#deleteFolderPendingReject = null;
-      this.#deleteFolderCheckPath = null;
     }
   }
   
   /** 
-   * Public method that gets called from swift when a file has been found in the getFile method within the files module. 
+   * Public method that gets called from swift when a file has been found successfully in the getFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
-  _fileFound(data)
+  _getFileSuccess(data)
   {
     data.type = this.#locationTypes.file;
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;  
     if(this.#getFilePendingResolve) 
     {
       this.#getFilePendingResolve(data);
       this.#getFilePendingResolve = null;
       this.#getFilePendingReject = null;
-      this.#getFileCheckPath = null;
     }
   }
   
   /** 
-   * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
+   * Public method that gets called from swift when a failure occurred when calling getFile method within the files module. 
    * @param {object} error - The error returned on why the folder could not be found.
    */
-  _fileNotFound(error) 
+  _getFileFail(error) 
   {
     if(this.#getFilePendingReject) 
     {
-      this.#getFilePendingReject(this.#errors.fileNotFoundError(this.#getFileCheckPath));
+      this.#getFilePendingReject(error);
       this.#getFilePendingResolve = null;
       this.#getFilePendingReject = null;
-      this.#getFileCheckPath = null;
     }
   }
   
@@ -1481,7 +1456,7 @@ class FilesManager
    * Public method that gets called from swift when a folder has been found in the getFolder method within the files module. 
    * @param {object} data - Object returned that conforms to the Folder data type.
    */
-  _folderFound(data)
+  _getFolderSuccess(data)
   {
     data.type = this.#locationTypes.folder;
     
@@ -1508,7 +1483,6 @@ class FilesManager
       this.#getFolderPendingResolve(data);
       this.#getFolderPendingResolve = null;
       this.#getFolderPendingReject = null;
-      this.#getFolderCheckPath = null;
     }
   }
   
@@ -1516,21 +1490,22 @@ class FilesManager
    * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
    * @param {object} error - The error returned on why the folder could not be found.
    */
-  _folderNotFound(error) 
+  _getFolderFail(error) 
   {
     if(this.#getFolderPendingReject) 
     {
-      this.#getFolderPendingReject(this.#errors.folderNotFoundError(this.#getFolderCheckPath));
+      this.#getFolderPendingReject(error);
       this.#getFolderPendingResolve = null;
       this.#getFolderPendingReject = null;
-      console.error(this.#errors.folderNotFoundError(this.#getFolderCheckPath));
-      this.#getFolderCheckPath = null;
     }
   }
   
-  _fileImported(data)
+  /** 
+   * Public method that gets called from swift when a file has been imported in the importFile method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _importFileSuccess(data)
   {
-    console.log('File imported!');
     data.type = this.#locationTypes.file;
     
     if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;  
@@ -1539,19 +1514,20 @@ class FilesManager
       this.#importFilePendingResolve(data);
       this.#importFilePendingResolve = null;
       this.#importFilePendingReject = null;
-      this.#importFileCheckPath = null;
     }
   }
   
-  _fileNotImported(error)
+  /** 
+   * Public method that gets called from swift when a failure occurred when calling importFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be imported.
+   */
+  _importFileFail(error)
   {
-    console.log('File not imported!');
     if(this.#importFilePendingReject) 
     {
-      this.#importFilePendingReject(this.#errors.fileNotImportedError(this.#importFileCheckPath));
+      this.#importFilePendingReject(error);
       this.#importFilePendingResolve = null;
       this.#importFilePendingReject = null;
-      this.#importFileCheckPath = null;
     }
   }
   
@@ -1559,14 +1535,13 @@ class FilesManager
    * Public method that gets called from swift when a file has been read in the readFile method within the files module. 
    * @param {object} data - The contents of the file as a string.
    */
-  _fileRead(data)
+  _readFileSuccess(data)
   {  
     if(this.#readFilePendingResolve) 
     {
       this.#readFilePendingResolve(data);
       this.#readFilePendingResolve = null;
       this.#readFilePendingReject = null;
-      this.#readFileCheckPath = null;
     }
   }
   
@@ -1574,28 +1549,26 @@ class FilesManager
    * Public method that gets called from swift when a file could not been read successfully in the readFile method within the files module. 
    * @param {object} error - The error returned on why the file could not be read.
    */
-  _fileNotRead(error) 
+  _readFileFail(error) 
   {
     if(this.#readFilePendingReject) 
     {
-      this.#readFilePendingReject(this.#errors.fileCouldNotBeReadError(this.#readFileCheckPath));
+      this.#readFilePendingReject(error);
       this.#readFilePendingResolve = null;
       this.#readFilePendingReject = null;
-      this.#readFileCheckPath = null;
     }
   }
   
   /** 
    * Public method that gets called from swift when a file has been successfully written to in the writeToFile method within the files module. 
    */
-  _fileWrittenTo()
+  _writeToFileSuccess()
   {
     if(this.#writeToFilePendingResolve) 
     {
       this.#writeToFilePendingResolve();
       this.#writeToFilePendingResolve = null;
       this.#writeToFilePendingReject = null;
-      this.#writeToFileCheckPath = null;
     }
   }
   
@@ -1603,14 +1576,13 @@ class FilesManager
    * Public method that gets called from swift when a file has not been successfully written to in the writeToFile method within the files module. 
    * @param {object} error - The error returned on why the file could not be written to.
    */
-  _fileNotWrittenTo(error)
+  _writeToFileFail(error)
   {
     if(this.#writeToFilePendingReject) 
     {
-      this.#writeToFilePendingReject(this.#errors.fileCouldNotBeWrittenToError(this.#writeToFileCheckPath));
+      this.#writeToFilePendingReject(error);
       this.#writeToFilePendingResolve = null;
       this.#writeToFilePendingReject = null;
-      this.#writeToFileCheckPath = null;
     }
   }
   
@@ -1618,7 +1590,7 @@ class FilesManager
    * Public method that gets called from swift when a file has been moved and returned in the moveFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
-  _movedFileFound(data)
+  _moveFileSuccess(data)
   {
     data.type = this.#locationTypes.file;
     
@@ -1628,7 +1600,6 @@ class FilesManager
       this.#moveFilePendingResolve(data);
       this.#moveFilePendingResolve = null;
       this.#moveFilePendingReject = null;
-      this.#moveFileCheckPath = null;
     }
   }
   
@@ -1636,14 +1607,13 @@ class FilesManager
    * Public method that gets called from swift when a file could not be moved in the moveFile method within the files module. 
    * @param {object} error - The error returned on why the file could not be moved.
    */
-  _movedFileNotFound(error) 
+  _moveFileFail(error) 
   {
     if(this.#moveFilePendingReject) 
     {
-      this.#moveFilePendingReject(this.#errors.fileCouldNotBeMovedError(this.#moveFileCheckPath));
+      this.#moveFilePendingReject(error);
       this.#moveFilePendingResolve = null;
       this.#moveFilePendingReject = null;
-      this.#moveFileCheckPath = null;
     }
   }
   
@@ -1651,7 +1621,7 @@ class FilesManager
    * Public method that gets called from swift when a folder has been moved and returned in the moveFolder method within the files module. 
    * @param {object} data - Object returned that conforms to the Folder data type.
    */
-  _movedFolderFound(data)
+  _moveFolderSuccess(data)
   {
     data.type = this.#locationTypes.folder;
     
@@ -1678,7 +1648,6 @@ class FilesManager
       this.#moveFolderPendingResolve(data);
       this.#moveFolderPendingResolve = null;
       this.#moveFolderPendingReject = null;
-      this.#moveFolderCheckPath = null;
     }
   }
   
@@ -1686,14 +1655,13 @@ class FilesManager
    * Public method that gets called from swift when a folder could not be moved in the moveFolder method within the files module. 
    * @param {object} error - The error returned on why the folder could not be moved.
    */
-  _movedFolderNotFound(error) 
+  _moveFolderFail(error) 
   {
     if(this.#moveFolderPendingReject) 
     {
-      this.#moveFolderPendingReject(this.#errors.folderCouldNotBeMovedError(this.#moveFolderCheckPath));
+      this.#moveFolderPendingReject(error);
       this.#moveFolderPendingResolve = null;
       this.#moveFolderPendingReject = null;
-      this.#moveFolderCheckPath = null;
     }
   }
   
@@ -1701,7 +1669,7 @@ class FilesManager
    * Public method that gets called from swift when a file has been renamed and returned in the renameFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
-  _renamedFileFound(data)
+  _renameFileSuccess(data)
   {
     data.type = this.#locationTypes.file;
     if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
@@ -1711,7 +1679,6 @@ class FilesManager
       this.#renameFilePendingResolve(data);
       this.#renameFilePendingResolve = null;
       this.#renameFilePendingReject = null;
-      this.#renameFileCheckPath = null;
     }
   }
   
@@ -1719,14 +1686,13 @@ class FilesManager
    * Public method that gets called from swift when a file could not be renamed in the renameFile method within the files module. 
    * @param {object} error - The error returned on why the file could not be created.
    */
-  _renamedFileNotFound(error) 
+  _renameFileFail(error) 
   {
     if(this.#renameFilePendingReject) 
     {
-      this.#renameFilePendingReject(this.#errors.fileCouldNotBeRenamedError(this.#renameFileCheckPath));
+      this.#renameFilePendingReject(error);
       this.#renameFilePendingResolve = null;
       this.#renameFilePendingReject = null;
-      this.#renameFileCheckPath = null;
     }
   }
   
@@ -1734,7 +1700,7 @@ class FilesManager
    * Public method that gets called from swift when a folder has been renamed and returned in the renameFolder method within the files module. 
    * @param {object} data - Object returned that conforms to the Folder data type.
    */
-  _renamedFolderFound(data)
+  _renameFolderSuccess(data)
   {
     data.type = this.#locationTypes.folder;
     
@@ -1761,22 +1727,20 @@ class FilesManager
       this.#renameFolderPendingResolve(data);
       this.#renameFolderPendingResolve = null;
       this.#renameFolderPendingReject = null;
-      this.#renameFolderCheckPath = null;
     }
   }
   
   /** 
    * Public method that gets called from swift when a folder could not be renamed in the renameFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be created.
+   * @param {object} error - The error returned on why the folder could not be renamed.
    */
-  _renamedFolderNotFound(error) 
+  _renameFolderFail(error) 
   {
     if(this.#renameFolderPendingReject) 
     {
-      this.#renameFolderPendingReject(this.#errors.folderCouldNotBeRenamedError(this.#renameFolderCheckPath));
+      this.#renameFolderPendingReject(error);
       this.#renameFolderPendingResolve = null;
       this.#renameFolderPendingReject = null;
-      this.#renameFolderCheckPath = null;
     }
   }
 }
@@ -1801,7 +1765,7 @@ class HudManager
       timoeutTypeError: 'Hud Manager Error: Expected type number for timeout. ',
     };
 
-    if (HudManager.#instance) console.error(this.#errors.singleInstanceError);
+    if(HudManager.#instance) console.error(this.#errors.singleInstanceError);
     else HudManager.#instance = this;
   }
 
