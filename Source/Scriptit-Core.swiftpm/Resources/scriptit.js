@@ -1254,12 +1254,6 @@ class FilesManager
       return;
     }
     
-    if(validator.isStringEmpty({ string: content }))
-    {
-      console.error(this.#errors.contentEmpty);
-      return;
-    }
-    
     if(!typechecker.check({ type: 'boolean', value: replace }))
     {
       console.error(this.#errors.replaceTypeError);
