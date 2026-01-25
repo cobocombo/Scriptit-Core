@@ -2124,10 +2124,10 @@ class UserInterface
     return _Text_;
   }
   
-  /** Get property to return a new instance of TextArea. */
-  get TextArea() 
+  /** Get property to return a new instance of Textarea. */
+  get Textarea() 
   {
-    return _TextArea_;
+    return _Textarea_;
   }
   
   /** Get property to return a new instance of Textfield. */
@@ -6494,6 +6494,7 @@ class _Row_ extends Component
 /** Class representing the search bar component. */
 class _Searchbar_ extends Component 
 {
+  #autocapitalize;
   #errors;
   #maxLength;
   #font;
@@ -6503,7 +6504,7 @@ class _Searchbar_ extends Component
   #textColor;
 
   /**
-   * Creates the progress bar object.
+   * Creates the search bar object.
    * @param {object} options - Custom options object to init properties from the constructor.
    */
   constructor(options = {}) 
@@ -6512,6 +6513,7 @@ class _Searchbar_ extends Component
 
     this.#errors = 
     {
+      autocapitalizeTypeError: 'Searchbar Error: Expected type boolean for autocapitalize.',
       caretColorInvalidError: 'Searchbar Error: Invalid color value provided for caret color.',
       caretColorTypeError: 'Searchbar Error: Expected type string for caret color.',
       fontTypeError: 'Searchbar Error: Expected type string for font.',
@@ -6524,6 +6526,7 @@ class _Searchbar_ extends Component
       textTypeError: 'Searchbar Error: Expected type string for text.'
     };
     
+    this.autocapitalize = options.autocapitalize || true;
     if(options.caretColor) this.caretColor = options.caretColor;
     if(options.maxLength) this.maxLength = options.maxLength;
     if(options.onChange) this.onChange = options.onChange;
@@ -6532,6 +6535,27 @@ class _Searchbar_ extends Component
     this.placeholder = options.placeholder || "Search...";
     this.font = options.font || font.library.system;
     if(options.textColor) this.textColor = options.textColor;
+  }
+  
+  /** 
+   * Get property to return the autocapitalize value of the search bar.
+   * @return {Boolean} The autocapitalize value of the search bar.
+   */
+  get autocapitalize() 
+  { 
+    return this.#autocapitalize; 
+  }
+  
+  /** 
+   * Set property to set the autocapitalize value of the search bar.
+   * @param {Boolean} value - The autocapitalize value of the search bar.
+   */
+  set autocapitalize(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value })) console.error(this.#errors.autocapitalizeTypeError);
+    if(value === true) this.setAttribute({ key: 'autocapitalize', value: 'on' });
+    else this.setAttribute({ key: 'autocapitalize', value: 'off' });
+    this.#autocapitalize = value;
   }
   
   /** 
@@ -8123,9 +8147,10 @@ class _Text_ extends Component
 
 /////////////////////////////////////////////////
 
-/** Class representing the textarea component. */
-class _TextArea_ extends Component 
+/** Class representing the text area component. */
+class _Textarea_ extends Component 
 {
+  #autocapitalize;
   #caretColor;
   #cols;
   #errors;
@@ -8137,7 +8162,7 @@ class _TextArea_ extends Component
   #rows;
   
   /**
-   * Creates the TextArea object.
+   * Creates the Textarea object.
    * @param {object} options - Custom options object to init properties from the constructor.
    */
   constructor(options = {}) 
@@ -8146,21 +8171,23 @@ class _TextArea_ extends Component
 
     this.#errors = 
     {
-      caretColorInvalidError: 'TextArea Error: Invalid color value provided for caretColor.',
-      caretColorTypeError: 'TextArea Error: Expected type string for caretColor.',
-      colsTypeError: 'TextArea Error: Expected type number for cols.',
-      fontTypeError: 'TextArea Error: Expected type string for font.',
-      maxLengthTypeError: 'TextArea Error: Expected type number for maxLength.',
-      onChangeTypeError: 'TextArea Error: Expected type function for onChange.',
-      onTextChangeTypeError: 'TextArea Error: Expected type function for onTextChange.',
-      placeholderTypeError: 'TextArea Error: Expected type string for placeholder.',
-      resizableTypeError: 'TextArea Error: Expected boolean value for resizable.',
-      rowsTypeError: 'TextArea Error: Expected type number for rows.',
-      textColorInvalidError: 'TextArea Error: Invalid color value provided for textColor.',
-      textColorTypeError: 'TextArea Error: Expected type string for textColor.',
-      textTypeError: 'TextArea Error: Expected type string for text.'
+      autocapitalizeTypeError: 'Textarea Error: Expected type boolean for autocapitalize.',
+      caretColorInvalidError: 'Textarea Error: Invalid color value provided for caretColor.',
+      caretColorTypeError: 'Textarea Error: Expected type string for caretColor.',
+      colsTypeError: 'Textarea Error: Expected type number for cols.',
+      fontTypeError: 'Textarea Error: Expected type string for font.',
+      maxLengthTypeError: 'Textarea Error: Expected type number for maxLength.',
+      onChangeTypeError: 'Textarea Error: Expected type function for onChange.',
+      onTextChangeTypeError: 'Textarea Error: Expected type function for onTextChange.',
+      placeholderTypeError: 'Textarea Error: Expected type string for placeholder.',
+      resizableTypeError: 'Textarea Error: Expected boolean value for resizable.',
+      rowsTypeError: 'Textarea Error: Expected type number for rows.',
+      textColorInvalidError: 'Textarea Error: Invalid color value provided for textColor.',
+      textColorTypeError: 'Textarea Error: Expected type string for textColor.',
+      textTypeError: 'Textarea Error: Expected type string for text.'
     };
     
+    this.autocapitalize = options.autocapitalize || true;
     if(options.caretColor) this.caretColor = options.caretColor;
     if(options.cols) this.cols = options.cols;
     this.font = options.font || font.library.system;
@@ -8172,6 +8199,27 @@ class _TextArea_ extends Component
     if(options.rows) this.rows = options.rows;
     if(options.text) this.text = options.text;
     if(options.textColor) this.textColor = options.textColor;
+  }
+  
+  /** 
+   * Get property to return the autocapitalize value of the search bar.
+   * @return {Boolean} The autocapitalize value of the search bar.
+   */
+  get autocapitalize() 
+  { 
+    return this.#autocapitalize; 
+  }
+  
+  /** 
+   * Set property to set the autocapitalize value of the search bar.
+   * @param {Boolean} value - The autocapitalize value of the search bar.
+   */
+  set autocapitalize(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value })) console.error(this.#errors.autocapitalizeTypeError);
+    if(value === true) this.setAttribute({ key: 'autocapitalize', value: 'on' });
+    else this.setAttribute({ key: 'autocapitalize', value: 'off' });
+    this.#autocapitalize = value;
   }
   
   /** 
@@ -8406,6 +8454,7 @@ class _TextArea_ extends Component
 /** Class representing the Textfield component. */
 class _Textfield_ extends Component
 {
+  #autocapitalize;
   #caretColor;
   #errors;
   #font;
@@ -8436,6 +8485,7 @@ class _Textfield_ extends Component
 
     this.#errors = 
     {
+      autocapitalizeTypeError: 'Textfield Error: Expected type boolean for autocapitalize.',
       caretColorInvalidError: 'Textfield Error: Invalid color value provided for caretColor.',
       caretColorTypeError: 'Textfield Error: Expected type string for caretColor.',
       fontTypeError: 'Textfield Error: Expected type string for font.',
@@ -8451,6 +8501,7 @@ class _Textfield_ extends Component
       underbarTypeError: 'Textfield Error: Expected type boolean for underbar.'
     };
     
+    this.autocapitalize = options.autocapitalize || true;
     if(options.caretColor) this.caretColor = options.caretColor;
     this.font = options.font || font.library.system;
     if(options.maxLength) this.maxLength = options.maxLength;
@@ -8461,6 +8512,27 @@ class _Textfield_ extends Component
     if(options.textColor) this.textColor = options.textColor;
     this.type = options.type || 'text';
     this.underbar = options.underbar || true;
+  }
+  
+  /** 
+   * Get property to return the autocapitalize value of the search bar.
+   * @return {Boolean} The autocapitalize value of the search bar.
+   */
+  get autocapitalize() 
+  { 
+    return this.#autocapitalize; 
+  }
+  
+  /** 
+   * Set property to set the autocapitalize value of the search bar.
+   * @param {Boolean} value - The autocapitalize value of the search bar.
+   */
+  set autocapitalize(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value })) console.error(this.#errors.autocapitalizeTypeError);
+    if(value === true) this.setAttribute({ key: 'autocapitalize', value: 'on' });
+    else this.setAttribute({ key: 'autocapitalize', value: 'off' });
+    this.#autocapitalize = value;
   }
   
   /** 
@@ -9641,7 +9713,7 @@ typechecker.register({ name: 'switch', constructor: _Switch_ });
 typechecker.register({ name: 'tab', constructor: _Tab_ }); 
 typechecker.register({ name: 'tabbar', constructor: _Tabbar_ });
 typechecker.register({ name: 'text', constructor: _Text_ }); 
-typechecker.register({ name: 'text-area', constructor: _TextArea_ }); 
+typechecker.register({ name: 'text-area', constructor: _Textarea_ }); 
 typechecker.register({ name: 'textfield', constructor: _Textfield_ }); 
 typechecker.register({ name: 'toast', constructor: _Toast_ }); 
 ui.register({ name: 'Component', constructor: Component });

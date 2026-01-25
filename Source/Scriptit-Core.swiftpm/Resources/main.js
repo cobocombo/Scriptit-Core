@@ -3,8 +3,11 @@
 class HomePage extends ui.Page
 {
   onInit()
-  {    
-    this.backgroundColor = 'red';
+  {        
+    let search = new ui.Textfield();
+    search.autocapitalize = false;
+    
+    this.addComponents({ components: [ search ] });
   }
 }
 
