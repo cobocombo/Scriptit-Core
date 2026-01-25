@@ -6,6 +6,11 @@ class HomePage extends ui.Page
   {        
     this.navigationBarTitle = 'Home';
     this.onNavigationBarTitleTap = () => { console.log(this.navigationBarTitle); }
+    
+    let search = new ui.Textfield();
+    search.spellcheck = false;
+    
+    this.addComponents({ components: [ search ] });
   }
 }
 

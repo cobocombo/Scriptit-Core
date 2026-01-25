@@ -5929,7 +5929,7 @@ class _Page_ extends Component
   
   /** 
    * Get property to return the page's function declaration for the onNavigationBarTitleTap event.
-   * @return {function} The page's function declaration for the onNavigationBarTitleTap event.
+   * @return {Function} The page's function declaration for the onNavigationBarTitleTap event.
    */
   get onNavigationBarTitleTap()
   {
@@ -5938,7 +5938,7 @@ class _Page_ extends Component
   
   /** 
    * Set property to change the page's function declaration for the onNavigationBarTitleTap event.
-   * @param {function} value - The page's function declaration for the onNavigationBarTitleTap event.
+   * @param {Function} value - The page's function declaration for the onNavigationBarTitleTap event.
    */
   set onNavigationBarTitleTap(value)
   {
@@ -6533,11 +6533,12 @@ class _Searchbar_ extends Component
 {
   #autocapitalize;
   #errors;
-  #maxLength;
   #font;
+  #maxLength;
   #onChange;
   #onTextChange;
   #placeholder;
+  #spellcheck
   #textColor;
 
   /**
@@ -6558,12 +6559,14 @@ class _Searchbar_ extends Component
       onChangeTypeError: 'Searchbar Error: Expected type function for onChange.',
       onTextChangeTypeError: 'Searchbar Error: Expected type function for onTextChange.',
       placeholderTypeError: 'Searchbar Error: Expected type string for placeholder.',
+      spellcheckTypeError: 'Searchbar Error: Expected type boolean for spellcheck.',
       textColorInvalidError: 'Searchbar Error: Invalid color value provided for text color.',
       textColorTypeError: 'Searchbar Error: Expected type string for text color.',
       textTypeError: 'Searchbar Error: Expected type string for text.'
     };
     
     this.autocapitalize = options.autocapitalize || true;
+    this.spellcheck = options.spellcheck || true;
     if(options.caretColor) this.caretColor = options.caretColor;
     if(options.maxLength) this.maxLength = options.maxLength;
     if(options.onChange) this.onChange = options.onChange;
@@ -6725,6 +6728,60 @@ class _Searchbar_ extends Component
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.placeholderTypeError);
     this.setAttribute({ key: 'placeholder', value: value });
     this.#placeholder = value;
+  }
+  
+  /** 
+   * Get property to return the spellcheck value of the search bar.
+   * @return {Boolean} The spellcheck value of the search bar.
+   */
+  get spellcheck() 
+  { 
+    return this.#spellcheck; 
+  }
+  
+  /** 
+   * Set property to set the spellcheck value of the search bar.
+   * @param {Boolean} value - The spellcheck value of the search bar.
+   */
+  set spellcheck(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value })) 
+    {
+      console.error(this.#errors.spellcheckTypeError);
+      return;
+    }
+    
+    if(value === true)
+    {
+      this.setAttribute({ key: 'type', value: 'search' });
+      this.setAttribute({ key: 'spellcheck', value: 'true' });
+      this.setAttribute({ key: 'autocorrect', value: 'on' });
+      this.setAttribute({ key: 'autocomplete',value: 'on' });
+      setTimeout(() => 
+      {
+        let input = this.element.querySelector('input');
+        input.setAttribute('type', 'search');
+        input.setAttribute('spellcheck', 'true');
+        input.setAttribute('autocorrect','on');
+        input.setAttribute('autocomplete','on');
+      });
+    }
+    else 
+    {
+      this.setAttribute({ key: 'type', value: 'text' });
+      this.setAttribute({ key: 'spellcheck', value: 'false' });
+      this.setAttribute({ key: 'autocorrect', value: 'off' });
+      this.setAttribute({ key: 'autocomplete',value: 'off' });
+      setTimeout(() => 
+      {
+        let input = this.element.querySelector('input');
+        input.setAttribute('type', 'text');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('autocorrect','off');
+        input.setAttribute('autocomplete','off');
+      });
+    }
+    this.#spellcheck = value;
   }
   
   /** 
@@ -8197,6 +8254,7 @@ class _Textarea_ extends Component
   #placeholder;
   #resizable;
   #rows;
+  #spellcheck;
   
   /**
    * Creates the Textarea object.
@@ -8219,12 +8277,14 @@ class _Textarea_ extends Component
       placeholderTypeError: 'Textarea Error: Expected type string for placeholder.',
       resizableTypeError: 'Textarea Error: Expected boolean value for resizable.',
       rowsTypeError: 'Textarea Error: Expected type number for rows.',
+      spellcheckTypeError: 'Textarea Error: Expected type boolean for spellcheck.',
       textColorInvalidError: 'Textarea Error: Invalid color value provided for textColor.',
       textColorTypeError: 'Textarea Error: Expected type string for textColor.',
       textTypeError: 'Textarea Error: Expected type string for text.'
     };
     
     this.autocapitalize = options.autocapitalize || true;
+    this.spellcheck = options.spellcheck || true;
     if(options.caretColor) this.caretColor = options.caretColor;
     if(options.cols) this.cols = options.cols;
     this.font = options.font || font.library.system;
@@ -8445,6 +8505,42 @@ class _Textarea_ extends Component
     this.setAttribute({ key: 'rows', value: String(value) });
     this.#rows = value;
   }
+  
+  /** 
+   * Get property to return the spellcheck value of the textarea.
+   * @return {Boolean} The spellcheck value of the textarea.
+   */
+  get spellcheck() 
+  { 
+    return this.#spellcheck; 
+  }
+  
+  /** 
+   * Set property to set the spellcheck value of the textarea.
+   * @param {Boolean} value - The spellcheck value of the textarea.
+   */
+  set spellcheck(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value })) 
+    {
+      console.error(this.#errors.spellcheckTypeError);
+      return;
+    }
+    
+    if(value === true)
+    {
+      this.setAttribute({ key: 'spellcheck', value: 'true' });
+      this.setAttribute({ key: 'autocorrect', value: 'on' });
+      this.setAttribute({ key: 'autocomplete',value: 'on' });
+    }
+    else 
+    {
+      this.setAttribute({ key: 'spellcheck', value: 'false' });
+      this.setAttribute({ key: 'autocorrect', value: 'off' });
+      this.setAttribute({ key: 'autocomplete',value: 'off' });
+    }
+    this.#spellcheck = value;
+  }
 
   /** 
    * Get property to return the text value for the text area.
@@ -8499,6 +8595,7 @@ class _Textfield_ extends Component
   #onChange;
   #onTextChange;
   #placeholder;
+  #spellcheck;
   #type;
   #textColor;
   #underbar;
@@ -8530,6 +8627,7 @@ class _Textfield_ extends Component
       onChangeTypeError: 'Textfield Error: Expected type function for onChange.',
       onTextChangeTypeError: 'Textfield Error: Expected type function for onTextChange.',
       placeholderTypeError: 'Textfield Error: Expected type string for placeholder.',
+      spellcheckTypeError: 'Textfield Error: Expected type boolean for spellcheck.',
       textColorInvalidError: 'Textfield Error: Invalid color value provided for textColor.',
       textColorTypeError: 'Textfield Error: Expected type string for textColor.',
       textTypeError: 'Textfield Error: Expected type string for text.',
@@ -8539,6 +8637,7 @@ class _Textfield_ extends Component
     };
     
     this.autocapitalize = options.autocapitalize || true;
+    this.spellcheck = options.spellcheck || true;
     if(options.caretColor) this.caretColor = options.caretColor;
     this.font = options.font || font.library.system;
     if(options.maxLength) this.maxLength = options.maxLength;
@@ -8702,6 +8801,60 @@ class _Textfield_ extends Component
     if(!typechecker.check({ type: 'string', value: value })) console.error(this.#errors.placeholderTypeError);
     this.setAttribute({ key: 'placeholder', value: value });
     this.#placeholder = value;  
+  }
+  
+  /** 
+   * Get property to return the spellcheck value of the textfield.
+   * @return {Boolean} The spellcheck value of the textfield.
+   */
+  get spellcheck() 
+  { 
+    return this.#spellcheck; 
+  }
+  
+  /** 
+   * Set property to set the spellcheck value of the textfield.
+   * @param {Boolean} value - The spellcheck value of the textfield.
+   */
+  set spellcheck(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value })) 
+    {
+      console.error(this.#errors.spellcheckTypeError);
+      return;
+    }
+    
+    if(value === true)
+    {
+      this.setAttribute({ key: 'type', value: 'search' });
+      this.setAttribute({ key: 'spellcheck', value: 'true' });
+      this.setAttribute({ key: 'autocorrect', value: 'on' });
+      this.setAttribute({ key: 'autocomplete',value: 'on' });
+      setTimeout(() => 
+      {
+        let input = this.element.querySelector('input');
+        input.setAttribute('type', 'search');
+        input.setAttribute('spellcheck', 'true');
+        input.setAttribute('autocorrect','on');
+        input.setAttribute('autocomplete','on');
+      });
+    }
+    else 
+    {
+      this.setAttribute({ key: 'type', value: 'text' });
+      this.setAttribute({ key: 'spellcheck', value: 'false' });
+      this.setAttribute({ key: 'autocorrect', value: 'off' });
+      this.setAttribute({ key: 'autocomplete',value: 'off' });
+      setTimeout(() => 
+      {
+        let input = this.element.querySelector('input');
+        input.setAttribute('type', 'text');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('autocorrect','off');
+        input.setAttribute('autocomplete','off');
+      });
+    }
+    this.#spellcheck = value;
   }
   
   /** 
