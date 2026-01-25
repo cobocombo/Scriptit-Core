@@ -56,7 +56,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     self.webView = WKWebView(frame: view.bounds, configuration: webViewConfiguration);
     self.webView.autoresizingMask = [ .flexibleWidth, .flexibleHeight];
     
-    if let htmlPath = Bundle.main.path(forResource: "app", ofType: "html")
+    if let htmlPath = Bundle.main.path(forResource: "main", ofType: "html")
     {
       let fileURL = URL(fileURLWithPath: htmlPath);
       let fileDirectory = fileURL.deletingLastPathComponent();
