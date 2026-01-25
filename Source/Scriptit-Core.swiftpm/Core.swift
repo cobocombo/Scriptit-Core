@@ -264,6 +264,36 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   }
   
   /**
+   * Public method to send a success message from Swift back to JavaScript.
+   *
+   * This method optionally takes a payload (already serialized as a JSON string),
+   * escapes it for safe JavaScript injection, constructs the appropriate JavaScript
+   * success callback, and evaluates it on the provided WKWebView.
+   *
+   * This is used throughout file system methods to notify JavaScript when an operation
+   * completes successfully, such as creating, deleting, renaming, moving, or retrieving
+   * files and folders.
+   *
+   * If no payload is provided, the callback is invoked without arguments.
+   *
+   * @param jsCallback The name of the JavaScript success callback function to invoke
+   *                   (e.g., "_createFolderSuccess", "_folderFound").
+   * @param payload An optional JSON string to pass to the callback.
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   */
+  func dispatchSuccess(jsCallback: String, payload: String? = nil, webView: WKWebView)
+  {
+    let js: String;
+    if let payload = payload
+    {
+      let escaped = self.escapeForJavaScript(payload);
+      js = "files.\(jsCallback)(JSON.parse('\(escaped)'));";
+    }
+    else { js = "files.\(jsCallback)();"; }
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  }
+  
+  /**
   * Public method to escape special characters in a Swift string for safe injection into JavaScript.
   *
   * This method ensures that backslashes, single quotes, and newline characters are properly escaped,
@@ -385,7 +415,6 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         return Folder.library;
       case "tmp":
         return Folder.temporary;
-  
       default:
         print(self.errors.invalidRoot.rawValue);
         return nil;
@@ -644,9 +673,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       return;
     }
   
-    let escaped = self.escapeForJavaScript(jsonString);
-    let js = "files._createFileSuccess(JSON.parse('\(escaped)'));";
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    self.dispatchSuccess(jsCallback: "_createFileSuccess", payload: jsonString, webView: webView);
   }
 
   /**
@@ -734,9 +761,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       return;
     }
   
-    let escaped = self.escapeForJavaScript(jsonString);
-    let js = "files._createFolderSuccess(JSON.parse('\(escaped)'));";
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    self.dispatchSuccess(jsCallback: "_createFolderSuccess", payload: jsonString, webView: webView);
   }
   
   /**
@@ -793,8 +818,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       return;
     }
   
-    let js = "files._deleteFileSuccess();";
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    self.dispatchSuccess(jsCallback: "_deleteFileSuccess", webView: webView);
   }
 
   /**
@@ -810,8 +834,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     * - subpath (String): The relative path to the folder to be deleted.
     *
     * JavaScript callbacks:
-    * - files._folderDeleted(): Called when the folder is successfully deleted.
-    * - files._folderNotDeleted(error): Called when folder deletion fails.
+    * - files._deleteFolderSuccess(): Called when the folder is successfully deleted.
+    * - files._deleteFolderFail(error): Called when folder deletion fails.
     *
     * @param dict A dictionary of arguments passed from JavaScript.
     * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
@@ -845,8 +869,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     do
     {
       try targetFolder.delete();
-      let js = "files._deleteFolderSuccess();";
-      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      self.dispatchSuccess(jsCallback: "_deleteFolderSuccess", webView: webView);
     }
     catch
     {
@@ -869,7 +892,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    * - subpath (String): The relative path to the file within the base directory.
    *
    * JavaScript callbacks:
-   * - files.__getFileSuccess(data): Called when the file is successfully found.
+   * - files._getFileSuccess(data): Called when the file is successfully found.
    * - files._getFileFail(error): Called when the file cannot be resolved or processed.
    *
    * @param dict A dictionary of arguments passed from JavaScript.
@@ -912,10 +935,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView);
       return;
     }
-    
-    let escaped = self.escapeForJavaScript(jsonString);
-    let js = "files._getFileSuccess(JSON.parse('\(escaped)'));"
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  
+    self.dispatchSuccess(jsCallback: "_getFileSuccess", payload: jsonString, webView: webView);
   }
 
   /**
@@ -977,10 +998,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView);
         return;
       }
-  
-      let escaped = self.escapeForJavaScript(jsonString);
-      let js = "files._getFolderSuccess(JSON.parse('\(escaped)'));";
-      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      
+      self.dispatchSuccess(jsCallback: "_getFolderSuccess", payload: jsonString, webView: webView);
     }
     catch
     {
@@ -1118,9 +1137,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   
       let jsonData = try JSONSerialization.data(withJSONObject: importedFiles);
       let jsonString = String(data: jsonData, encoding: .utf8)!;
-      let escaped = self.escapeForJavaScript(jsonString);
-      let js = "files._importFileSuccess(JSON.parse('\(escaped)'));";
-      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      self.dispatchSuccess(jsCallback: "_importFileSuccess", payload: jsonString, webView: webView);
     }
     catch
     {
@@ -1229,10 +1246,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
         return;
       }
-  
-      let escaped = self.escapeForJavaScript(jsonString);
-      let js = "files._moveFileSuccess(JSON.parse('\(escaped)'));";
-      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      
+      self.dispatchSuccess(jsCallback: "_moveFileSuccess", payload: jsonString, webView: webView);
     }
     catch
     {
@@ -1349,10 +1364,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
         return;
       }
-  
-      let escaped = self.escapeForJavaScript(jsonString);
-      let js = "files._moveFolderSuccess(JSON.parse('\(escaped)'));";
-      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      
+      self.dispatchSuccess(jsCallback: "_moveFolderSuccess", payload: jsonString, webView: webView);
     }
     catch
     {
@@ -1415,10 +1428,10 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView);
       return;
     }
-  
-    let escapedContent = self.escapeForJavaScript(content);
-    let js = "files._readFileSuccess('\(escapedContent)');"
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+    
+    let escaped = escapeForJavaScript(content);
+    let js = "files._readFileSuccess('\(escaped)');";
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil) };
   }
 
   /**
@@ -1437,8 +1450,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    * - subpath (String): Relative path to the file to rename.
    *
    * JavaScript callbacks:
-   * - files._renamedFileFound(fileInfo): Called when the file is successfully renamed.
-   * - files._renamedFileNotFound(error): Called when the file cannot be renamed.
+   * - files._renamedFileSuccess(data): Called when the file is successfully renamed.
+   * - files._renamedFileFail(error): Called when the file cannot be renamed.
    *
    * @param dict A dictionary of arguments passed from JavaScript.
    * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
@@ -1514,9 +1527,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
           return;
         }
   
-        let escaped = self.escapeForJavaScript(jsonString);
-        let js = "files._renameFileSuccess(JSON.parse('\(escaped)'));"
-        webView.evaluateJavaScript(js, completionHandler: nil);
+        self.dispatchSuccess(jsCallback: "_renameFileSuccess", payload: jsonString, webView: webView);
       }
       catch
       {
@@ -1605,10 +1616,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
         return;
       }
-  
-      let escaped = self.escapeForJavaScript(jsonString);
-      let js = "files._renameFolderSuccess(JSON.parse('\(escaped)'));";
-      DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+      
+      self.dispatchSuccess(jsCallback: "_renameFolderSuccess", payload: jsonString, webView: webView);
     }
     catch
     {
@@ -1704,9 +1713,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView);
       return;
     }
-  
-    let js = "files._writeToFileSuccess();";
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+
+    self.dispatchSuccess(jsCallback: "_writeToFileSuccess", webView: webView);
   }
 }
 

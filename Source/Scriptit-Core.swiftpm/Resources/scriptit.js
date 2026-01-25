@@ -556,7 +556,6 @@ class FilesManager
       excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
       fileNameEmpty: 'Files Manager Error: File name empty.',
       fileNameTypeError: 'Files Manager Error: Expected type string for fileName.',
-      folderCouldNotBeRenamedError: (path) => `Files Manager Error: Folder could not be renamed at the path: '${path}'`,
       folderNameEmpty: 'Files Manager Error: Folder name empty.',
       folderNameTypeError: 'Files Manager Error: Expected type string for folderName.',
       folderNotFoundError: (path) => `Files Manager Error: No folder could be found at the path: '${path}'`,
@@ -736,7 +735,7 @@ class FilesManager
    * Public method to delete a file stored in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
-   * @return {Promise} - Returns a promise with deleteFilePendingResolve as the resolve and deleteFilePendingReject as the reject. If the call is successful the method _fileDeleted gets called. If the call is unsuccessful then _fileNotDeleted is called.
+   * @return {Promise} - Returns a promise with deleteFilePendingResolve as the resolve and deleteFilePendingReject as the reject. If the call is successful the method _deleteFileSuccess gets called. If the call is unsuccessful then _deleteFileFail is called.
    */
   deleteFile({ root = this.roots.documents, subpath = '' })
   {
@@ -769,7 +768,7 @@ class FilesManager
    * Public method to delete a folder stored in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
-   * @return {Promise} - Returns a promise with deleteFolderPendingResolve as the resolve and deleteFolderPendingReject as the reject. If the call is successful the method folderDeleted gets called. If the call is unsuccessful then folderNotDeleted is called.
+   * @return {Promise} - Returns a promise with deleteFolderPendingResolve as the resolve and deleteFolderPendingReject as the reject. If the call is successful the method deleteFolderSuccess gets called. If the call is unsuccessful then deleteFolderFail is called.
    */
   deleteFolder({ root = this.roots.documents, subpath = '' })
   {
@@ -836,8 +835,8 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @return {Promise} - Returns a promise with getFolderPendingResolve as the resolve and 
-   * getFolderPendingReject as the reject. If the call is successful the method folderFound
-   * gets called. If the call is unsuccessful and no folder is found, then the folderNotFound
+   * getFolderPendingReject as the reject. If the call is successful the method _getFolderSuccess
+   * gets called. If the call is unsuccessful and no folder is found, then the _getFolderFail
    * method gets called.
    */
   getFolder({ root = this.roots.documents, subpath = '' })
@@ -872,7 +871,10 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string[]} fileExtensions - Allowed file extensions (with dots, e.g. ".js")
-   * @return {Promise}
+   * @return {Promise} - Returns a promise with importFilePendingResolve as the resolve and 
+   * importFilePendingReject as the reject. If the call is successful the method _importFileSuccess
+   * gets called. If the call is unsuccessful and no folder is found, then the _importFileFail
+   * method gets called.
    */
   importFile({ root = this.roots.documents, subpath = '', fileExtensions = Object.values(this.fileExtensions) })
   {
@@ -988,7 +990,7 @@ class FilesManager
    * @param {string} newRoot - The root path filesystem type of the folder we intend to the move to.
    * @param {string} oldSubpath - The subpath to be added to the oldRootPath.
    * @param {string} newSubpath - The subpath to be added to the newRootPath.
-   * @return {Promise} - Returns a promise with moveFilePendingResolve as the resolve and moveFilePendingReject as the reject. If the call is successful the method _movedFileFound gets called. If the call is unsuccessful and no folder is found, then the _movedFileNotFound method gets called.
+   * @return {Promise} - Returns a promise with moveFilePendingResolve as the resolve and moveFilePendingReject as the reject. If the call is successful the method _movedFileSuccess gets called. If the call is unsuccessful and no folder is found, then the _movedFileFail method gets called.
    */
   moveFile({ oldRoot = this.roots.documents, newRoot = this.roots.documents, oldSubpath = '', newSubpath = '' })
   {
@@ -1088,7 +1090,7 @@ class FilesManager
    * Public method to get and return content stored in a file in the iOS filesystem. 
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
-   * @return {Promise} - Returns a promise with readFilePendingResolve as the resolve and readFilePendingReject as the reject. If the call is successful the method _fileRead gets called. If the call is unsuccessful and no file is found, then the _fileNotRead method gets called.
+   * @return {Promise} - Returns a promise with readFilePendingResolve as the resolve and readFilePendingReject as the reject. If the call is successful the method _readFileSuccess gets called. If the call is unsuccessful and no file is found, then the _readFileFail method gets called.
    */
   readFile({ root = this.roots.documents, subpath = '' })
   {
@@ -1179,7 +1181,7 @@ class FilesManager
    * @param {string} root - The root path filesystem type.
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string} folderName - The desired name of the folder.
-   * @return {Promise} - Returns a promise with renameFolderPendingResolve as the resolve and renameFolderPendingReject as the reject. If the call is successful the method renamedFolderFound gets called. If the call is unsuccessful and no folder is found, then the renamedFolderNotFound method gets called.
+   * @return {Promise} - Returns a promise with renameFolderPendingResolve as the resolve and renameFolderPendingReject as the reject. If the call is successful the method renameFolderSuccess gets called. If the call is unsuccessful and no folder is found, then the renameFolderFail method gets called.
    */
   renameFolder({ root = this.roots.documents, subpath = '', folderName = '' })
   {
@@ -1229,8 +1231,8 @@ class FilesManager
    * @param {string} subpath - The subpath to be added to the root path.
    * @param {string} content - The content to be written to the file.
    * @param {boolean} replace - Boolean flag determining if the current content in the file should be cleared before writing the new content.
-   * @param {boolean} newline - TBoolean flag determining if the content should be written to a newline in the file.
-   * @return {Promise} - Returns a promise with writeToFilePendingResolve as the resolve and writeToFilePendingReject as the reject. If the call is successful the _fileWrittenTo method gets called. If the call is unsuccessful and the writing was not performed, then the _fileNotWrittenTo method gets called.
+   * @param {boolean} newline - Boolean flag determining if the content should be written to a newline in the file.
+   * @return {Promise} - Returns a promise with writeToFilePendingResolve as the resolve and writeToFilePendingReject as the reject. If the call is successful the _writeToFileSuccess method gets called. If the call is unsuccessful and the writing was not performed, then the _writeToFileFail method gets called.
    */
   writeToFile({ root = this.roots.documents, subpath = '', content = '', replace = false, newline = true })
   {
@@ -1532,61 +1534,6 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a file has been read in the readFile method within the files module. 
-   * @param {object} data - The contents of the file as a string.
-   */
-  _readFileSuccess(data)
-  {  
-    if(this.#readFilePendingResolve) 
-    {
-      this.#readFilePendingResolve(data);
-      this.#readFilePendingResolve = null;
-      this.#readFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file could not been read successfully in the readFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be read.
-   */
-  _readFileFail(error) 
-  {
-    if(this.#readFilePendingReject) 
-    {
-      this.#readFilePendingReject(error);
-      this.#readFilePendingResolve = null;
-      this.#readFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file has been successfully written to in the writeToFile method within the files module. 
-   */
-  _writeToFileSuccess()
-  {
-    if(this.#writeToFilePendingResolve) 
-    {
-      this.#writeToFilePendingResolve();
-      this.#writeToFilePendingResolve = null;
-      this.#writeToFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file has not been successfully written to in the writeToFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be written to.
-   */
-  _writeToFileFail(error)
-  {
-    if(this.#writeToFilePendingReject) 
-    {
-      this.#writeToFilePendingReject(error);
-      this.#writeToFilePendingResolve = null;
-      this.#writeToFilePendingReject = null;
-    }
-  }
-  
-  /** 
    * Public method that gets called from swift when a file has been moved and returned in the moveFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
@@ -1666,6 +1613,34 @@ class FilesManager
   }
   
   /** 
+   * Public method that gets called from swift when a file has been read in the readFile method within the files module. 
+   * @param {object} data - The contents of the file as a string.
+   */
+  _readFileSuccess(data)
+  {  
+    if(this.#readFilePendingResolve) 
+    {
+      this.#readFilePendingResolve(data);
+      this.#readFilePendingResolve = null;
+      this.#readFilePendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file could not been read successfully in the readFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be read.
+   */
+  _readFileFail(error) 
+  {
+    if(this.#readFilePendingReject) 
+    {
+      this.#readFilePendingReject(error);
+      this.#readFilePendingResolve = null;
+      this.#readFilePendingReject = null;
+    }
+  }
+  
+  /** 
    * Public method that gets called from swift when a file has been renamed and returned in the renameFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
@@ -1741,6 +1716,33 @@ class FilesManager
       this.#renameFolderPendingReject(error);
       this.#renameFolderPendingResolve = null;
       this.#renameFolderPendingReject = null;
+    }
+  }
+  
+    /** 
+   * Public method that gets called from swift when a file has been successfully written to in the writeToFile method within the files module. 
+   */
+  _writeToFileSuccess()
+  {
+    if(this.#writeToFilePendingResolve) 
+    {
+      this.#writeToFilePendingResolve();
+      this.#writeToFilePendingResolve = null;
+      this.#writeToFilePendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has not been successfully written to in the writeToFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be written to.
+   */
+  _writeToFileFail(error)
+  {
+    if(this.#writeToFilePendingReject) 
+    {
+      this.#writeToFilePendingReject(error);
+      this.#writeToFilePendingResolve = null;
+      this.#writeToFilePendingReject = null;
     }
   }
 }
