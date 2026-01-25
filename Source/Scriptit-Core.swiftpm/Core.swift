@@ -201,10 +201,10 @@ class DeviceMessageManager: JavascriptMessageManager
 /** Class that manages messages the files module. */
 class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerDelegate
 {
-  var presentingController: UIViewController?
-  var webView: WKWebView?
+  var presentingController: UIViewController?;
+  var webView: WKWebView?;
   var importDestinationRoot: String?;
-  var importDestinationSubpath: String?
+  var importDestinationSubpath: String?;
   var importAllowedExtensions: [String]?;
   
   enum Errors: String
