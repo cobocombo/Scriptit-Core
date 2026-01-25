@@ -5599,6 +5599,7 @@ class _Page_ extends Component
   #navigationBar;
   #navigationBarButtonsLeft;
   #navigationBarButtonsRight;
+  #onNavigationBarTitleTap;
   #onOrientationChange;
   #rightToolbarContainer;
   #toolbarButtonsLeft;
@@ -5628,6 +5629,7 @@ class _Page_ extends Component
       navigationTitleTypeError: 'Page Error: Expected type string for navigationBarTitle.',
       navigationBarTitleColorInvalidError: 'Page Error: Invalid color provided for navigationBarTitleColor',
       navigationBarTitleColorTypeError: 'Page Error: Expected type string for navigationBarTitleColor.',
+      onNavigationBarTitleTapTypeError: 'Page Error: Expected type function for onNavigationBarTitleTap.',
       onOrientationChangeTypeError: 'Page Error: Expected type function for onOrientationChange.',
       searchbarTypeError: 'Page Error: Expected type Searchbar.',
       toolbarButtonTypeError: 'Page Error: Expected type BarButton when setting toolbar button.',
@@ -5923,6 +5925,41 @@ class _Page_ extends Component
       else console.error(this.#errors.navigationBarButtonRightTypeError);
     });
     this.#navigationBarButtonsRight = value;
+  }
+  
+  /** 
+   * Get property to return the page's function declaration for the onNavigationBarTitleTap event.
+   * @return {function} The page's function declaration for the onNavigationBarTitleTap event.
+   */
+  get onNavigationBarTitleTap()
+  {
+    return this.#onNavigationBarTitleTap;
+  }
+  
+  /** 
+   * Set property to change the page's function declaration for the onNavigationBarTitleTap event.
+   * @param {function} value - The page's function declaration for the onNavigationBarTitleTap event.
+   */
+  set onNavigationBarTitleTap(value)
+  {
+    if(!typechecker.check({ type: 'function', value: value }))
+    {
+      console.error(this.#errors.onNavigationBarTitleTapTypeError);
+      return;
+    }
+    
+    if(!this.#navigationBar) this.#addNavigationBar();
+    let centerDiv = this.#navigationBar.querySelector('.center');
+    if(!centerDiv) 
+    {
+      centerDiv = document.createElement('div');
+      centerDiv.className = 'center';
+      this.#navigationBar.appendChild(centerDiv);
+    }
+    
+    if(this.#onNavigationBarTitleTap) centerDiv.removeEventListener('click', this.#onNavigationBarTitleTap );
+    this.#onNavigationBarTitleTap = value;
+    centerDiv.addEventListener('click', value );
   }
 
   /** 

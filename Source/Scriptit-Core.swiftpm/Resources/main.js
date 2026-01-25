@@ -4,10 +4,8 @@ class HomePage extends ui.Page
 {
   onInit()
   {        
-    let search = new ui.Textfield();
-    search.autocapitalize = false;
-    
-    this.addComponents({ components: [ search ] });
+    this.navigationBarTitle = 'Home';
+    this.onNavigationBarTitleTap = () => { console.log(this.navigationBarTitle); }
   }
 }
 
