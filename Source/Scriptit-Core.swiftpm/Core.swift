@@ -234,6 +234,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     case subpathNotProvided    = "Files Message Manager Error: Subpath was not provided."
     case unknownCommand        = "Files Message Manager Error: Unknown command."
     case writeToFileFailed     = "Files Message Manager Error: File could not be written to at path:"
+    case zipFailed             = "Files Message Manager Error: Zip failed at path:"
   }
   
   let errors = Errors.self;
@@ -377,6 +378,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         else { print(self.errors.missingFolderName.rawValue); }
       case "writeToFile":
         self.writeToFile(dict: dict, webView: webView);
+      case "zipFolder":
+        self.zipFolder(dict: dict, webView: webView);
       default:
         print(self.errors.unknownCommand.rawValue);
     }
@@ -1715,6 +1718,118 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     }
 
     self.dispatchSuccess(jsCallback: "_writeToFileSuccess", webView: webView);
+  }
+  
+  /**
+   * Public method called from JavaScript to zip a folder in-place.
+   *
+   * This method resolves the base folder using a JavaScript-provided root value,
+   * constructs the full path to the source folder, zips the folder using
+   * NSFileCoordinator (.forUploading), saves the resulting zip file in the same
+   * directory as the source folder, serializes the zip as a File, and returns
+   * it to JavaScript.
+   *
+   * Any failure is reported via the standardized `dispatchFailure` method.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): Base directory ("Documents", "Library", "tmp").
+   * - subpath (String): Relative path to the folder to zip.
+   * - zippedFileName (String): Name of the resulting zip file (e.g. "project.zip").
+   *
+   * JavaScript callbacks:
+   * - files._zipFolderSuccess(fileInfo): Called on successful zip.
+   * - files._zipFolderFail(error): Called on failure.
+   *
+   * @param dict Dictionary of arguments from JavaScript.
+   * @param webView WKWebView to evaluate JavaScript callbacks.
+   */
+  func zipFolder(dict: [String: Any], webView: WKWebView)
+  {
+    guard let base = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+    
+    guard let zipName = dict["zippedFileName"] as? String else
+    {
+      let error = self.errors.missingFileName.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+  
+    let sourcePath = subpath.isEmpty ? base.path : base.path + subpath;
+    let sourceURL = URL(fileURLWithPath: sourcePath);
+    let parentDirectoryURL = sourceURL.deletingLastPathComponent();
+    let fileManager = FileManager.default;
+    let baseName = (zipName as NSString).deletingPathExtension;
+    let fileExtension = (zipName as NSString).pathExtension.isEmpty ? "zip" : (zipName as NSString).pathExtension;
+  
+    var uniqueZipName = "\(baseName).\(fileExtension)";
+    var destinationZipURL = parentDirectoryURL.appendingPathComponent(uniqueZipName);
+    var counter = 1;
+    while fileManager.fileExists(atPath: destinationZipURL.path)
+    {
+      uniqueZipName = "\(baseName)(\(counter)).\(fileExtension)";
+      destinationZipURL = parentDirectoryURL.appendingPathComponent(uniqueZipName);
+      counter += 1;
+    }
+  
+    let coordinator = NSFileCoordinator();
+    var coordinationError: NSError?;
+    coordinator.coordinate(readingItemAt: sourceURL, options: [.forUploading], error: &coordinationError)
+    { 
+      tempZipURL in
+      do { try fileManager.moveItem(at: tempZipURL, to: destinationZipURL); }
+      catch
+      {
+        let errorMessage = self.errors.zipFailed.rawValue + " (\(sourcePath))."
+        self.dispatchFailure(error: errorMessage, jsCallback: "_zipFolderFail", webView: webView)
+        return
+      }
+    }
+  
+    if let error = coordinationError
+    {
+      self.dispatchFailure(error: error.localizedDescription, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+  
+    let zippedFile: File;
+    do { zippedFile = try File(path: destinationZipURL.path); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(destinationZipURL.path)).";
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+  
+    let fileInfo = self.serializeFile(zippedFile, relativeTo: base);
+    let jsonData: Data;
+    do { jsonData = try JSONSerialization.data(withJSONObject: fileInfo); }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+  
+    guard let jsonString = String(data: jsonData, encoding: .utf8) else
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      return;
+    }
+  
+    self.dispatchSuccess(jsCallback: "_zipFolderSuccess", payload: jsonString, webView: webView);
   }
 }
 

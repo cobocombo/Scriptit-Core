@@ -543,6 +543,8 @@ class FilesManager
   #renameFolderPendingReject = null;
   #writeToFilePendingResolve = null;
   #writeToFilePendingReject = null;
+  #zipFolderPendingResolve = null;
+  #zipFolderPendingReject = null;
   
   /** Creates the files object. **/
   constructor() 
@@ -1284,6 +1286,75 @@ class FilesManager
     }
   }
   
+  /**
+   * Zips a folder in place and saves the resulting zip file
+   * in the same directory as the source folder.
+   *
+   * This method validates the provided root and subpath, ensures
+   * a valid zip filename (auto-appending `.zip` if missing),
+   * and sends a message to the native FilesMessageManager to
+   * perform the zip operation.
+   *
+   * The native layer resolves the folder, zips it using
+   * NSFileCoordinator, treats the result as a File, serializes it,
+   * and returns it via a success callback.
+   *
+   * @param {Object} options
+   * @param {string} options.root Base directory
+   *   ("Documents", "Library", "tmp").
+   * @param {string} options.subpath Relative path to the folder to zip.
+   * @param {string} options.zippedFileName Name of the resulting zip file.
+   *
+   * @returns {Promise<Object>} Resolves with the serialized File object
+   *   representing the newly created zip file.
+   *
+   * Native callbacks:
+   * - files._zipFolderSuccess(data): Called on success.
+   * - files._zipFolderFail(error): Called on failure.
+   */
+  zipFolder({ root = this.roots.documents, subpath = '', zippedFileName = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+  
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+  
+    if(!typechecker.check({ type: 'string', value: zippedFileName })) 
+    {
+      console.error(this.#errors.fileNameTypeError);
+      return;
+    }
+    
+    if(validator.isStringEmpty({ string: zippedFileName }))
+    {
+      console.error(this.#errors.fileNameEmpty);
+      return;
+    }
+  
+    if(this.isValidSubpath({ subpath: subpath }))
+    {
+      let finalZipName = zippedFileName.toLowerCase().endsWith('.zip') ? zippedFileName : `${zippedFileName}.zip`;
+      return new Promise((resolve, reject) =>
+      {
+        this.#zipFolderPendingResolve = resolve;
+        this.#zipFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'zipFolder',
+          root: root,
+          subpath: subpath,
+          zippedFileName: finalZipName
+        });
+      });
+    }
+  }
+  
   /** 
    * Public method that gets called from swift when a file has been created and returned in the createFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
@@ -1737,6 +1808,37 @@ class FilesManager
       this.#writeToFilePendingReject(error);
       this.#writeToFilePendingResolve = null;
       this.#writeToFilePendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been zipped in the zipFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _zipFolderSuccess(data)
+  {
+    data.type = this.#locationTypes.file;
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    if(this.#zipFolderPendingResolve) 
+    {
+      this.#zipFolderPendingResolve(data);
+      this.#zipFolderPendingResolve = null;
+      this.#zipFolderPendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder could not be zipped in the zipFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be zipped.
+   */
+  _zipFolderFail(error) 
+  {
+    if(this.#zipFolderPendingReject) 
+    {
+      this.#zipFolderPendingReject(error);
+      this.#zipFolderPendingResolve = null;
+      this.#zipFolderPendingReject = null;
     }
   }
 }

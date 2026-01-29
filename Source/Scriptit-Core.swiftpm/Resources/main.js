@@ -5,12 +5,55 @@ class HomePage extends ui.Page
   onInit()
   {        
     this.navigationBarTitle = 'Home';
-    this.onNavigationBarTitleTap = () => { console.log(this.navigationBarTitle); }
+    this.backgroundColor = 'red';
     
-    let search = new ui.Textfield();
-    search.spellcheck = false;
+    setTimeout(() => { this.filesRequest(); }, 2000);
+  }
+  
+  filesRequest()
+  {
+    // files.getFolder({ subpath: '' })
+    // .then(folder => 
+    // {
+    //   console.log('Folders:');
+    //   for(let sub of folder.subfolders)
+    //   {
+    //     console.log(sub.name);
+    //   }
+    //   console.log('Files:');
+    //   for(let file of folder.files)
+    //   {
+    //     console.log(file.name);
+    //   }
+    // });
     
-    this.addComponents({ components: [ search ] });
+    // files.deleteFile({ subpath: 'project.zip' })
+    // .then(() => 
+    // {
+    //   files.getFolder({ subpath: '' })
+    //   .then(folder => 
+    //   {
+    //     console.log('Folders:');
+    //     for(let sub of folder.subfolders)
+    //     {
+    //       console.log(sub.name);
+    //     }
+    //     console.log('Files:');
+    //     for(let file of folder.files)
+    //     {
+    //       console.log(file.name);
+    //     }
+    //   });
+    // });
+    
+    // files.createFolder({ folderName: 'Project' })
+    // .then(folder => 
+    // {
+    //   console.log(folder);
+    // });
+    
+    files.zipFolder({ subpath: 'Project/', zippedFileName: 'project' })
+    .then(file => { console.log(file); });
   }
 }
 
