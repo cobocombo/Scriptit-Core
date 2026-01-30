@@ -12,15 +12,20 @@ class HomePage extends ui.Page
   
   filesRequest()
   {
-    files.importFile({ subpath: '' })
-    .then(() => 
+    files.createFile({ fileName: 'up.txt' })
+    .then(file => 
     {
-      files.getFolder({ subpath: '' })
-      .then(folder => 
+      files.copyFile({ oldSubpath: 'up.txt', copiedFileName: 'up.js' })
+      .then(file => 
       {
-        console.log(folder.files);
+        console.log(file.name);
       });
     });
+    // files.getFolder({ subpath: '' })
+    // .then(folder => 
+    // {
+    //   for(let file of folder.files) { console.log(file.name); }
+    // });
   }
 }
 

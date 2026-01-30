@@ -210,6 +210,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   enum Errors: String
   {
     case controllerUnavailable = "Files Message Manager Error: Presenting controller not available."
+    case copyFileFailed        = "Files Message Manager Error: File could not be copied at path:"
     case createFileFailed      = "Files Message Manager Error: File could not be created at path:"
     case createFolderFailed    = "Files Message Manager Error: Folder could not be created at path:"
     case deleteFileFailed      = "Files Message Manager Error: File could not be deleted at path:"
@@ -349,6 +350,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   
     switch command
     {
+      case "copyFile":
+        self.copyFile(dict: dict, webView: webView);
       case "createFile":
         if let fileName = dict["fileName"] as? String { self.createFile(dict: dict, webView: webView, fileName: fileName); }
         else { print(self.errors.missingFileName.rawValue); }  
@@ -593,6 +596,128 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   
     folderInfo["files"] = fileArray;
     return folderInfo;
+  }
+  
+  /**
+   * Public method called from JavaScript to copy a file from one location to another.
+   *
+   * This method resolves the source and destination base folders using JavaScript-
+   * provided root values, constructs the full source and destination paths, and
+   * copies the file while ensuring name uniqueness at the destination.
+   *
+   * If a copiedFileName is provided, it is used as the base name.
+   * Otherwise, "(copy)" is appended to the original filename.
+   * A numeric counter is appended when needed to ensure uniqueness.
+   *
+   * If the copy succeeds, the new file is serialized and returned to JavaScript
+   * via a success callback. If any step fails, a standardized error message is
+   * dispatched back to JavaScript and logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - oldRoot (String): Source base directory ("Documents", "Library", "tmp").
+   * - oldSubpath (String): Relative path to the source file.
+   * - newRoot (String): Destination base directory.
+   * - newSubpath (String): Relative path to the destination folder.
+   * - copiedFileName (String, optional): Custom name for the copied file.
+   *
+   * JavaScript callbacks:
+   * - files._copyFileSuccess(fileInfo): Called when the file is successfully copied.
+   * - files._copyFileFail(error): Called when the file cannot be copied.
+   *
+   * @param dict Dictionary of arguments from JavaScript.
+   * @param webView WKWebView to evaluate JavaScript callbacks.
+   */
+  func copyFile(dict: [String: Any], webView: WKWebView)
+  {
+    guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      return;
+    }
+  
+    guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      return;
+    }
+  
+    guard let oldSubpath = dict["oldSubpath"] as? String,
+          let newSubpath = dict["newSubpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      return;
+    }
+  
+    let customName = dict["copiedFileName"] as? String;
+  
+    let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+  
+    let sourceFile: File;
+    let destinationFolder: Folder;
+  
+    do { sourceFile = try File(path: sourcePath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(sourcePath)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      return;
+    }
+  
+    do { destinationFolder = try Folder(path: destinationParentPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      return;
+    }
+  
+    let fileExtension = sourceFile.extension ?? "";
+    let originalBaseName = sourceFile.nameExcludingExtension;
+  
+    let baseName: String =
+      customName?.isEmpty == false
+        ? (customName!.hasSuffix(".\(fileExtension)") || fileExtension.isEmpty
+            ? String(customName!.dropLast(fileExtension.isEmpty ? 0 : fileExtension.count + 1))
+            : customName!)
+        : "\(originalBaseName)(copy)";
+  
+    var uniqueName: String;
+    var counter = 0;
+    repeat
+    {
+      let suffix = counter == 0 ? "" : "(\(counter))";
+      uniqueName = fileExtension.isEmpty
+        ? "\(baseName)\(suffix)"
+        : "\(baseName)\(suffix).\(fileExtension)";
+      counter += 1;
+    }
+    while destinationFolder.containsFile(named: uniqueName);
+  
+    do
+    {
+      let destinationFile = try destinationFolder.createFile(named: uniqueName);
+      try destinationFile.write(sourceFile.read());
+  
+      let fileInfo = self.serializeFile(destinationFile, relativeTo: newBase);
+      let jsonData = try JSONSerialization.data(withJSONObject: fileInfo);
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+        return;
+      }
+  
+      self.dispatchSuccess(jsCallback: "_copyFileSuccess", payload: jsonString, webView: webView);
+    }
+    catch
+    {
+      let error = self.errors.copyFileFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+    }
   }
   
   /**
