@@ -525,6 +525,8 @@ class FilesManager
   #deleteFilePendingReject = null;
   #deleteFolderPendingResolve = null;
   #deleteFolderPendingReject = null;
+  #exportFilePendingResolve = null;
+  #exportFilePendingReject = null;
   #getFilePendingResolve = null;
   #getFilePendingReject = null;
   #getFolderPendingResolve = null;
@@ -794,6 +796,45 @@ class FilesManager
         this.#deleteFolderPendingReject = reject;
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
           command: 'deleteFolder', root: root, subpath: subpath
+        });
+      });
+    }
+  }
+  
+  /**
+   * Public method to export a file from the iOS filesystem to the files app.
+   * @param {string} root - The root path filesystem type.
+   * @param {string} subpath - The subpath to be added to the root path.
+   * @return {Promise} - Returns a promise with exportFilePendingResolve as the resolve and 
+   * exportFilePendingReject as the reject. If the call is successful the method _exportFileSuccess
+   * gets called. If the call is unsuccessful and no folder is found, then the _exportFileFail
+   * method gets called.
+   */
+  exportFile({ root = this.roots.documents, subpath = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+  
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+  
+    if(this.isValidSubpath({ subpath }))
+    {
+      return new Promise((resolve, reject) =>
+      {
+        this.#exportFilePendingResolve = resolve;
+        this.#exportFilePendingReject = reject;
+  
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'exportFile',
+          root: root,
+          subpath: subpath
         });
       });
     }
@@ -1485,6 +1526,34 @@ class FilesManager
       this.#deleteFolderPendingReject(error);
       this.#deleteFolderPendingResolve = null;
       this.#deleteFolderPendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a file has been exported in the exportFile method within the files module. 
+   * @param {object} data - Object returned that conforms to the File data type.
+   */
+  _exportFileSuccess()
+  {  
+    if(this.#exportFilePendingResolve) 
+    {
+      this.#exportFilePendingResolve();
+      this.#exportFilePendingResolve = null;
+      this.#exportFilePendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a failure occurred when calling exportFile method within the files module. 
+   * @param {object} error - The error returned on why the file could not be exported.
+   */
+  _exportFileFail(error)
+  {
+    if(this.#exportFilePendingReject) 
+    {
+      this.#exportFilePendingReject(error);
+      this.#exportFilePendingResolve = null;
+      this.#exportFilePendingReject = null;
     }
   }
   

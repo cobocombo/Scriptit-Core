@@ -12,48 +12,15 @@ class HomePage extends ui.Page
   
   filesRequest()
   {
-    // files.getFolder({ subpath: '' })
-    // .then(folder => 
-    // {
-    //   console.log('Folders:');
-    //   for(let sub of folder.subfolders)
-    //   {
-    //     console.log(sub.name);
-    //   }
-    //   console.log('Files:');
-    //   for(let file of folder.files)
-    //   {
-    //     console.log(file.name);
-    //   }
-    // });
-    
-    // files.deleteFile({ subpath: 'project.zip' })
-    // .then(() => 
-    // {
-    //   files.getFolder({ subpath: '' })
-    //   .then(folder => 
-    //   {
-    //     console.log('Folders:');
-    //     for(let sub of folder.subfolders)
-    //     {
-    //       console.log(sub.name);
-    //     }
-    //     console.log('Files:');
-    //     for(let file of folder.files)
-    //     {
-    //       console.log(file.name);
-    //     }
-    //   });
-    // });
-    
-    // files.createFolder({ folderName: 'Project' })
-    // .then(folder => 
-    // {
-    //   console.log(folder);
-    // });
-    
-    files.zipFolder({ subpath: 'Project/', zippedFileName: 'project' })
-    .then(file => { console.log(file); });
+    files.importFile({ subpath: '' })
+    .then(() => 
+    {
+      files.getFolder({ subpath: '' })
+      .then(folder => 
+      {
+        console.log(folder.files);
+      });
+    });
   }
 }
 

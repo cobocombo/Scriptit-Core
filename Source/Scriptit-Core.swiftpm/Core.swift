@@ -226,6 +226,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     case missingFolderName     = "Files Message Manager Error: Folder name was not found."
     case moveFileFailed        = "Files Message Manager Error: File could not be moved at path:"
     case moveFolderFailed      = "Files Message Manager Error: Folder could not be moved at path:"
+    case operationCancelled    = "Files Message Manager Error: Import or export operation cancelled."
     case parentFolderNotFound  = "Files Message Manager Error: Parent folder not found."
     case readFileFailed        = "Files Message Manager Error: File could not be read at path:"
     case renameFileFailed      = "Files Message Manager Error: File could not be renamed at path:"
@@ -358,6 +359,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         self.deleteFile(dict: dict, webView: webView);
       case "deleteFolder":
         self.deleteFolder(dict: dict, webView: webView);
+      case "exportFile":
+        self.exportFile(dict: dict, webView: webView);
       case "getFile":
         self.getFile(dict: dict, webView: webView);
       case "getFolder":
@@ -1098,55 +1101,151 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   }
   
   /**
-   * UIDocumentPicker delegate callback invoked after the user selects files.
+   * Public method called from JavaScript to export a file
+   * to the system Files app using the document exporter.
    *
-   * Copies supported files into the destination root + subpath, ensuring
-   * imported filenames are unique. Imported files are serialized and
-   * returned to JavaScript. Any failure is routed through standardized
-   * error dispatch.
+   * Expected JavaScript input (dict):
+   * - root (String): One of "Documents", "Library", or "tmp"
+   * - subpath (String): Relative path to the file to export
+   *
+   * JavaScript callbacks:
+   * - files._exportFileSuccess()
+   * - files._exportFileFail(error)
+   */
+  func exportFile(dict: [String: Any], webView: WKWebView)
+  {
+    guard let controller = self.presentingController else
+    {
+      let error = self.errors.controllerUnavailable.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      return;
+    }
+  
+    guard let root = dict["root"] as? String else
+    {
+      let error = self.errors.rootNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      return;
+    }
+  
+    guard let baseFolder = self.resolveBaseFolder(from: root) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let file: File;
+    do { file = try File(path: targetPath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      return;
+    }
+  
+    let fileURL = URL(fileURLWithPath: file.path);
+    self.webView = webView;
+  
+    let picker = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true);
+    picker.delegate = self;
+    picker.modalPresentationStyle = .formSheet;
+    controller.present(picker, animated: true);
+  }
+  
+  /**
+   * UIDocumentPicker delegate callback invoked after the user
+   * completes an import or export operation.
+   *
+   * This method is shared by both importFile and exportFile flows.
    */
   func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
   {
-    guard
-      let webView = self.webView,
+    guard let webView = self.webView else { return; }
+  
+    // ---------------------------------------------
+    // IMPORT FLOW
+    // ---------------------------------------------
+    if
       let root = self.importDestinationRoot,
       let subpath = self.importDestinationSubpath,
       let baseFolder = self.resolveBaseFolder(from: root)
-    else { return; }
-  
-    let destinationPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
-    do
     {
-      let destinationFolder = try Folder(path: destinationPath);
-      var importedFiles: [[String: Any]] = [];
-      for url in urls
+      let destinationPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+  
+      do
       {
-        let ext = url.pathExtension.lowercased();
-        if let allowed = self.importAllowedExtensions,
-           !allowed.contains(ext) { continue; }
-        let baseName = url.deletingPathExtension().lastPathComponent;
-        var index = 0;
-        var finalName = "\(baseName).\(ext)";
-        while destinationFolder.containsFile(named: finalName)
+        let destinationFolder = try Folder(path: destinationPath);
+        var importedFiles: [[String: Any]] = [];
+  
+        for url in urls
         {
-          index += 1;
-          finalName = "\(baseName)(\(index)).\(ext)";
+          let ext = url.pathExtension.lowercased();
+          if let allowed = self.importAllowedExtensions,
+             !allowed.contains(ext) { continue; }
+  
+          let baseName = url.deletingPathExtension().lastPathComponent;
+          var index = 0;
+          var finalName = "\(baseName).\(ext)";
+  
+          while destinationFolder.containsFile(named: finalName)
+          {
+            index += 1;
+            finalName = "\(baseName)(\(index)).\(ext)";
+          }
+  
+          let importedFile = try destinationFolder.createFile(named: finalName, contents: try Data(contentsOf: url));
+          let info = self.serializeFile(importedFile, relativeTo: baseFolder);
+          importedFiles.append(info);
         }
   
-        let importedFile = try destinationFolder.createFile(named: finalName, contents: try Data(contentsOf: url));
-        let info = self.serializeFile(importedFile, relativeTo: baseFolder);
-        importedFiles.append(info);
+        let jsonData = try JSONSerialization.data(withJSONObject: importedFiles);
+        let jsonString = String(data: jsonData, encoding: .utf8)!;
+        self.dispatchSuccess(jsCallback: "_importFileSuccess", payload: jsonString, webView: webView);
+      }
+      catch
+      {
+        let error = self.errors.importFileFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
       }
   
-      let jsonData = try JSONSerialization.data(withJSONObject: importedFiles);
-      let jsonString = String(data: jsonData, encoding: .utf8)!;
-      self.dispatchSuccess(jsCallback: "_importFileSuccess", payload: jsonString, webView: webView);
+      self.importDestinationRoot = nil;
+      self.importDestinationSubpath = nil;
+      self.importAllowedExtensions = nil;
+      self.webView = nil;
+      return;
     }
-    catch
-    {
-      let error = self.errors.importFileFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
-    }
+  
+    // ---------------------------------------------
+    // EXPORT FLOW
+    // ---------------------------------------------
+    self.dispatchSuccess(jsCallback: "_exportFileSuccess", webView: webView);
+    self.webView = nil;
+  }
+  
+  /**
+   * UIDocumentPicker delegate callback invoked when the user
+   * cancels the document picker.
+   *
+   * This is shared by both import and export flows.
+   * Import triggers a failure callback.
+   * Export triggers a failure callback.
+   */
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
+  {
+    guard let webView = self.webView else { return; }
+  
+    let error = self.errors.operationCancelled.rawValue;
+    if self.importDestinationRoot != nil { self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView); }
+    else { self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView); }
   
     self.importDestinationRoot = nil;
     self.importDestinationSubpath = nil;
