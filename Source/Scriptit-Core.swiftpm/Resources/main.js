@@ -12,20 +12,21 @@ class HomePage extends ui.Page
   
   filesRequest()
   {
-    files.createFile({ fileName: 'up.txt' })
-    .then(file => 
-    {
-      files.copyFile({ oldSubpath: 'up.txt', copiedFileName: 'up.js' })
-      .then(file => 
-      {
-        console.log(file.name);
-      });
-    });
-    // files.getFolder({ subpath: '' })
+    // files.createFolder({ folderName: 'Nope' })
     // .then(folder => 
     // {
-    //   for(let file of folder.files) { console.log(file.name); }
+    //   files.copyFolder({ oldSubpath: 'Nope/', copiedFolderName: 'Maybe' })
+    //   .then(folder => 
+    //   {
+    //     console.log(folder.name);
+    //   });
     // });
+    
+    files.getFolder({ subpath: '' })
+    .then(folder => 
+    {
+      for(let fol of folder.subfolders) { console.log(fol.name); }
+    });
   }
 }
 

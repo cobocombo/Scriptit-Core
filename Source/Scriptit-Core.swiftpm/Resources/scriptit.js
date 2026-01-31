@@ -519,6 +519,8 @@ class FilesManager
   
   #copyFilePendingResolve = null;
   #copyFilePendingReject = null;
+  #copyFolderPendingResolve = null;
+  #copyFolderPendingReject = null;
   #createFilePendingResolve = null;
   #createFilePendingReject = null;
   #createFolderPendingResolve = null;
@@ -634,9 +636,10 @@ class FilesManager
   /** 
    * Public method to copy an existing file at the specified path to another path with a optional custom name in the iOS filesystem. 
    * @param {string} oldRoot - The root path filesystem type of the file to be copied.
-   * @param {string} newRoot - The root path filesystem type of the folder we intend to the copy to.
+   * @param {string} newRoot - The root path filesystem type of the folder we intend to do the copy to.
    * @param {string} oldSubpath - The subpath to be added to the oldRootPath.
    * @param {string} newSubpath - The subpath to be added to the newRootPath.
+   * @param {string} copiedFileName - Optional file name for the copied file.
    * @return {Promise} - Returns a promise with copyFilePendingResolve as the resolve and copyFilePendingReject as the reject. If the call is successful the method _copyFileSuccess gets called. If the call is unsuccessful, then the _copyFileFail method gets called.
    */
   copyFile({ oldRoot = this.roots.documents, newRoot = this.roots.documents, oldSubpath = '', newSubpath = '', copiedFileName = '' })
@@ -678,6 +681,59 @@ class FilesManager
           oldSubpath: oldSubpath,
           newSubpath: newSubpath,
           copiedFileName: copiedFileName
+        });
+      });
+    }
+  }
+  
+  /** 
+   * Public method to copy an existing folder at the specified path to another path with a optional custom name in the iOS filesystem. 
+   * @param {string} oldRoot - The root path filesystem type of the folder to be copied.
+   * @param {string} newRoot - The root path filesystem type of the folder we intend to do the copy to.
+   * @param {string} oldSubpath - The subpath to be added to the oldRootPath.
+   * @param {string} newSubpath - The subpath to be added to the newRootPath.
+   * @param {string} copiedFolderName - Optional folder name for the copied folder.
+   * @return {Promise} - Returns a promise with copyFolderPendingResolve as the resolve and copyFolderPendingReject as the reject. If the call is successful the method _copyFolderSuccess gets called. If the call is unsuccessful, then the _copyFolderFail method gets called.
+   */
+  copyFolder({ oldRoot = this.roots.documents, newRoot = this.roots.documents, oldSubpath = '', newSubpath = '', copiedFolderName = '' })
+  {
+    if(!typechecker.check({ type: 'string', value: oldRoot }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(oldRoot))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(!typechecker.check({ type: 'string', value: newRoot }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(newRoot))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
+    {
+      return new Promise((resolve, reject) => 
+      {
+        this.#copyFolderPendingResolve = resolve;
+        this.#copyFolderPendingReject = reject;
+        window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+          command: 'copyFolder', 
+          oldRoot: oldRoot,
+          newRoot: newRoot, 
+          oldSubpath: oldSubpath,
+          newSubpath: newSubpath,
+          copiedFolderName: copiedFolderName
         });
       });
     }
@@ -1478,6 +1534,54 @@ class FilesManager
       this.#copyFilePendingReject(error);
       this.#copyFilePendingResolve = null;
       this.#copyFilePendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder has been copied and returned in the copyFolder method within the files module. 
+   * @param {object} data - Object returned that conforms to the Folder data type.
+   */
+  _copyFolderSuccess(data)
+  {
+    data.type = this.#locationTypes.folder;
+    
+    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(data.subfolders.length !== 0) 
+    {
+      for(let sub of data.subfolders) 
+      {
+        sub.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(data.files.length !== 0) 
+    {
+      for(let file of data.files) 
+      {
+        file.type = this.#locationTypes.file;
+        if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
+      }
+    }
+    
+    if(this.#copyFolderPendingResolve) 
+    {
+      this.#copyFolderPendingResolve(data);
+      this.#copyFolderPendingResolve = null;
+      this.#copyFolderPendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when a folder could not be copied in the copyFolder method within the files module. 
+   * @param {object} error - The error returned on why the folder could not be copied.
+   */
+  _copyFolderFail(error) 
+  {
+    if(this.#copyFolderPendingReject) 
+    {
+      this.#copyFolderPendingReject(error);
+      this.#copyFolderPendingResolve = null;
+      this.#copyFolderPendingReject = null;
     }
   }
   

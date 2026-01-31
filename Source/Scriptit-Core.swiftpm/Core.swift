@@ -211,6 +211,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   {
     case controllerUnavailable = "Files Message Manager Error: Presenting controller not available."
     case copyFileFailed        = "Files Message Manager Error: File could not be copied at path:"
+    case copyFolderFailed      = "Files Message Manager Error: Folder could not be copied at path:"
     case createFileFailed      = "Files Message Manager Error: File could not be created at path:"
     case createFolderFailed    = "Files Message Manager Error: Folder could not be created at path:"
     case deleteFileFailed      = "Files Message Manager Error: File could not be deleted at path:"
@@ -352,6 +353,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     {
       case "copyFile":
         self.copyFile(dict: dict, webView: webView);
+      case "copyFolder":
+        self.copyFolder(dict: dict, webView: webView);
       case "createFile":
         if let fileName = dict["fileName"] as? String { self.createFile(dict: dict, webView: webView, fileName: fileName); }
         else { print(self.errors.missingFileName.rawValue); }  
@@ -717,6 +720,103 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     {
       let error = self.errors.copyFileFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
       self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to copy a folder from one location to another.
+   *
+   * This method resolves the source and destination base folders using JavaScript-
+   * provided root values, constructs the full source and destination paths, and
+   * copies the folder recursively while ensuring name uniqueness at the destination.
+   *
+   * If copiedFolderName is provided, it is used as the base name.
+   * Otherwise, "(copy)" is appended to the source folder’s name.
+   * A numeric counter is appended when needed to ensure uniqueness.
+   *
+   * If the copy succeeds, the new folder is serialized and returned to JavaScript
+   * via a success callback. If any step fails, a standardized error message is
+   * dispatched back to JavaScript.
+   */
+  func copyFolder(dict: [String: Any], webView: WKWebView)
+  {
+    guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      return
+    };
+  
+    guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      return;
+    }
+  
+    guard let oldSubpath = dict["oldSubpath"] as? String,
+          let newSubpath = dict["newSubpath"] as? String
+    else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      return;
+    }
+  
+    let customName = dict["copiedFolderName"] as? String;
+    let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+    let sourceFolder: Folder;
+    let destinationParent: Folder;
+    do { sourceFolder = try Folder(path: sourcePath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(sourcePath)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      return;
+    }
+  
+    do { destinationParent = try Folder(path: destinationParentPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      return;
+    }
+  
+    let baseName: String = customName?.isEmpty == false ? customName! : "\(sourceFolder.name)(copy)";
+  
+    var uniqueName: String;
+    var counter = 0;
+    repeat
+    {
+      let suffix = counter == 0 ? "" : "(\(counter))";
+      uniqueName = "\(baseName)\(suffix)";
+      counter += 1;
+    }
+    while destinationParent.containsSubfolder(named: uniqueName)
+  
+    do
+    {
+      let destinationFolder = try destinationParent.createSubfolder(named: uniqueName);
+      try sourceFolder.copy(to: destinationFolder);
+      let folderInfo = self.serializeFolder(destinationFolder, relativeTo: newBase.path);
+      
+      let jsonData = try JSONSerialization.data(withJSONObject: folderInfo);
+      guard let jsonString = String(data: jsonData, encoding: .utf8)
+      else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+        return;
+      }
+  
+      self.dispatchSuccess(jsCallback: "_copyFolderSuccess", payload: jsonString, webView: webView);
+    }
+    catch
+    {
+      let error = self.errors.copyFolderFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
     }
   }
   
