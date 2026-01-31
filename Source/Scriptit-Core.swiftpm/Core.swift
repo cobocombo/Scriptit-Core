@@ -209,35 +209,35 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   
   enum Errors: String
   {
-    case controllerUnavailable = "Files Message Manager Error: Presenting controller not available."
-    case copyFileFailed        = "Files Message Manager Error: File could not be copied at path:"
-    case copyFolderFailed      = "Files Message Manager Error: Folder could not be copied at path:"
-    case createFileFailed      = "Files Message Manager Error: File could not be created at path:"
-    case createFolderFailed    = "Files Message Manager Error: Folder could not be created at path:"
-    case deleteFileFailed      = "Files Message Manager Error: File could not be deleted at path:"
-    case deleteFolderFailed    = "Files Message Manager Error: Folder could not be deleted at path:"
-    case fileNotFound          = "Files Message Manager Error: File not found at path:"
-    case folderNotFound        = "Files Message Manager Error: Folder not found at path:"
-    case importFileFailed      = "Files Message Manager Error: File could not be imported at path:"
-    case invalidFileTypes      = "Files Message Manager Error: Invalid file type."
-    case invalidMessageBody    = "Files Message Manager Error: Message body not found."
-    case invalidRoot           = "Files Message Manager Error: Invalid root provided."
-    case jsonEncodingFailed    = "Files Message Manager Error: Failed to encode JSON."
-    case missingCommand        = "Files Message Manager Error: Command not found."
-    case missingFileName       = "Files Message Manager Error: File name was not found."
-    case missingFolderName     = "Files Message Manager Error: Folder name was not found."
-    case moveFileFailed        = "Files Message Manager Error: File could not be moved at path:"
-    case moveFolderFailed      = "Files Message Manager Error: Folder could not be moved at path:"
-    case operationCancelled    = "Files Message Manager Error: Import or export operation cancelled."
-    case parentFolderNotFound  = "Files Message Manager Error: Parent folder not found."
-    case readFileFailed        = "Files Message Manager Error: File could not be read at path:"
-    case renameFileFailed      = "Files Message Manager Error: File could not be renamed at path:"
-    case renameFolderFailed    = "Files Message Manager Error: Folder could not be renamed at path:"
-    case rootNotProvided       = "Files Message Manager Error: Root was not provided."
-    case subpathNotProvided    = "Files Message Manager Error: Subpath was not provided."
-    case unknownCommand        = "Files Message Manager Error: Unknown command."
-    case writeToFileFailed     = "Files Message Manager Error: File could not be written to at path:"
-    case zipFailed             = "Files Message Manager Error: Zip failed at path:"
+    case controllerUnavailable = "Files Error: Presenting controller not available."
+    case copyFileFailed        = "Files Error: File could not be copied at path:"
+    case copyFolderFailed      = "Files Error: Folder could not be copied at path:"
+    case createFileFailed      = "Files Error: File could not be created at path:"
+    case createFolderFailed    = "Files Error: Folder could not be created at path:"
+    case deleteFileFailed      = "Files Error: File could not be deleted at path:"
+    case deleteFolderFailed    = "Files Error: Folder could not be deleted at path:"
+    case fileNotFound          = "Files Error: File not found at path:"
+    case folderNotFound        = "Files Error: Folder not found at path:"
+    case importFileFailed      = "Files Error: File could not be imported at path:"
+    case invalidFileTypes      = "Files Error: Invalid file type."
+    case invalidMessageBody    = "Files Error: Message body not found."
+    case invalidRoot           = "Files Error: Invalid root provided."
+    case jsonEncodingFailed    = "Files Error: Failed to encode JSON."
+    case missingCommand        = "Files Error: Command not found."
+    case missingFileName       = "Files Error: File name was not found."
+    case missingFolderName     = "Files Error: Folder name was not found."
+    case moveFileFailed        = "Files Error: File could not be moved at path:"
+    case moveFolderFailed      = "Files Error: Folder could not be moved at path:"
+    case operationCancelled    = "Files Error: Import or export operation cancelled."
+    case parentFolderNotFound  = "Files Error: Parent folder not found."
+    case readFileFailed        = "Files Error: File could not be read at path:"
+    case renameFileFailed      = "Files Error: File could not be renamed at path:"
+    case renameFolderFailed    = "Files Error: Folder could not be renamed at path:"
+    case rootNotProvided       = "Files Error: Root was not provided."
+    case subpathNotProvided    = "Files Error: Subpath was not provided."
+    case unknownCommand        = "Files Error: Unknown command."
+    case writeToFileFailed     = "Files Error: File could not be written to at path:"
+    case zipFailed             = "Files Error: Zip failed at path:"
   }
   
   let errors = Errors.self;
@@ -326,8 +326,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   * or root paths) are present and logs errors if any are missing.
   *
   * Supported commands:
-  * - createFile, createFolder, deleteFile, deleteFolder
-  * - getFile, getFolder, importFile
+  * - copyFile, copyFolder, createFile, createFolder, deleteFile, deleteFolder
+  * - exportFile, getFile, getFolder, importFile
   * - moveFile, moveFolder
   * - readFile, renameFile, renameFolder
   * - writeToFile
@@ -2159,39 +2159,144 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
 
 //=============================================//
 
-/** Class that manages messages the hud module. */
-class HudMessageManager: JavascriptMessageManager 
+/** Class that manages messages for the hud module. */
+class HudMessageManager: JavascriptMessageManager
 {
-  /** Method to handle messages for the hud module. Calls the the correct hud method as needed. */
-  func handleMessage(_ message: WKScriptMessage, webView: WKWebView) 
+  enum Errors: String
   {
-    let dict = message.body as? [String: Any];
-    let command = dict!["command"] as? String;
-    let hudMessage = dict!["message"] as? String;
-    let delay = dict!["timeout"] as? Double;
+    case invalidMessageBody = "HUD Error: Invalid message body."
+    case commandNotProvided = "HUD Error: Command not provided."
+    case invalidCommand = "HUD Error: Invalid command."
+    case invalidMessage = "HUD Error: Invalid message."
+    case invalidTimeout = "HUD Error: Invalid timeout value."
+  }
+  
+  let errors = Errors.self;
 
-    switch command 
+  /**
+   * Entry point for all JavaScript messages targeting the HUD module.
+   *
+   * This method validates the incoming message payload, extracts the
+   * required command and optional parameters, and routes execution
+   * to the appropriate HUD action.
+   *
+   * Invalid input or unsupported commands are logged using standardized
+   * error messages and do not crash the application.
+   *
+   * Expected JavaScript input (dict):
+   * - command (String): HUD command ("added", "failed", "loading", "succeed", "dismiss")
+   * - message (String, optional): HUD display text
+   * - timeout (Double, optional): Delay before auto-dismiss
+   *
+   * @param message The WKScriptMessage sent from JavaScript.
+   * @param webView The WKWebView instance associated with the message.
+   */
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+  {
+    guard let dict = message.body as? [String: Any] else
+    {
+      let error = self.errors.invalidMessageBody.rawValue;
+      print(error);
+      return;
+    }
+
+    guard let command = dict["command"] as? String else
+    {
+      let error = self.errors.commandNotProvided.rawValue;
+      print(error);
+      return;
+    }
+
+    let hudMessage = dict["message"] as? String;
+    let timeoutValue = dict["timeout"];
+
+    var delay: Double = 0;
+    if let timeout = timeoutValue
+    {
+      guard let parsedDelay = timeout as? Double else
+      {
+        let error = self.errors.invalidTimeout.rawValue;
+        print(error);
+        return;
+      }
+      delay = parsedDelay;
+    }
+
+    switch command
     {
       case "added":
-        if let msg = hudMessage { delay! > 0 ? ProgressHUD.added(msg, delay: delay) : ProgressHUD.added(msg) } 
-        else { delay! > 0 ? ProgressHUD.added(delay: delay) : ProgressHUD.added() }
+        self.handleAdded(message: hudMessage, delay: delay)
       case "failed":
-        if let msg = hudMessage { delay! > 0 ? ProgressHUD.failed(msg, delay: delay) : ProgressHUD.failed(msg) } 
-        else { delay! > 0 ? ProgressHUD.failed(delay: delay) : ProgressHUD.failed() }
+        self.handleFailed(message: hudMessage, delay: delay)
       case "loading":
-        if let msg = hudMessage { ProgressHUD.animate(msg) } 
-        else { ProgressHUD.animate() }
+        self.handleLoading(message: hudMessage)
       case "succeed":
-        if let msg = hudMessage { delay! > 0 ? ProgressHUD.succeed(msg, delay: delay) : ProgressHUD.succeed(msg)} 
-        else { delay! > 0 ? ProgressHUD.succeed(delay: delay) : ProgressHUD.succeed() }
+        self.handleSucceed(message: hudMessage, delay: delay)
       case "dismiss":
         ProgressHUD.dismiss()
       default:
-        print("❌ HudMessageManager Error: Unknown command");
-        return;
+        let error = self.errors.invalidCommand.rawValue + " (\(command)).";
+        print(error);
     }
   }
-}
 
+  /**
+   * Displays a success-style HUD indicating an item was added.
+   *
+   * If a message is provided, it is displayed to the user.
+   * If a delay is greater than zero, the HUD auto-dismisses after the delay.
+   *
+   * @param message Optional text to display in the HUD.
+   * @param delay Optional delay before dismissal.
+   */
+  func handleAdded(message: String?, delay: Double)
+  {
+    if let msg = message { delay > 0 ? ProgressHUD.added(msg, delay: delay) : ProgressHUD.added(msg); }
+    else { delay > 0 ? ProgressHUD.added(delay: delay) : ProgressHUD.added(); }
+  }
+
+  /**
+   * Displays an error-style HUD indicating a failure occurred.
+   *
+   * If a message is provided, it is displayed to the user.
+   * If a delay is greater than zero, the HUD auto-dismisses after the delay.
+   *
+   * @param message Optional text to display in the HUD.
+   * @param delay Optional delay before dismissal.
+   */
+  func handleFailed(message: String?, delay: Double)
+  {
+    if let msg = message { delay > 0 ? ProgressHUD.failed(msg, delay: delay) : ProgressHUD.failed(msg); }
+    else { delay > 0 ? ProgressHUD.failed(delay: delay) : ProgressHUD.failed(); }
+  }
+
+  /**
+   * Displays a loading or indeterminate-progress HUD.
+   *
+   * If a message is provided, it is displayed alongside the animation.
+   *
+   * @param message Optional loading text to display.
+   */
+  func handleLoading(message: String?)
+  {
+    if let msg = message { ProgressHUD.animate(msg); }
+    else { ProgressHUD.animate(); }
+  }
+
+  /**
+   * Displays a success-style HUD indicating a successful operation.
+   *
+   * If a message is provided, it is displayed to the user.
+   * If a delay is greater than zero, the HUD auto-dismisses after the delay.
+   *
+   * @param message Optional text to display in the HUD.
+   * @param delay Optional delay before dismissal.
+   */
+  func handleSucceed(message: String?, delay: Double)
+  {
+    if let msg = message { delay > 0 ? ProgressHUD.succeed(msg, delay: delay) : ProgressHUD.succeed(msg); }
+    else { delay > 0 ? ProgressHUD.succeed(delay: delay) : ProgressHUD.succeed(); }
+  }
+}
 
 //=======================================================//

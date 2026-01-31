@@ -557,24 +557,23 @@ class FilesManager
   {
     this.#errors = 
     {
-      absolutePathError: 'Files Manager Error: Absolute paths are not allowed.',
-      contentEmpty: 'Files Manager Error: Content empty.',
-      contentTypeError: 'Files Manager Error: Expected type string for content.',
-      directoryTraversalError: 'Files Manager Error: Directory traversal is not allowed.',
-      excessiveLengthError: 'Files Manager Error: Excessive length detected for segment of path.',
-      fileNameEmpty: 'Files Manager Error: File name empty.',
-      fileNameTypeError: 'Files Manager Error: Expected type string for fileName.',
-      folderNameEmpty: 'Files Manager Error: Folder name empty.',
-      folderNameTypeError: 'Files Manager Error: Expected type string for folderName.',
-      folderNotFoundError: (path) => `Files Manager Error: No folder could be found at the path: '${path}'`,
-      invalidCharsError: 'Files Manager Error: Invalid char detected. The following chars are not supported: [<>:"|?*]',
-      invalidRootError: 'Files Manager Error: Invalid root detected. Valid values are in files.roots object.',
-      newlineTypeError: 'Files Manager Error: Expected type boolean for newline.',
-      replaceTypeError: 'Files Manager Error: Expected type boolean for replace.',
-      rootTypeError: 'Files Manager Error: Expected type string for root.',
-      singleInstanceError: 'Files Manager Error: Only one FilesManager object can exist at a time.',
-      subpathTypeError: 'Files Manager Error: Expected type string for subpath',
-      windowsSlashesError: 'Files Manager Error: Windows style slashes are not allowed.'
+      absolutePathError: 'Files Error: Absolute paths are not allowed.',
+      contentEmpty: 'Files Error: Content empty.',
+      contentTypeError: 'Files Error: Expected type string for content.',
+      directoryTraversalError: 'Files Error: Directory traversal is not allowed.',
+      excessiveLengthError: 'Files Error: Excessive length detected for segment of path.',
+      fileNameEmpty: 'Files Error: File name empty.',
+      fileNameTypeError: 'Files Error: Expected type string for fileName.',
+      folderNameEmpty: 'Files Error: Folder name empty.',
+      folderNameTypeError: 'Files Error: Expected type string for folderName.',
+      invalidCharsError: 'Files Error: Invalid char detected. The following chars are not supported: [<>:"|?*]',
+      invalidRootError: 'Files Error: Invalid root detected. Valid values are in files.roots object.',
+      newlineTypeError: 'Files Error: Expected type boolean for newline.',
+      replaceTypeError: 'Files Error: Expected type boolean for replace.',
+      rootTypeError: 'Files Error: Expected type string for root.',
+      singleInstanceError: 'Files Error: Only one FilesManager object can exist at a time.',
+      subpathTypeError: 'Files Error: Expected type string for subpath',
+      windowsSlashesError: 'Files Error: Windows style slashes are not allowed.'
     };
 
     if(FilesManager.#instance) console.error(this.#errors.singleInstanceError);
