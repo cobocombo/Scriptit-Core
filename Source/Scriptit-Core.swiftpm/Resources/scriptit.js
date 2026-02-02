@@ -531,6 +531,8 @@ class FilesManager
   #deleteFolderPendingReject = null;
   #exportFilePendingResolve = null;
   #exportFilePendingReject = null;
+  #getAbsoluteRootPathPendingResolve = null;
+  #getAbsoluteRootPathPendingReject = null;
   #getFilePendingResolve = null;
   #getFilePendingReject = null;
   #getFolderPendingResolve = null;
@@ -602,6 +604,7 @@ class FilesManager
     
     this.#roots = 
     {
+      bundle: 'Bundle',
       documents: 'Documents',
       library: 'Library',
       temporary: 'tmp'
@@ -947,6 +950,37 @@ class FilesManager
         });
       });
     }
+  }
+  
+  /** 
+   * Public method to get and return the absolute path of a root directory. 
+   * @param {string} root - The root path filesystem type.
+   * @return {Promise} - Returns a promise with getAbsoluteRootPathPendingResolve as the resolve and 
+   * getAbsoluteRootPathPendingReject as the reject. If the call is successful the method _getAbsoluteRootPathSuccess
+   * gets called. If the call is unsuccessful, then the _getAbsoluteRootPathFail method gets called.
+   */
+  getAbsoluteRootPath({ root = this.roots.documents })
+  {
+    if(!typechecker.check({ type: 'string', value: root }))
+    {
+      console.error(this.#errors.rootTypeError);
+      return;
+    }
+   
+    if(!Object.values(this.#roots).includes(root))
+    {
+      console.error(this.#errors.invalidRootError);
+      return;
+    }
+    
+    return new Promise((resolve, reject) => 
+    {
+      this.#getAbsoluteRootPathPendingResolve = resolve;
+      this.#getAbsoluteRootPathPendingReject = reject;
+      window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
+        command: 'getAbsoluteRootPath', root: root
+      });
+    });
   }
   
   /** 
@@ -1746,6 +1780,34 @@ class FilesManager
   }
   
   /** 
+   * Public method that gets called from swift when an absolute root path has been returned within the files module. 
+   * @param {object} data - Object with root and absolutePath.
+   */
+  _getAbsoluteRootPathSuccess(data)
+  {
+    if(this.#getAbsoluteRootPathPendingResolve) 
+    {
+      this.#getAbsoluteRootPathPendingResolve(data);
+      this.#getAbsoluteRootPathPendingResolve = null;
+      this.#getAbsoluteRootPathPendingReject = null;
+    }
+  }
+  
+  /** 
+   * Public method that gets called from swift when an absolute root path couldn't be returned within the files module. 
+   * @param {object} error - The error returned on why the absolute root path couldn't be returned.
+   */
+  _getAbsoluteRootPathFail(error) 
+  {
+    if(this.#getAbsoluteRootPathPendingReject) 
+    {
+      this.#getAbsoluteRootPathPendingReject(error);
+      this.#getAbsoluteRootPathPendingResolve = null;
+      this.#getAbsoluteRootPathPendingReject = null;
+    }
+  }
+  
+  /** 
    * Public method that gets called from swift when a file has been found successfully in the getFile method within the files module. 
    * @param {object} data - Object returned that conforms to the File data type.
    */
@@ -2276,7 +2338,7 @@ class UserInterface
   /** Get property to return a new instance of BackBarButton. */
   get BackBarButton() 
   {
-    return_BackBarButton_;
+    return _BackBarButton_;
   }
   
   /** Get property to return a new instance of BarButton. */
@@ -2499,6 +2561,12 @@ class UserInterface
   get Toast() 
   {
     return _Toast_;
+  }
+  
+  /** Get property to return a new instance of Toast. */
+  get Webbrowser() 
+  {
+    return _Webbrowser_;
   }
 
   /** 
@@ -9465,7 +9533,7 @@ class _Toast_ extends Component
     this.#timeout = value;
   }
   
-  /** Public method to present a toast notification.*/
+  /** Public method to present a toast notification. */
   present() 
   {
     document.body.appendChild(this.element);
@@ -9478,6 +9546,136 @@ class _Toast_ extends Component
   {
     this.element.hide();
   }
+}
+
+/////////////////////////////////////////////////
+
+/** Class representing the Webbrowser component. */
+class _Webbrowser_ extends Component
+{
+  #errors;
+  #html;
+  #url;
+
+  constructor(options = {})
+  {
+    super({ tagName: 'iframe', options: options });
+
+    this.#errors =
+    {
+      invalidSrcType: 'Webbrowser Error: Expected type string for src.',
+      invalidURL: 'Webbrowser Error: Invalid URL provided: ',
+      executeJSType: 'Webbrowser Error: Expected type string for script.',
+      executeJSError: 'Webbrowser Error: Ran into the following error while evaluating JS:'
+    };
+    
+    this.#html = null;
+    this.$url = null;
+    
+    let sandboxScope = ['allow-downloads', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-top-navigation', 'allow-top-navigation-by-user-activation' ];
+    
+    this.setAttribute({ key: 'sandbox', value: sandboxScope.join(' ') });
+    this.setAttribute({ key: 'frameborder', value: '0' });
+    
+    this.width = '100%';
+    this.height = '100%';
+  }
+
+  /** 
+   * Get property to return the html of the webbrowser.
+   * @return {String} The html of the webbrowser.
+   */
+  get html()
+  {
+    return this.#html;
+  }
+  
+  /** 
+   * Get property to return the url of the webbrowser.
+   * @return {String} The url of the webbrowser.
+   */
+  get url()
+  {
+    return this.#url;
+  }
+  
+  /**
+   * Executes javascript code within the iframe.
+   * @param {String} script - The javascript code to run.
+   */
+  executeJS({ script })
+  {
+    if(!typechecker.check({ type: 'string', value: script }))
+    {
+      console.error(this.#errors.executeJSType);
+      return;
+    }
+    
+    try { this.element.contentWindow.eval(script); }
+    catch(e) { console.error(this.#errors.executeJSError + e); }
+  }
+
+  /**
+   * Loads external html into the iframe.
+   * @param {string} url - The html string to load.
+   */
+  loadHTML({ html })
+  {
+    if(!typechecker.check({ type: 'string', value: html }))
+    {
+      console.error(this.#errors.invalidSrcType);
+      return;
+    } 
+
+    let blob = new Blob([html], { type: 'text/html' });
+    let src = URL.createObjectURL(blob);
+    this.setAttribute({ key: 'src', value: src });
+    this.#html = html;
+    this.#url = null;
+  }
+  
+  /**
+   * Loads an external internet URL into the iframe.
+   *
+   * Validates the provided URL string using the validator module
+   * before applying it to the iframe src attribute.
+   *
+   * @param {string} url - The URL to load.
+   */
+  loadURL({ url })
+  {
+    if(!typechecker.check({ type: 'string', value: url }))
+    {
+      console.error(this.#errors.invalidSrcType);
+      return;
+    }
+  
+    let normalizedURL = url.trim();
+    if(!/^https?:\/\//i.test(normalizedURL)) { normalizedURL = `https://${normalizedURL}`; }
+    if(!validator.isValidURL({ url: normalizedURL }))
+    {
+      console.error(this.#errors.invalidURL + ` (${normalizedURL})`);
+      return;
+    }
+    
+    this.setAttribute({ key: 'src', value: normalizedURL });
+    this.#url = normalizedURL;
+    this.#html = null;
+  }
+
+  /** Public method to reload the webbrowser. */
+  reload()
+  {
+    if(this.url === null && this.html !== null) { this.setAttribute({ key: 'src', value: this.html }); }
+    else if(this.html === null && this.url !== null) { this.setAttribute({ key: 'src', value: this.url }); }
+    else { return; }
+  }
+
+  /** Public method to stop the webbrowser. Passes in blank to the src internally. */
+  stop()
+  {
+    this.setAttribute({ key: 'src', value: 'about:blank' });
+  }  
 }
 
 ///////////////////////////////////////////////////////////
@@ -10264,7 +10462,8 @@ typechecker.register({ name: 'tabbar', constructor: _Tabbar_ });
 typechecker.register({ name: 'text', constructor: _Text_ }); 
 typechecker.register({ name: 'text-area', constructor: _Textarea_ }); 
 typechecker.register({ name: 'textfield', constructor: _Textfield_ }); 
-typechecker.register({ name: 'toast', constructor: _Toast_ }); 
+typechecker.register({ name: 'toast', constructor: _Toast_ });
+typechecker.register({ name: 'webbrowser', constructor: _Webbrowser_ });
 ui.register({ name: 'Component', constructor: Component });
 
 ///////////////////////////////////////////////////////////

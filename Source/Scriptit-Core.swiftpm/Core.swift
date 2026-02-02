@@ -367,6 +367,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         self.deleteFolder(dict: dict, webView: webView);
       case "exportFile":
         self.exportFile(dict: dict, webView: webView);
+      case "getAbsoluteRootPath":
+        self.getAbsoluteRootPath(dict: dict, webView: webView);
       case "getFile":
         self.getFile(dict: dict, webView: webView);
       case "getFolder":
@@ -430,6 +432,88 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       default:
         print(self.errors.invalidRoot.rawValue);
         return nil;
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to retrieve the absolute URL
+   * for a given root at runtime.
+   *
+   * This method accepts a root identifier string and resolves it to
+   * its corresponding absolute filesystem URL on the device.
+   * The resolved URL is returned to JavaScript as a string.
+   *
+   * Supported root values:
+   * - "Documents"
+   * - "Library"
+   * - "tmp"
+   * - "Bundle"
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The root to resolve.
+   *
+   * JavaScript callbacks:
+   * - files._getAbsoluteRootPathSuccess(data)
+   * - files._getAbsoluteRootPathFail(error)
+   *
+   * @param dict Dictionary of arguments passed from JavaScript.
+   * @param webView WKWebView instance used for callbacks.
+   */
+  func getAbsoluteRootPath(dict: [String: Any], webView: WKWebView)
+  {
+    guard let root = dict["root"] as? String else
+    {
+      let error = self.errors.rootNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+      return;
+    }
+  
+    let resolvedURL: URL?;
+    switch root
+    {
+      case "Documents":
+        resolvedURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first;
+      case "Library":
+        resolvedURL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first;
+      case "tmp":
+        resolvedURL = FileManager.default.temporaryDirectory;
+      case "Bundle":
+        resolvedURL = Bundle.main.bundleURL;
+      default:
+        let error = self.errors.invalidRoot.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+        return;
+    }
+  
+    guard let url = resolvedURL else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+      return;
+    }
+  
+    let payload: [String: Any] =
+    [
+      "root": root,
+      "absolutePath": url.absoluteString
+    ];
+  
+    do
+    {
+      let jsonData = try JSONSerialization.data(withJSONObject: payload);
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+        return;
+      }
+  
+      self.dispatchSuccess(jsCallback: "_getAbsoluteRootPathSuccess", payload: jsonString, webView: webView);
+    }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
     }
   }
   
