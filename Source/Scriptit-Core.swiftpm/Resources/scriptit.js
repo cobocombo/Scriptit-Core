@@ -2564,9 +2564,9 @@ class UserInterface
   }
   
   /** Get property to return a new instance of Toast. */
-  get Webbrowser() 
+  get Webframe() 
   {
-    return _Webbrowser_;
+    return _Webframe_;
   }
 
   /** 
@@ -9550,11 +9550,13 @@ class _Toast_ extends Component
 
 /////////////////////////////////////////////////
 
-/** Class representing the Webbrowser component. */
-class _Webbrowser_ extends Component
+/** Class representing the Webframe component. */
+class _Webframe_ extends Component
 {
+  #doc;
   #errors;
   #html;
+  #parser;
   #url;
 
   constructor(options = {})
@@ -9563,14 +9565,19 @@ class _Webbrowser_ extends Component
 
     this.#errors =
     {
-      invalidSrcType: 'Webbrowser Error: Expected type string for src.',
-      invalidURL: 'Webbrowser Error: Invalid URL provided: ',
-      executeJSType: 'Webbrowser Error: Expected type string for script.',
-      executeJSError: 'Webbrowser Error: Ran into the following error while evaluating JS:'
+      executeJSTypeError: 'Webframe Error: Expected type string for script.',
+      executeJSError: 'Webframe Error: Ran into the following error while evaluating JS:',
+      htmlTypeError: 'Webframe Error: Expected type string for html.',
+      invalidHTMLError: 'Webframe Error: Invalid html provided.',
+      invalidURLError: 'Webframe Error: Invalid URL provided: ',
+      tagTypeError: 'Webframe Error: Expected type string for tag.',
+      urlTypeError: 'Webframe Error: Expected type string for url.',
     };
     
+    this.#doc = null;
     this.#html = null;
-    this.$url = null;
+    this.#url = null;
+    this.#parser = new DOMParser();
     
     let sandboxScope = ['allow-downloads', 'allow-forms', 'allow-modals', 'allow-orientation-lock', 'allow-pointer-lock', 'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-presentation', 'allow-same-origin', 'allow-scripts', 'allow-top-navigation', 'allow-top-navigation-by-user-activation' ];
     
@@ -9579,99 +9586,196 @@ class _Webbrowser_ extends Component
     
     this.width = '100%';
     this.height = '100%';
-  }
-
-  /** 
-   * Get property to return the html of the webbrowser.
-   * @return {String} The html of the webbrowser.
-   */
-  get html()
-  {
-    return this.#html;
+    
+    if(options.html) this.html = options.html;
+    if(options.url) this.url = options.url;
   }
   
   /** 
-   * Get property to return the url of the webbrowser.
-   * @return {String} The url of the webbrowser.
+   * Get property to return the html of the webframe.
+   * @return {String} The html of the webframe.
+   */
+  get html()
+  {
+    return this.#html.replace(/></g, '>\n<').replace(/\n\s*\n/g, '\n');
+  }
+  
+  /** 
+   * Set property to set the html of the webframe.
+   * @param {string} value - The html of the webframe.
+   */
+  set html(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value }))
+    {
+      console.error(this.#errors.htmlTypeError);
+      return;
+    }
+    
+    if(!validator.isValidHTML({ html: value }))
+    {
+      console.error(this.#errors.invalidHTMLError);
+      return;
+    }
+    
+    this.#html = value;
+    this.#url = null;
+    this.#parser = new DOMParser();
+    this.#doc = this.#parser.parseFromString(value, 'text/html');
+  }
+  
+  /** 
+   * Get property to return the url of the webframe.
+   * @return {String} The url of the webframe.
    */
   get url()
   {
     return this.#url;
   }
   
+  /** 
+   * Set property to set the url of the webframe.
+   * @param {string} value - The url of the webframe.
+   */
+  set url(value)
+  {
+    if(!typechecker.check({ type: 'string', value: value }))
+    {
+      console.error(this.#errors.urlTypeError);
+      return;
+    }
+  
+    let normalizedURL = value.trim();
+    if(!/^https?:\/\//i.test(normalizedURL)) { normalizedURL = `https://${normalizedURL}`; }
+    if(!validator.isValidURL({ url: normalizedURL }))
+    {
+      console.error(this.#errors.invalidURLError + ` (${normalizedURL})`);
+      return;
+    }
+    
+    this.#url = normalizedURL;
+    this.#html = null;
+    this.#parser = null;
+    this.#doc = null;
+  }
+  
   /**
-   * Executes javascript code within the iframe.
+   * Method called to add custom html elements to the current html head of the webframe. A base html must already be set first.
+   * @param {String} tag - The element to create and add to the head of the html in the webframe.
+   * @param (Object) options - Object containing any element options. Supported options are attributes, properties, style, text, and innerHTML.
+   */
+  addNewHeadElement({ tag = 'meta', options = {} })
+  {
+    if(!typechecker.check({ type: 'string', value: tag }))
+    {
+      console.error(this.#errors.tagTypeError);
+      return;
+    }
+    
+    if(this.html !== null && this.#parser !== null && this.#doc !== null)
+    {
+      let element = this.#doc.createElement(tag);
+      this.applyElementOptions({ element: element, options: options });
+      this.#doc.head.appendChild(element);
+      this.#html = '<!DOCTYPE html>\n' + this.#doc.documentElement.outerHTML;
+    }
+  }
+  
+  /**
+   * Method called to add custom html elements to the current html body of the webframe. A base html must already be set first.
+   * @param {String} tag - The element to create and add to the body of the html in the webframe.
+   * @param (Object) options - Object containing any element options. Supported options are attributes, properties, style, text, and innerHTML.
+   */
+  addNewBodyElement({ tag = 'script', options = {} })
+  {
+    if(!typechecker.check({ type: 'string', value: tag }))
+    {
+      console.error(this.#errors.tagTypeError);
+      return;
+    }
+    
+    if(this.html !== null && this.#parser !== null && this.#doc !== null)
+    {
+      let element = this.#doc.createElement(tag);
+      this.applyElementOptions({ element: element, options: options });
+      this.#doc.body.appendChild(element);
+      this.#html = '<!DOCTYPE html>\n' + this.#doc.documentElement.outerHTML;
+    }
+  }
+  
+  /**
+   * Method called to apply options to existing html elements.
+   * @param {String} element - The existing html element to add options to.
+   * @param (Object) options - Object containing any element options. Supported options are attributes, properties, style, text, and innerHTML.
+   */
+  applyElementOptions({ element, options = {} })
+  {
+    if(!options || typeof options !== 'object') return;
+    if(options.attributes)
+    {
+      for(let [key, value] of Object.entries(options.attributes))
+      {
+        if(value != null) element.setAttribute(key, String(value));
+      }
+    }
+  
+    if(options.properties)
+    {
+      for(let [key, value] of Object.entries(options.properties))
+      {
+        if(key in element) element[key] = value;
+      }
+    }
+  
+    if(options.style)
+    {
+      for(let [key, value] of Object.entries(options.style))
+      {
+        element.style[key] = value;
+      }
+    }
+  
+    if(typechecker.check({ type: 'string', value: options.text })) { element.textContent = options.text; }
+    if(typechecker.check({ type: 'string', value: options.html })) { element.innerHTML = options.html; }
+  }
+  
+  /**
+   * Executes javascript code within the webframe.
    * @param {String} script - The javascript code to run.
    */
   executeJS({ script })
   {
     if(!typechecker.check({ type: 'string', value: script }))
     {
-      console.error(this.#errors.executeJSType);
+      console.error(this.#errors.executeJSTypeError);
       return;
     }
     
     try { this.element.contentWindow.eval(script); }
     catch(e) { console.error(this.#errors.executeJSError + e); }
   }
-
-  /**
-   * Loads external html into the iframe.
-   * @param {string} url - The html string to load.
-   */
-  loadHTML({ html })
-  {
-    if(!typechecker.check({ type: 'string', value: html }))
-    {
-      console.error(this.#errors.invalidSrcType);
-      return;
-    } 
-
-    let blob = new Blob([html], { type: 'text/html' });
-    let src = URL.createObjectURL(blob);
-    this.setAttribute({ key: 'src', value: src });
-    this.#html = html;
-    this.#url = null;
-  }
   
-  /**
-   * Loads an external internet URL into the iframe.
-   *
-   * Validates the provided URL string using the validator module
-   * before applying it to the iframe src attribute.
-   *
-   * @param {string} url - The URL to load.
-   */
-  loadURL({ url })
+  /** Public method to load the webframe. */
+  load()
   {
-    if(!typechecker.check({ type: 'string', value: url }))
-    {
-      console.error(this.#errors.invalidSrcType);
-      return;
+    if(this.#url === null && this.#html !== null) 
+    { 
+      let blob = new Blob([ this.#html ], { type: 'text/html' });
+      let src = URL.createObjectURL(blob);
+      this.setAttribute({ key: 'src', value: src }); 
     }
-  
-    let normalizedURL = url.trim();
-    if(!/^https?:\/\//i.test(normalizedURL)) { normalizedURL = `https://${normalizedURL}`; }
-    if(!validator.isValidURL({ url: normalizedURL }))
-    {
-      console.error(this.#errors.invalidURL + ` (${normalizedURL})`);
-      return;
-    }
-    
-    this.setAttribute({ key: 'src', value: normalizedURL });
-    this.#url = normalizedURL;
-    this.#html = null;
-  }
-
-  /** Public method to reload the webbrowser. */
-  reload()
-  {
-    if(this.url === null && this.html !== null) { this.setAttribute({ key: 'src', value: this.html }); }
-    else if(this.html === null && this.url !== null) { this.setAttribute({ key: 'src', value: this.url }); }
+    else if(this.#html === null && this.#url !== null) { this.setAttribute({ key: 'src', value: this.#url }); }
     else { return; }
   }
+  
+  /** Public method to reload the webframe. */
+  reload()
+  {
+    if(this.#url === null && this.#html === null) { return; }
+    else { this.load(); }
+  }
 
-  /** Public method to stop the webbrowser. Passes in blank to the src internally. */
+  /** Public method to stop the webframe. Passes in blank to the src internally. */
   stop()
   {
     this.setAttribute({ key: 'src', value: 'about:blank' });
@@ -9711,18 +9815,6 @@ class BrowserManager
   }
 
   /** 
-   * Public method to check if url is a valid website url.
-   * @param {string} url - The url to be checked.
-   * @return {boolean} If the url is a valid website url or not.
-   */
-  isValidWebsiteUrl({ url } = {}) 
-  {
-    if(!typechecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
-    let regex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/i;
-    return regex.test(url);
-  }
-
-  /** 
    * Public method to open a website url in safari, either within the app or outside in a seperate app.
    * @param {string} url - The url to be opened.
    * @param {boolean} inApp - Flag dictating if the the url should be opened inside or outside the current app.
@@ -9731,7 +9823,15 @@ class BrowserManager
   open({ url, inApp = true, animated = true } = {})
   {
     if(!typechecker.check({ type: 'string', value: url })) console.error(this.#errors.urlTypeError);
-    if(!this.isValidWebsiteUrl({ url: url })) console.error(this.#errors.urlInvalidError);
+    
+    let normalizedURL = url.trim();
+    if(!/^https?:\/\//i.test(normalizedURL)) { normalizedURL = `https://${normalizedURL}`; }
+    if(!validator.isValidURL({ url: normalizedURL })) 
+    {
+      console.error(this.#errors.urlInvalidError);
+      return;
+    }
+    
     if(!typechecker.check({ type: 'boolean', value: inApp })) console.error(this.#errors.inAppTypeError);
     if(!typechecker.check({ type: 'boolean', value: animated })) console.error(this.#errors.animatedTypeError);
     window.webkit.messageHandlers.browserMessageManager.postMessage({ url: url, inApp: inApp, animated: animated });
@@ -10256,6 +10356,51 @@ class ValidationManager
     let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
+  
+  /**
+   * Checks whether a string is plausibly valid HTML as parsed by WebKit.
+   *
+   * NOTE:
+   * HTML parsing is error-tolerant by design.
+   * This method detects severe or malformed input by checking
+   * whether WebKit had to significantly repair the document.
+   *
+   * @param {String} html - The HTML string to validate.
+   * @returns {Boolean} True if the HTML is structurally valid.
+   */
+  isValidHTML({ html } = {})
+  {
+    if(!typechecker.check({ type: 'string', value: html })) return false;
+  
+    let trimmed = html.trim();
+    if(!trimmed) return false;
+  
+    try
+    {
+      let parser = new DOMParser();
+      let doc = parser.parseFromString(trimmed, 'text/html');
+      
+      if(!doc || !doc.documentElement) return false;
+  
+      let htmlEl = doc.documentElement;
+      if(htmlEl.nodeName.toLowerCase() !== 'html') return false;
+  
+      if(!doc.head || !doc.body) return false;
+  
+      let serialized = '<!DOCTYPE html>\n' + htmlEl.outerHTML;
+  
+      let inputNormalized = trimmed.replace(/\s+/g, ' ');
+      let outputNormalized = serialized.replace(/\s+/g, ' ');
+  
+      if(outputNormalized.length < inputNormalized.length * 0.5) return false;
+  
+      let startsLikeHTML = /^\s*(<!doctype|<html|<head|<body)/i.test(trimmed);
+      if(!startsLikeHTML) return false;
+  
+      return true;
+    }
+    catch { return false; }
+  }
  
   /**
    * Checks if a phone number is valid.
@@ -10463,7 +10608,7 @@ typechecker.register({ name: 'text', constructor: _Text_ });
 typechecker.register({ name: 'text-area', constructor: _Textarea_ }); 
 typechecker.register({ name: 'textfield', constructor: _Textfield_ }); 
 typechecker.register({ name: 'toast', constructor: _Toast_ });
-typechecker.register({ name: 'webbrowser', constructor: _Webbrowser_ });
+typechecker.register({ name: 'webframe', constructor: _Webframe_ });
 ui.register({ name: 'Component', constructor: Component });
 
 ///////////////////////////////////////////////////////////
