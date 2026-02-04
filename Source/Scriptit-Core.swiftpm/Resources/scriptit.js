@@ -298,7 +298,7 @@ class App
       this.#isPresented = false;
       this.statusBarColor = 'black';
       this.#coreVersion = '1.7';
-      this.#coreReleaseDate = 'TBD';
+      this.#coreReleaseDate = '2/3/26';
     }    
   }
   
@@ -10313,6 +10313,7 @@ class ValidationManager
       cardNumberTypeError: 'Validator Error: Expected type string for cardNumber.',
       dateStringTypeError: 'Validator Error: Expected type string for dateString.',
       emailTypeError: 'Validator Error: Expected type string for email.',
+      htmlTypeErorr: 'Validator Error: Expected type string for html.',
       maxTypeError: 'Validator Error: Expected type number for max.',
       minTypeError: 'Validator Error: Expected type number for min.',
       numberTypeError: 'Validator Error: Expected type number for number.',
@@ -10370,7 +10371,11 @@ class ValidationManager
    */
   isValidHTML({ html } = {})
   {
-    if(!typechecker.check({ type: 'string', value: html })) return false;
+    if(!typechecker.check({ type: 'string', value: html }))
+    {
+      console.error(this.#errors.htmlTypeError);
+      return false;
+    }
   
     let trimmed = html.trim();
     if(!trimmed) return false;
