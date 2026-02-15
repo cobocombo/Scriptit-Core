@@ -7191,7 +7191,7 @@ class _Searchbar_ extends Component
         input.setAttribute('spellcheck', 'true');
         input.setAttribute('autocorrect','on');
         input.setAttribute('autocomplete','on');
-      });
+      },5);
     }
     else 
     {
@@ -7206,7 +7206,7 @@ class _Searchbar_ extends Component
         input.setAttribute('spellcheck', 'false');
         input.setAttribute('autocorrect','off');
         input.setAttribute('autocomplete','off');
-      });
+      },5);
     }
     this.#spellcheck = value;
   }
@@ -9264,7 +9264,7 @@ class _Textfield_ extends Component
         input.setAttribute('spellcheck', 'true');
         input.setAttribute('autocorrect','on');
         input.setAttribute('autocomplete','on');
-      });
+      },5);
     }
     else 
     {
@@ -9279,7 +9279,7 @@ class _Textfield_ extends Component
         input.setAttribute('spellcheck', 'false');
         input.setAttribute('autocorrect','off');
         input.setAttribute('autocomplete','off');
-      });
+      },5);
     }
     this.#spellcheck = value;
   }
