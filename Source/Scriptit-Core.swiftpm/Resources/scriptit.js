@@ -1082,11 +1082,11 @@ class FilesManager
       return;
     }
   
-    const normalizedExtensions = fileExtensions.map(ext =>
+    let normalizedExtensions = fileExtensions.map(ext =>
     {
       if(!typechecker.check({ type: 'string', value: ext }))
       {
-        console.erro(this.#errors.fileExtensionsTypeError);
+        console.error(this.#errors.fileExtensionsTypeError);
         return;
       }
   
