@@ -554,6 +554,9 @@ class FilesManager
   #zipFolderPendingResolve = null;
   #zipFolderPendingReject = null;
   
+  #readFilePending = new Map();
+  #readFileRequestCounter = 0;
+  
   /** Creates the files object. **/
   constructor() 
   {
@@ -571,6 +574,7 @@ class FilesManager
       invalidCharsError: 'Files Error: Invalid char detected. The following chars are not supported: [<>:"|?*]',
       invalidRootError: 'Files Error: Invalid root detected. Valid values are in files.roots object.',
       newlineTypeError: 'Files Error: Expected type boolean for newline.',
+      parsePayloadError: 'Files Error: There was an issue parsing the payload from a success or failure call.',
       replaceTypeError: 'Files Error: Expected type boolean for replace.',
       rootTypeError: 'Files Error: Expected type string for root.',
       singleInstanceError: 'Files Error: Only one FilesManager object can exist at a time.',
@@ -1273,10 +1277,16 @@ class FilesManager
   }
   
   /** 
-   * Public method to get and return content stored in a file in the iOS filesystem. 
-   * @param {string} root - The root path filesystem type.
-   * @param {string} subpath - The subpath to be added to the root path.
-   * @return {Promise} - Returns a promise with readFilePendingResolve as the resolve and readFilePendingReject as the reject. If the call is successful the method _readFileSuccess gets called. If the call is unsuccessful and no file is found, then the _readFileFail method gets called.
+   * Public method to read a file from the iOS filesystem.
+   * Returns a Promise that resolves or rejects when Swift responds.
+   *
+   * @param {Object} options - Options object containing:
+   *   - root {String} : The root filesystem path to read from (e.g., documents, library, tmp). Defaults to documents.
+   *   - subpath {String} : The relative path to the file within the root. Defaults to empty string.
+   * @return {Promise} - A Promise that resolves with the file content if successful, or rejects with an error.
+   *                     Each call generates a unique requestId, which Swift includes in the response.
+   *                     On success, `_readFileSuccess(payload)` is called from Swift.
+   *                     On failure, `_readFileFail(payload)` is called from Swift.
    */
   readFile({ root = this.roots.documents, subpath = '' })
   {
@@ -1291,15 +1301,19 @@ class FilesManager
       console.error(this.#errors.invalidRootError);
       return;
     }
-      
+    
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#readFilePendingResolve = resolve;
-        this.#readFilePendingReject = reject;
+        let requestId = ++this.#readFileRequestCounter;
+        this.#readFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'readFile', root: root, subpath: subpath
+          command: 'readFile',
+          requestId: requestId,
+          root: root,
+          subpath: subpath
         });
       });
     }
@@ -1997,31 +2011,37 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a file has been read in the readFile method within the files module. 
-   * @param {object} data - The contents of the file as a string.
+   * Public method called by Swift when a file has been successfully read via the files module.
+   * Resolves the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original readFile request.
+   *   - data {String} : The contents of the file that was read.
    */
-  _readFileSuccess(data)
-  {  
-    if(this.#readFilePendingResolve) 
-    {
-      this.#readFilePendingResolve(data);
-      this.#readFilePendingResolve = null;
-      this.#readFilePendingReject = null;
-    }
+  _readFileSuccess(payload)
+  {
+    let pending = this.#readFilePending.get(payload.requestId);
+    if(!pending) return;
+    
+    pending.resolve(payload.data);
+    this.#readFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file could not been read successfully in the readFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be read.
+   * Public method called by Swift when a file could not be read via the files module.
+   * Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original readFile request.
+   *   - error {String} : The error message describing why the file could not be read.
    */
-  _readFileFail(error) 
+  _readFileFail(payload)
   {
-    if(this.#readFilePendingReject) 
-    {
-      this.#readFilePendingReject(error);
-      this.#readFilePendingResolve = null;
-      this.#readFilePendingReject = null;
-    }
+    let pending = this.#readFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#readFilePending.delete(payload.requestId);
   }
   
   /** 

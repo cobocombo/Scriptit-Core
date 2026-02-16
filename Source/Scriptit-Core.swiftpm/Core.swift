@@ -263,7 +263,20 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     DispatchQueue.main.async
     {
       print(error);
-      webView.evaluateJavaScript(js, completionHandler: nil)
+      webView.evaluateJavaScript(js, completionHandler: nil);
+    }
+  }
+    
+  func dispatchFailureV2(error: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  {
+    var jsProps = "error: '\(self.escapeForJavaScript(error))'";
+    if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
+    let js = "files.\(jsCallback)({ \(jsProps) });";
+  
+    DispatchQueue.main.async 
+    {
+      print(error);
+      webView.evaluateJavaScript(js, completionHandler: nil);
     }
   }
   
@@ -294,6 +307,15 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       js = "files.\(jsCallback)(JSON.parse('\(escaped)'));";
     }
     else { js = "files.\(jsCallback)();"; }
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  }
+  
+  func dispatchSuccessV2(data: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  {
+    var jsProps = "data: '\(self.escapeForJavaScript(data))'";
+    if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
+    let js = "files.\(jsCallback)({ \(jsProps) });";
+  
     DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
   }
   
@@ -1786,49 +1808,53 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   }
   
   /**
-   * Public method called from JavaScript to read string data from a file.
+   * Public method called from JavaScript to read a file as a UTF-8 string.
    *
-   * This method resolves the base folder using a JavaScript-provided root value,
-   * appends the provided subpath, and attempts to read the file as a UTF-8 string.
-   * If successful, the file contents are escaped and returned to JavaScript.
-   * If any step fails, a standardized error is dispatched back to JavaScript
-   * and logged to the console.
+   * Each call generates a unique requestId passed from JavaScript.
+   * The method resolves the specified root folder, appends the provided subpath,
+   * and attempts to read the file content. On completion, a payload containing
+   * the requestId and either the file data or an error is sent back to JavaScript.
    *
    * Expected JavaScript input (dict):
-   * - root (String): The base directory to resolve ("Documents", "Library", "tmp").
-   * - subpath (String): The relative path to the file within the base directory.
+   * - requestId (Int, optional): Unique ID for this read request.
+   * - root (String): Base directory to read from ("Documents", "Library", "tmp").
+   * - subpath (String): Relative path to the file within the root.
    *
    * JavaScript callbacks:
-   * - files._readFileSuccess(content): Called when the file is successfully read.
-   * - files._readFileFail(error): Called when the file cannot be read.
+   * - files._readFileSuccess(payload): Called when the file is successfully read.
+   *   The payload includes { requestId, data }.
+   * - files._readFileFail(payload): Called when the file cannot be read.
+   *   The payload includes { requestId, error }.
    *
-   * @param dict A dictionary of arguments passed from JavaScript.
-   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   * @param dict Dictionary of arguments passed from JavaScript.
+   * @param webView WKWebView instance used to evaluate JavaScript callbacks.
    */
   func readFile(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
-  
+    
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
-  
+
     let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
     let file: File;
     let content: String;
+  
     do { file = try File(path: targetPath); }
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1836,13 +1862,11 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.readFileFailed.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
-    
-    let escaped = escapeForJavaScript(content);
-    let js = "files._readFileSuccess('\(escaped)');";
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil) };
+  
+    self.dispatchSuccessV2(data: content, jsCallback: "_readFileSuccess", webView: webView, requestId: requestId);
   }
 
   /**
