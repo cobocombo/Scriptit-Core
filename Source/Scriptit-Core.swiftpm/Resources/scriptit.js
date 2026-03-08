@@ -535,8 +535,6 @@ class FilesManager
   #getAbsoluteRootPathPendingReject = null;
   #getFilePendingResolve = null;
   #getFilePendingReject = null;
-  #getFolderPendingResolve = null;
-  #getFolderPendingReject = null;
   #importFilePendingResolve = null;
   #importFilePendingReject = null;
   #moveFilePendingResolve = null;
@@ -554,6 +552,9 @@ class FilesManager
   #zipFolderPendingResolve = null;
   #zipFolderPendingReject = null;
   
+  #getFolderPending = new Map();
+  #getFolderRequestCounter = 0;
+
   #readFilePending = new Map();
   #readFileRequestCounter = 0;
   
@@ -1042,15 +1043,19 @@ class FilesManager
       console.error(this.#errors.invalidRootError);
       return;
     }
-      
+    
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#getFolderPendingResolve = resolve;
-        this.#getFolderPendingReject = reject;
+        let requestId = ++this.#getFolderRequestCounter;
+        this.#getFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'getFolder', root: root, subpath: subpath
+          command: 'getFolder',
+          requestId: requestId,
+          root: root,
+          subpath: subpath
         });
       });
     }
@@ -1853,51 +1858,62 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a folder has been found in the getFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
+   * Public method called by Swift when a folder has been successfully retrieved
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned folder object may contain metadata for the folder itself, its
+   * parent folder, any subfolders, and any files. Each location object is assigned
+   * a type property to normalize the structure for use within the files module.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original getFolder request.
+   *   - data {Object} : The folder object containing information about the folder,
+   *                    its parent folder, subfolders, and files.
    */
-  _getFolderSuccess(data)
+  _getFolderSuccess(payload)
   {
-    data.type = this.#locationTypes.folder;
+    let pending = this.#getFolderPending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
+    payload.data.type = this.#locationTypes.folder;
+    
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(payload.data.subfolders.length !== 0) 
     {
-      for(let sub of data.subfolders) 
+      for(let sub of payload.data.subfolders) 
       {
         sub.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(data.files.length !== 0) 
+    if(payload.data.files.length !== 0) 
     {
-      for(let file of data.files) 
+      for(let file of payload.data.files) 
       {
         file.type = this.#locationTypes.file;
         if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(this.#getFolderPendingResolve) 
-    {
-      this.#getFolderPendingResolve(data);
-      this.#getFolderPendingResolve = null;
-      this.#getFolderPendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#getFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder has not been found in the getFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be found.
+   * Public method called by Swift when a folder could not be retrieved
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original getFolder request.
+   *   - error {String} : The error message describing why the folder could not be retrieved.
    */
-  _getFolderFail(error) 
+  _getFolderFail(payload) 
   {
-    if(this.#getFolderPendingReject) 
-    {
-      this.#getFolderPendingReject(error);
-      this.#getFolderPendingResolve = null;
-      this.#getFolderPendingReject = null;
-    }
+    let pending = this.#getFolderPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#getFolderPending.delete(payload.requestId);
   }
   
   /** 

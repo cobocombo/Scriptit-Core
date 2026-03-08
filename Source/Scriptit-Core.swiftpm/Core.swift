@@ -310,7 +310,62 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
   }
   
-  func dispatchSuccessV2(data: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  /**
+   * Public method to send a success message from Swift back to JavaScript
+   * when the payload is structured JSON data.
+   *
+   * This method expects the provided data to already be serialized as a JSON
+   * string representing a valid JavaScript object or array. The JSON is injected
+   * directly into the JavaScript callback without additional escaping so that it
+   * is received as a native JavaScript object.
+   *
+   * An optional requestId may be included to associate the response with the
+   * original asynchronous request made from JavaScript. This is used by methods
+   * that support multiple concurrent operations such as reading folders or files.
+   *
+   * This method is typically used for operations that return structured data,
+   * such as folder listings, file metadata, or other serialized objects.
+   *
+   * @param data A JSON string representing the structured data to pass back to JavaScript.
+   * @param jsCallback The name of the JavaScript success callback function to invoke
+   *                   (e.g., "_getFolderSuccess", "_getFilesSuccess").
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   * @param requestId An optional request identifier used to match the response with the
+   *                  original JavaScript request.
+   */
+  func dispatchSuccessJSON(data: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  {
+    var jsProps = "data: \(data)";
+    if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
+    let js = "files.\(jsCallback)({ \(jsProps) });";
+  
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  }
+  
+  /**
+   * Public method to send a success message from Swift back to JavaScript
+   * when the payload is a plain string.
+   *
+   * The provided string is escaped to ensure it can be safely embedded within
+   * a JavaScript string literal before being passed to the specified callback.
+   * This prevents issues with characters such as quotes, backslashes, or
+   * newlines that could otherwise break the injected JavaScript.
+   *
+   * An optional requestId may be included to associate the response with the
+   * original asynchronous request made from JavaScript. This is commonly used
+   * by methods that read file contents or return raw text data.
+   *
+   * This method is typically used for operations that return unstructured text,
+   * such as file contents read from disk.
+   *
+   * @param data The string data to pass back to JavaScript.
+   * @param jsCallback The name of the JavaScript success callback function to invoke
+   *                   (e.g., "_readFileSuccess").
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   * @param requestId An optional request identifier used to match the response with the
+   *                  original JavaScript request.
+   */
+  func dispatchSuccessString(data: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
   {
     var jsProps = "data: '\(self.escapeForJavaScript(data))'";
     if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
@@ -1299,17 +1354,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     */
   func getFolder(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1320,7 +1376,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1332,16 +1388,17 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView);
+        self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
         return;
       }
       
-      self.dispatchSuccess(jsCallback: "_getFolderSuccess", payload: jsonString, webView: webView);
+      //self.dispatchSuccess(jsCallback: "_getFolderSuccess", payload: jsonString, webView: webView);
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getFolderSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView);
+      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -1866,7 +1923,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       return;
     }
   
-    self.dispatchSuccessV2(data: content, jsCallback: "_readFileSuccess", webView: webView, requestId: requestId);
+    self.dispatchSuccessString(data: content, jsCallback: "_readFileSuccess", webView: webView, requestId: requestId);
   }
 
   /**

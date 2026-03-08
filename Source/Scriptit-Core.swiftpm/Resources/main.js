@@ -13,21 +13,22 @@ class HomePage extends ui.Page
     files.getFolder({ subpath: '' })
     .then(folder =>
     {
-      this.textFiles = folder.files;
+      console.log(folder);
+      //this.textFiles = folder.files;
     });
     
-    setTimeout(() => 
-    {
-      for(let file of this.textFiles)
-      {
-        files.readFile({ subpath: file.relativePath })
-        .then(content => 
-        {
-          console.log(content);
-        })
-        .catch(() => { console.log('Error'); })
-      }
-    }, 3000);
+    // setTimeout(() => 
+    // {
+    //   for(let file of this.textFiles)
+    //   {
+    //     files.readFile({ subpath: file.relativePath })
+    //     .then(content => 
+    //     {
+    //       console.log(content);
+    //     })
+    //     .catch(() => { console.log('Error'); })
+    //   }
+    // }, 3000);
   }
 }
 
