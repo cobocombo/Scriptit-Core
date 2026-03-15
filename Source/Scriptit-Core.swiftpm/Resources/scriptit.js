@@ -297,8 +297,8 @@ class App
       this.#componentsById = new Map();
       this.#isPresented = false;
       this.statusBarColor = 'black';
-      this.#coreVersion = '1.7';
-      this.#coreReleaseDate = '2/3/26';
+      this.#coreVersion = '1.8';
+      this.#coreReleaseDate = '3/15/26';
     }    
   }
   
