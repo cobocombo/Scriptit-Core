@@ -1,34 +1,34 @@
 class HomePage extends ui.Page
-{
-  textFiles;
-  
+{  
   constructor()
   {
     super();
-    this.textFiles = [];
   }
   
   onInit()
   {
-    files.getFolder({ subpath: '' })
-    .then(folder =>
+    // files.getFolder({ subpath: '' })
+    // .then(folder =>
+    // {
+    //   console.log(folder.subfolders);
+    // });
+    
+    files.zipFolder({ subpath: 'New/', zippedFileName: 'new' })
+    .then(file =>
     {
-      console.log(folder);
-      //this.textFiles = folder.files;
+      console.log(file.name);
     });
     
-    // setTimeout(() => 
+    // files.writeToFile({ subpath: 'next.txt', content: 'New code...', replace: false, newline: true })
+    // .then(() =>
     // {
-    //   for(let file of this.textFiles)
+    //   console.log('Successfully wrote to next.txt');
+    //   files.readFile({ subpath: 'next.txt' })
+    //   .then(content =>
     //   {
-    //     files.readFile({ subpath: file.relativePath })
-    //     .then(content => 
-    //     {
-    //       console.log(content);
-    //     })
-    //     .catch(() => { console.log('Error'); })
-    //   }
-    // }, 3000);
+    //     console.log(content);
+    //   });
+    // });
   }
 }
 

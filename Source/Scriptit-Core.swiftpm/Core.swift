@@ -206,6 +206,8 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   var importDestinationRoot: String?;
   var importDestinationSubpath: String?;
   var importAllowedExtensions: [String]?;
+  var exportRequestId: Int?;
+  var importRequestId: Int?;
   
   enum Errors: String
   {
@@ -237,37 +239,40 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     case subpathNotProvided    = "Files Error: Subpath was not provided."
     case unknownCommand        = "Files Error: Unknown command."
     case writeToFileFailed     = "Files Error: File could not be written to at path:"
+    case zipFolderFailed       = "Files Error: Folder could not be zipped:"
     case zipFailed             = "Files Error: Zip failed at path:"
   }
   
   let errors = Errors.self;
   
   /**
-  * Public method to send an error or failure message from Swift back to JavaScript.
-  *
-  * This method takes a string describing the error, escapes it for safe use in JavaScript,
-  * constructs a JS callback call, and evaluates it on the provided WKWebView.
-  * The error is also printed to the console for debugging purposes.
-  *
-  * This is used throughout the file system methods to notify JavaScript when an operation
-  * fails, such as file not found, invalid root, move/copy failure, or JSON serialization errors.
-  *
-  * @param error A descriptive string explaining the failure.
-  * @param jsCallback The name of the JavaScript callback function to invoke (e.g., "_moveFileFail").
-  * @param webView The WKWebView instance on which the JavaScript callback should be executed.
-  */
-  func dispatchFailure(error: String, jsCallback: String, webView: WKWebView)
-  {
-    let escaped = escapeForJavaScript(error);
-    let js = "files.\(jsCallback)('\(escaped)');";
-    DispatchQueue.main.async
-    {
-      print(error);
-      webView.evaluateJavaScript(js, completionHandler: nil);
-    }
-  }
-    
-  func dispatchFailureV2(error: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+   * Public method to send a failure message from Swift back to JavaScript.
+   *
+   * This method constructs a JavaScript callback invocation containing an
+   * error message describing why the requested operation failed. The error
+   * string is escaped to ensure it can be safely injected into the evaluated
+   * JavaScript code.
+   *
+   * An optional requestId may be included to associate the response with the
+   * original asynchronous request made from JavaScript. This is used by methods
+   * that support multiple concurrent operations such as reading, copying,
+   * moving, or deleting files and folders.
+   *
+   * The error payload is sent to the specified JavaScript failure callback
+   * as an object containing the error message and optional request identifier.
+   *
+   * This method is typically used when a file system operation cannot be
+   * completed due to invalid paths, missing files, permission issues,
+   * or other runtime errors.
+   *
+   * @param error A string describing the reason the operation failed.
+   * @param jsCallback The name of the JavaScript failure callback function to invoke
+   *                   (e.g., "_readFileFail", "_createFolderFail").
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   * @param requestId An optional request identifier used to match the response with the
+   *                  original JavaScript request.
+   */
+  func dispatchFailure(error: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
   {
     var jsProps = "error: '\(self.escapeForJavaScript(error))'";
     if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
@@ -278,36 +283,6 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       print(error);
       webView.evaluateJavaScript(js, completionHandler: nil);
     }
-  }
-  
-  /**
-   * Public method to send a success message from Swift back to JavaScript.
-   *
-   * This method optionally takes a payload (already serialized as a JSON string),
-   * escapes it for safe JavaScript injection, constructs the appropriate JavaScript
-   * success callback, and evaluates it on the provided WKWebView.
-   *
-   * This is used throughout file system methods to notify JavaScript when an operation
-   * completes successfully, such as creating, deleting, renaming, moving, or retrieving
-   * files and folders.
-   *
-   * If no payload is provided, the callback is invoked without arguments.
-   *
-   * @param jsCallback The name of the JavaScript success callback function to invoke
-   *                   (e.g., "_createFolderSuccess", "_folderFound").
-   * @param payload An optional JSON string to pass to the callback.
-   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
-   */
-  func dispatchSuccess(jsCallback: String, payload: String? = nil, webView: WKWebView)
-  {
-    let js: String;
-    if let payload = payload
-    {
-      let escaped = self.escapeForJavaScript(payload);
-      js = "files.\(jsCallback)(JSON.parse('\(escaped)'));";
-    }
-    else { js = "files.\(jsCallback)();"; }
-    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
   }
   
   /**
@@ -538,10 +513,11 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func getAbsoluteRootPath(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let root = dict["root"] as? String else
     {
       let error = self.errors.rootNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -558,14 +534,14 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         resolvedURL = Bundle.main.bundleURL;
       default:
         let error = self.errors.invalidRoot.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
         return;
     }
   
     guard let url = resolvedURL else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -581,16 +557,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
         return;
       }
-  
-      self.dispatchSuccess(jsCallback: "_getAbsoluteRootPathSuccess", payload: jsonString, webView: webView);
+
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getAbsoluteRootPathSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -793,17 +769,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func copyFile(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -811,7 +788,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
           let newSubpath = dict["newSubpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -827,7 +804,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(sourcePath)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -835,7 +812,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -871,16 +848,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
         return;
       }
   
-      self.dispatchSuccess(jsCallback: "_copyFileSuccess", payload: jsonString, webView: webView);
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_copyFileSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.copyFileFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -901,17 +878,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func copyFolder(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
       return
     };
   
     guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -920,7 +898,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -933,7 +911,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(sourcePath)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -941,7 +919,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -968,16 +946,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
         return;
       }
   
-      self.dispatchSuccess(jsCallback: "_copyFolderSuccess", payload: jsonString, webView: webView);
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_copyFolderSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.copyFolderFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -1007,17 +985,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func createFile(dict: [String: Any], webView: WKWebView, fileName: String)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1027,7 +1006,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1044,7 +1023,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.createFileFailed.rawValue + " (\(uniqueName)).";
-      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1054,18 +1033,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let jsonString = String(data: jsonData, encoding: .utf8) else
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
       return;
     }
-  
-    self.dispatchSuccess(jsCallback: "_createFileSuccess", payload: jsonString, webView: webView);
+
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_createFileSuccess", webView: webView, requestId: requestId);
   }
 
   /**
@@ -1095,17 +1074,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     */
   func createFolder(dict: [String: Any], webView: WKWebView, folderName: String)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1115,7 +1095,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1132,7 +1112,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.createFolderFailed.rawValue + " (\(uniqueName)).";
-      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1142,18 +1122,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let jsonString = String(data: jsonData, encoding: .utf8) else
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
       return;
     }
-  
-    self.dispatchSuccess(jsCallback: "_createFolderSuccess", payload: jsonString, webView: webView);
+
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_createFolderSuccess", webView: webView, requestId: requestId);
   }
   
   /**
@@ -1178,17 +1158,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func deleteFile(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error,jsCallback: "_deleteFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail",webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1198,7 +1179,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1206,11 +1187,11 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.deleteFileFailed.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
       return;
     }
   
-    self.dispatchSuccess(jsCallback: "_deleteFileSuccess", webView: webView);
+    self.dispatchSuccessJSON(data: "{}", jsCallback: "_deleteFileSuccess", webView: webView, requestId: requestId);
   }
 
   /**
@@ -1234,17 +1215,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     */
   func deleteFolder(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1254,19 +1236,19 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     do
     {
       try targetFolder.delete();
-      self.dispatchSuccess(jsCallback: "_deleteFolderSuccess", webView: webView);
+      self.dispatchSuccessJSON(data: "{}", jsCallback: "_deleteFolderSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.deleteFolderFailed.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -1292,11 +1274,12 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func getFile(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else { return }
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
       return;
     }
     
@@ -1307,7 +1290,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
       return;
     }
     
@@ -1317,18 +1300,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
       return;
     }
     
     guard let jsonString = String(data: jsonData, encoding: .utf8) else
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
       return;
     }
-  
-    self.dispatchSuccess(jsCallback: "_getFileSuccess", payload: jsonString, webView: webView);
+
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getFileSuccess", webView: webView, requestId: requestId);
   }
 
   /**
@@ -1358,14 +1341,14 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1376,7 +1359,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1388,17 +1371,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+        self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
         return;
       }
       
-      //self.dispatchSuccess(jsCallback: "_getFolderSuccess", payload: jsonString, webView: webView);
       self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getFolderSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailureV2(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -1416,31 +1398,32 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func importFile(dict: [String: Any], webView: WKWebView)
   {
+    self.importRequestId = dict["requestId"] as? Int;
     guard let controller = self.presentingController else
     {
       let error = self.errors.controllerUnavailable.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
       return;
     }
   
     guard let root = dict["root"] as? String else
     {
       let error = self.errors.rootNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
       return;
     }
   
     guard let _ = self.resolveBaseFolder(from: root) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
       return;
     }
   
@@ -1455,7 +1438,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       if contentTypes.isEmpty
       {
         let error = self.errors.invalidFileTypes.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
         return;
       }
     }
@@ -1502,31 +1485,32 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func exportFile(dict: [String: Any], webView: WKWebView)
   {
+    self.exportRequestId = dict["requestId"] as? Int;
     guard let controller = self.presentingController else
     {
       let error = self.errors.controllerUnavailable.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
       return;
     }
   
     guard let root = dict["root"] as? String else
     {
       let error = self.errors.rootNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
       return;
     }
   
     guard let baseFolder = self.resolveBaseFolder(from: root) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
       return;
     }
   
@@ -1536,7 +1520,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
       return;
     }
   
@@ -1597,26 +1581,28 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   
         let jsonData = try JSONSerialization.data(withJSONObject: importedFiles);
         let jsonString = String(data: jsonData, encoding: .utf8)!;
-        self.dispatchSuccess(jsCallback: "_importFileSuccess", payload: jsonString, webView: webView);
+        self.dispatchSuccessJSON(data: jsonString, jsCallback: "_importFileSuccess", webView: webView, requestId: self.importRequestId);
       }
       catch
       {
         let error = self.errors.importFileFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
       }
   
       self.importDestinationRoot = nil;
       self.importDestinationSubpath = nil;
       self.importAllowedExtensions = nil;
       self.webView = nil;
+      self.importRequestId = nil;
       return;
     }
   
     // ---------------------------------------------
     // EXPORT FLOW
     // ---------------------------------------------
-    self.dispatchSuccess(jsCallback: "_exportFileSuccess", webView: webView);
+    self.dispatchSuccessJSON(data: "{}", jsCallback: "_exportFileSuccess", webView: webView, requestId: self.exportRequestId);
     self.webView = nil;
+    self.exportRequestId = nil;
   }
   
   /**
@@ -1632,12 +1618,14 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     guard let webView = self.webView else { return; }
   
     let error = self.errors.operationCancelled.rawValue;
-    if self.importDestinationRoot != nil { self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView); }
-    else { self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView); }
+    if self.importDestinationRoot != nil { self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId); }
+    else { self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId); }
   
     self.importDestinationRoot = nil;
     self.importDestinationSubpath = nil;
     self.importAllowedExtensions = nil;
+    self.importRequestId = nil;
+    self.exportRequestId = nil;
     self.webView = nil;
   }
   
@@ -1667,17 +1655,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func moveFile(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1685,7 +1674,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
           let newSubpath = dict["newSubpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1697,7 +1686,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(sourcePath)).";
-      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1705,7 +1694,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1733,16 +1722,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
         return;
       }
       
-      self.dispatchSuccess(jsCallback: "_moveFileSuccess", payload: jsonString, webView: webView);
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_moveFileSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.moveFileFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
-      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
     }
   }
 
@@ -1769,17 +1758,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     */
   func moveFolder(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let oldBase = resolveBaseFolder(from: dict["oldRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let newBase = resolveBaseFolder(from: dict["newRoot"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1787,7 +1777,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
           let newSubpath = dict["newSubpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1800,7 +1790,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(sourcePath)).";
-      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1808,7 +1798,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1851,16 +1841,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
         return;
       }
       
-      self.dispatchSuccess(jsCallback: "_moveFolderSuccess", payload: jsonString, webView: webView);
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_moveFolderSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.moveFolderFailed.rawValue + " (\(sourcePath) → \(destinationParent.path + uniqueName)).";
-      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -1892,14 +1882,14 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
     
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
 
@@ -1911,7 +1901,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1919,7 +1909,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.readFileFailed.rawValue + " (\(targetPath)).";
-      self.dispatchFailureV2(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1951,17 +1941,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func renameFile(dict: [String: Any], webView: WKWebView, fileName: String)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -1971,14 +1962,14 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let parentFolder = targetFile.parent else
     {
       let error = self.errors.parentFolderNotFound.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2001,7 +1992,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.renameFileFailed.rawValue + " (\(newPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2015,16 +2006,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         guard let jsonString = String(data: jsonData, encoding: .utf8) else
         {
           let error = self.errors.jsonEncodingFailed.rawValue;
-          self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+          self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
           return;
         }
-  
-        self.dispatchSuccess(jsCallback: "_renameFileSuccess", payload: jsonString, webView: webView);
+
+        self.dispatchSuccessJSON(data: jsonString, jsCallback: "_renameFileSuccess", webView: webView, requestId: requestId);
       }
       catch
       {
         let error = self.errors.fileNotFound.rawValue + " (\(newPath)).";
-        self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
       }
     }
   }
@@ -2054,17 +2045,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     */
   func renameFolder(dict: [String: Any], webView: WKWebView, folderName: String)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2075,14 +2067,14 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let parentFolder = targetFolder.parent else
     {
       let error = self.errors.folderNotFound.rawValue + " (parent).";
-      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2105,16 +2097,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
-        self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
+        self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
         return;
       }
-      
-      self.dispatchSuccess(jsCallback: "_renameFolderSuccess", payload: jsonString, webView: webView);
+    
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_renameFolderSuccess", webView: webView, requestId: requestId);
     }
     catch
     {
       let error = self.errors.renameFolderFailed.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
     }
   }
   
@@ -2145,17 +2137,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func writeToFile(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2173,7 +2166,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.parentFolderNotFound.rawValue + " (\(parentFolderPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2181,7 +2174,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(fileName)).";
-      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2202,11 +2195,11 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.writeToFileFailed.rawValue + " (\(targetPath)).";
-      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
       return;
     }
-
-    self.dispatchSuccess(jsCallback: "_writeToFileSuccess", webView: webView);
+    
+    self.dispatchSuccessJSON(data: "{}", jsCallback: "_writeToFileSuccess", webView: webView, requestId: requestId);
   }
   
   /**
@@ -2234,24 +2227,25 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    */
   func zipFolder(dict: [String: Any], webView: WKWebView)
   {
+    let requestId = dict["requestId"] as? Int;
     guard let base = self.resolveBaseFolder(from: dict["root"] as? String) else
     {
       let error = self.errors.invalidRoot.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let subpath = dict["subpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
     
     guard let zipName = dict["zippedFileName"] as? String else
     {
       let error = self.errors.missingFileName.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2280,15 +2274,16 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
       do { try fileManager.moveItem(at: tempZipURL, to: destinationZipURL); }
       catch
       {
-        let errorMessage = self.errors.zipFailed.rawValue + " (\(sourcePath))."
-        self.dispatchFailure(error: errorMessage, jsCallback: "_zipFolderFail", webView: webView)
+        let error = self.errors.zipFailed.rawValue + " (\(sourcePath)).";
+        self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
         return
       }
     }
   
-    if let error = coordinationError
+    if let coordinatorError = coordinationError
     {
-      self.dispatchFailure(error: error.localizedDescription, jsCallback: "_zipFolderFail", webView: webView);
+      let error = self.errors.zipFolderFailed.rawValue + " (\(coordinatorError)).";
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2297,7 +2292,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.fileNotFound.rawValue + " (\(destinationZipURL.path)).";
-      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
@@ -2307,18 +2302,18 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     catch
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
     guard let jsonString = String(data: jsonData, encoding: .utf8) else
     {
       let error = self.errors.jsonEncodingFailed.rawValue;
-      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView);
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
       return;
     }
   
-    self.dispatchSuccess(jsCallback: "_zipFolderSuccess", payload: jsonString, webView: webView);
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_zipFolderSuccess", webView: webView, requestId: requestId);
   }
 }
 

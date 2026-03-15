@@ -517,46 +517,59 @@ class FilesManager
   #locationTypes;
   #roots;
   
-  #copyFilePendingResolve = null;
-  #copyFilePendingReject = null;
-  #copyFolderPendingResolve = null;
-  #copyFolderPendingReject = null;
-  #createFilePendingResolve = null;
-  #createFilePendingReject = null;
-  #createFolderPendingResolve = null;
-  #createFolderPendingReject = null;
-  #deleteFilePendingResolve = null;
-  #deleteFilePendingReject = null;
-  #deleteFolderPendingResolve = null;
-  #deleteFolderPendingReject = null;
-  #exportFilePendingResolve = null;
-  #exportFilePendingReject = null;
-  #getAbsoluteRootPathPendingResolve = null;
-  #getAbsoluteRootPathPendingReject = null;
-  #getFilePendingResolve = null;
-  #getFilePendingReject = null;
-  #importFilePendingResolve = null;
-  #importFilePendingReject = null;
-  #moveFilePendingResolve = null;
-  #moveFilePendingReject = null;
-  #moveFolderPendingResolve = null;
-  #moveFolderPendingReject = null;
-  #readFilePendingResolve = null;
-  #readFilePendingReject = null;
-  #renameFilePendingResolve = null;
-  #renameFilePendingReject = null;
-  #renameFolderPendingResolve = null;
-  #renameFolderPendingReject = null;
-  #writeToFilePendingResolve = null;
-  #writeToFilePendingReject = null;
-  #zipFolderPendingResolve = null;
-  #zipFolderPendingReject = null;
+  #copyFilePending = new Map();
+  #copyFileRequestCounter = 0;
+  
+  #copyFolderPending = new Map();
+  #copyFolderRequestCounter = 0;
+  
+  #createFilePending = new Map();
+  #createFileRequestCounter = 0;
+  
+  #createFolderPending = new Map();
+  #createFolderRequestCounter = 0;
+  
+  #deleteFilePending = new Map();
+  #deleteFileRequestCounter = 0;
+  
+  #deleteFolderPending = new Map();
+  #deleteFolderRequestCounter = 0;
+  
+  #exportFilePending = new Map();
+  #exportFileRequestCounter = 0;
+  
+  #getAbsoluteRootPathPending = new Map();
+  #getAbsoluteRootPathRequestCounter = 0;
+  
+  #getFilePending = new Map();
+  #getFileRequestCounter = 0;
   
   #getFolderPending = new Map();
   #getFolderRequestCounter = 0;
+  
+  #importFilePending = new Map();
+  #importFileRequestCounter = 0;
+  
+  #moveFilePending = new Map();
+  #moveFileRequestCounter = 0;
+  
+  #moveFolderPending = new Map();
+  #moveFolderRequestCounter = 0;
 
   #readFilePending = new Map();
   #readFileRequestCounter = 0;
+  
+  #renameFilePending = new Map();
+  #renameFileRequestCounter = 0;
+  
+  #renameFolderPending = new Map();
+  #renameFolderRequestCounter = 0;
+  
+  #writeToFilePending = new Map();
+  #writeToFileRequestCounter = 0;
+  
+  #zipFolderPending = new Map();
+  #zipFolderRequestCounter = 0;
   
   /** Creates the files object. **/
   constructor() 
@@ -677,12 +690,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#copyFilePendingResolve = resolve;
-        this.#copyFilePendingReject = reject;
+        let requestId = ++this.#copyFileRequestCounter;
+        this.#copyFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'copyFile', 
+          command: 'copyFile',
+          requestId: requestId, 
           oldRoot: oldRoot,
           newRoot: newRoot, 
           oldSubpath: oldSubpath,
@@ -730,12 +745,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#copyFolderPendingResolve = resolve;
-        this.#copyFolderPendingReject = reject;
+        let requestId = ++this.#copyFolderRequestCounter;
+        this.#copyFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'copyFolder', 
+          command: 'copyFolder',
+          requestId: requestId, 
           oldRoot: oldRoot,
           newRoot: newRoot, 
           oldSubpath: oldSubpath,
@@ -789,12 +806,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#createFilePendingResolve = resolve;
-        this.#createFilePendingReject = reject;
+        let requestId = ++this.#createFileRequestCounter;
+        this.#createFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'createFile', 
+          command: 'createFile',
+          requestId: requestId, 
           root: root, 
           subpath: subpath, 
           fileName: fileName
@@ -838,12 +857,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#createFolderPendingResolve = resolve;
-        this.#createFolderPendingReject = reject;
+        let requestId = ++this.#createFolderRequestCounter;
+        this.#createFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'createFolder', 
+          command: 'createFolder',
+          requestId: requestId, 
           root: root, 
           subpath: subpath, 
           folderName: folderName
@@ -874,12 +895,16 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#deleteFilePendingResolve = resolve;
-        this.#deleteFilePendingReject = reject;
+        let requestId = ++this.#deleteFileRequestCounter;
+        this.#deleteFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'deleteFile', root: root, subpath: subpath
+          command: 'deleteFile',
+          requestId: requestId, 
+          root: root, 
+          subpath: subpath
         });
       });
     }
@@ -907,12 +932,16 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#deleteFolderPendingResolve = resolve;
-        this.#deleteFolderPendingReject = reject;
+        let requestId = ++this.#deleteFolderRequestCounter;
+        this.#deleteFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'deleteFolder', root: root, subpath: subpath
+          command: 'deleteFolder',
+          requestId: requestId, 
+          root: root, 
+          subpath: subpath
         });
       });
     }
@@ -941,16 +970,17 @@ class FilesManager
       return;
     }
   
-    if(this.isValidSubpath({ subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       return new Promise((resolve, reject) =>
       {
-        this.#exportFilePendingResolve = resolve;
-        this.#exportFilePendingReject = reject;
-  
+        let requestId = ++this.#exportFileRequestCounter;
+        this.#exportFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
           command: 'exportFile',
-          root: root,
+          requestId: requestId, 
+          root: root, 
           subpath: subpath
         });
       });
@@ -978,12 +1008,15 @@ class FilesManager
       return;
     }
     
-    return new Promise((resolve, reject) => 
+    return new Promise((resolve, reject) =>
     {
-      this.#getAbsoluteRootPathPendingResolve = resolve;
-      this.#getAbsoluteRootPathPendingReject = reject;
+      let requestId = ++this.#getAbsoluteRootPathRequestCounter;
+      this.#getAbsoluteRootPathPending.set(requestId, { resolve, reject });
+  
       window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-        command: 'getAbsoluteRootPath', root: root
+        command: 'getAbsoluteRootPath',
+        requestId: requestId, 
+        root: root
       });
     });
   }
@@ -1010,12 +1043,16 @@ class FilesManager
       
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#getFilePendingResolve = resolve;
-        this.#getFilePendingReject = reject;
+        let requestId = ++this.#getFileRequestCounter;
+        this.#getFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'getFile', root: root, subpath: subpath
+          command: 'getFile',
+          requestId: requestId, 
+          root: root, 
+          subpath: subpath
         });
       });
     }
@@ -1105,16 +1142,17 @@ class FilesManager
         .replace(/^\./, '');
     });
   
-    if(this.isValidSubpath({ subpath }))
+    if(this.isValidSubpath({ subpath: subpath }))
     {
       return new Promise((resolve, reject) =>
       {
-        this.#importFilePendingResolve = resolve;
-        this.#importFilePendingReject = reject;
-  
+        let requestId = ++this.#importFileRequestCounter;
+        this.#importFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
           command: 'importFile',
-          root: root,
+          requestId: requestId, 
+          root: root, 
           subpath: subpath,
           fileExtensions: normalizedExtensions
         });
@@ -1215,12 +1253,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#moveFilePendingResolve = resolve;
-        this.#moveFilePendingReject = reject;
+        let requestId = ++this.#moveFileRequestCounter;
+        this.#moveFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'moveFile', 
+          command: 'moveFile',
+          requestId: requestId, 
           oldRoot: oldRoot,
           newRoot: newRoot, 
           oldSubpath: oldSubpath,
@@ -1266,12 +1306,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: oldSubpath }) && this.isValidSubpath({ subpath: newSubpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#moveFolderPendingResolve = resolve;
-        this.#moveFolderPendingReject = reject;
+        let requestId = ++this.#moveFolderRequestCounter;
+        this.#moveFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'moveFolder', 
+          command: 'moveFolder',
+          requestId: requestId, 
           oldRoot: oldRoot,
           newRoot: newRoot, 
           oldSubpath: oldSubpath,
@@ -1367,14 +1409,16 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#renameFilePendingResolve = resolve;
-        this.#renameFilePendingReject = reject;
+        let requestId = ++this.#renameFileRequestCounter;
+        this.#renameFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'renameFile', 
-          root: root, 
-          subpath: subpath, 
+          command: 'renameFile',
+          requestId: requestId,
+          root: root,
+          subpath: subpath,
           fileName: fileName
         });
       });
@@ -1416,14 +1460,16 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#renameFolderPendingResolve = resolve;
-        this.#renameFolderPendingReject = reject;
+        let requestId = ++this.#renameFolderRequestCounter;
+        this.#renameFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'renameFolder', 
-          root: root, 
-          subpath: subpath, 
+          command: 'renameFolder',
+          requestId: requestId,
+          root: root,
+          subpath: subpath,
           folderName: folderName
         });
       });
@@ -1473,12 +1519,14 @@ class FilesManager
     
     if(this.isValidSubpath({ subpath: subpath }))
     {
-      return new Promise((resolve, reject) => 
+      return new Promise((resolve, reject) =>
       {
-        this.#writeToFilePendingResolve = resolve;
-        this.#writeToFilePendingReject = reject;
+        let requestId = ++this.#writeToFileRequestCounter;
+        this.#writeToFilePending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
-          command: 'writeToFile', 
+          command: 'writeToFile',
+          requestId: requestId, 
           root: root, 
           subpath: subpath,
           content: content, 
@@ -1546,11 +1594,13 @@ class FilesManager
       let finalZipName = zippedFileName.toLowerCase().endsWith('.zip') ? zippedFileName : `${zippedFileName}.zip`;
       return new Promise((resolve, reject) =>
       {
-        this.#zipFolderPendingResolve = resolve;
-        this.#zipFolderPendingReject = reject;
+        let requestId = ++this.#zipFolderRequestCounter;
+        this.#zipFolderPending.set(requestId, { resolve, reject });
+    
         window.webkit?.messageHandlers?.filesMessageManager?.postMessage({
           command: 'zipFolder',
-          root: root,
+          requestId: requestId, 
+          root: root, 
           subpath: subpath,
           zippedFileName: finalZipName
         });
@@ -1559,302 +1609,400 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a file has been copied and returned in the copyFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
+   * Public method called by Swift when a file has been successfully copied
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned file object represents the newly copied file and includes
+   * metadata about the file and its parent folder. Location types are assigned
+   * to normalize the structure for use within the files module.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original copyFile request.
+   *   - data {Object} : The file object representing the newly copied file.
    */
-  _copyFileSuccess(data)
+  _copyFileSuccess(payload)
   {
-    data.type = this.#locationTypes.file;
+    let pending = this.#copyFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(this.#copyFilePendingResolve) 
-    {
-      this.#copyFilePendingResolve(data);
-      this.#copyFilePendingResolve = null;
-      this.#copyFilePendingReject = null;
-    }
+    payload.data.type = this.#locationTypes.file;
+    
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    pending.resolve(payload.data);
+    this.#copyFilePending.delete(payload.requestId);
+  }
+  
+  
+  /** 
+   * Public method called by Swift when a file could not be copied
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original copyFile request.
+   *   - error {String} : The error message describing why the file could not be copied.
+   */
+  _copyFileFail(payload) 
+  {
+    let pending = this.#copyFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#copyFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file could not be copied in the copyFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be copied.
+   * Public method called by Swift when a folder has been successfully copied
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned folder object represents the newly copied folder and includes
+   * metadata about the folder itself, its parent folder, any subfolders, and any
+   * files contained within it. Location types are assigned to normalize the
+   * structure for use within the files module.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original copyFolder request.
+   *   - data {Object} : The folder object representing the newly copied folder,
+   *                     including its subfolders and files.
    */
-  _copyFileFail(error) 
+  _copyFolderSuccess(payload)
   {
-    if(this.#copyFilePendingReject) 
-    {
-      this.#copyFilePendingReject(error);
-      this.#copyFilePendingResolve = null;
-      this.#copyFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a folder has been copied and returned in the copyFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
-   */
-  _copyFolderSuccess(data)
-  {
-    data.type = this.#locationTypes.folder;
+    let pending = this.#copyFolderPending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
+    payload.data.type = this.#locationTypes.folder;
+    
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(payload.data.subfolders.length !== 0) 
     {
-      for(let sub of data.subfolders) 
+      for(let sub of payload.data.subfolders) 
       {
         sub.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(data.files.length !== 0) 
+    if(payload.data.files.length !== 0) 
     {
-      for(let file of data.files) 
+      for(let file of payload.data.files) 
       {
         file.type = this.#locationTypes.file;
         if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(this.#copyFolderPendingResolve) 
-    {
-      this.#copyFolderPendingResolve(data);
-      this.#copyFolderPendingResolve = null;
-      this.#copyFolderPendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#copyFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder could not be copied in the copyFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be copied.
+   * Public method called by Swift when a folder could not be copied
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original copyFolder request.
+   *   - error {String} : The error message describing why the folder could not be copied.
    */
-  _copyFolderFail(error) 
+  _copyFolderFail(payload) 
   {
-    if(this.#copyFolderPendingReject) 
-    {
-      this.#copyFolderPendingReject(error);
-      this.#copyFolderPendingResolve = null;
-      this.#copyFolderPendingReject = null;
-    }
+    let pending = this.#copyFolderPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#copyFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file has been created and returned in the createFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
+   * Public method called by Swift when a file has been successfully created
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned file object represents the newly created file and includes
+   * metadata about the file and its parent folder. Location types are assigned
+   * to normalize the structure for use within the files module.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original createFile request.
+   *   - data {Object} : The file object representing the newly created file.
    */
-  _createFileSuccess(data)
+  _createFileSuccess(payload)
   {
-    data.type = this.#locationTypes.file;
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-  
-    if(this.#createFilePendingResolve) 
-    {
-      this.#createFilePendingResolve(data);
-      this.#createFilePendingResolve = null;
-      this.#createFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file could not be created in the createFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be created.
-   */
-  _createFileFail(error) 
-  {
-    if(this.#createFilePendingReject) 
-    {
-      this.#createFilePendingReject(error);
-      this.#createFilePendingResolve = null;
-      this.#createFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a folder has been created and returned in the createFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
-   */
-  _createFolderSuccess(data)
-  {
-    data.type = this.#locationTypes.folder;
+    let pending = this.#createFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
+    payload.data.type = this.#locationTypes.file;
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+  
+    pending.resolve(payload.data);
+    this.#createFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a file could not be created
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original createFile request.
+   *   - error {String} : The error message describing why the file could not be created.
+   */
+  _createFileFail(payload) 
+  {
+    let pending = this.#createFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#createFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a folder has been successfully created
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned folder object represents the newly created folder and includes
+   * metadata about the folder itself, its parent folder, any subfolders, and any
+   * files contained within it. Location types are assigned to normalize the
+   * structure for use within the files module.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original createFolder request.
+   *   - data {Object} : The folder object representing the newly created folder,
+   *                     including its subfolders and files.
+   */
+  _createFolderSuccess(payload)
+  {
+    let pending = this.#createFolderPending.get(payload.requestId);
+    if(!pending) return;
+    
+    payload.data.type = this.#locationTypes.folder;
+    
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(payload.data.subfolders.length !== 0) 
     {
-      for(let sub of data.subfolders) 
+      for(let sub of payload.data.subfolders) 
       {
         sub.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(data.files.length !== 0) 
+    if(payload.data.files.length !== 0) 
     {
-      for(let file of data.files) 
+      for(let file of payload.data.files) 
       {
         file.type = this.#locationTypes.file;
         if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(this.#createFolderPendingResolve) 
-    {
-      this.#createFolderPendingResolve(data);
-      this.#createFolderPendingResolve = null;
-      this.#createFolderPendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#createFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder could not be created in the createFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be created.
+   * Public method called by Swift when a folder could not be created
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original createFolder request.
+   *   - error {String} : The error message describing why the folder could not be created.
    */
-  _createFolderFail(error) 
+  _createFolderFail(payload) 
   {
-    if(this.#createFolderPendingReject) 
-    {
-      this.#createFolderPendingReject(error);
-      this.#createFolderPendingResolve = null;
-      this.#createFolderPendingReject = null;
-    }
+    let pending = this.#createFolderPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#createFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file has been deleted successfully in the deleteFile method within the files module. 
+   * Public method called by Swift when a file has been successfully deleted
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data typically represents metadata about the deleted file
+   * or confirmation information from the native layer.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original deleteFile request.
+   *   - data {Object} : Information related to the deleted file.
    */
-  _deleteFileSuccess()
+  _deleteFileSuccess(payload)
+  {    
+    let pending = this.#deleteFilePending.get(payload.requestId);
+    if(!pending) return;
+    
+    pending.resolve(payload.data);
+    this.#deleteFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a file could not be deleted
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original deleteFile request.
+   *   - error {String} : The error message describing why the file could not be deleted.
+   */
+  _deleteFileFail(payload)
   {
-    if(this.#deleteFilePendingResolve) 
-    {
-      this.#deleteFilePendingResolve();
-      this.#deleteFilePendingResolve = null;
-      this.#deleteFilePendingReject = null;
-    }
+    let pending = this.#deleteFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#deleteFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file has not been deleted successfully in the deleteFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be deleted.
+   * Public method called by Swift when a folder has been successfully deleted
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data typically represents metadata or confirmation information
+   * about the deleted folder from the native layer.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original deleteFolder request.
+   *   - data {Object} : Information related to the deleted folder.
    */
-  _deleteFileFail(error)
+  _deleteFolderSuccess(payload)
   {
-    if(this.#deleteFilePendingReject) 
-    {
-      this.#deleteFilePendingReject(error);
-      this.#deleteFilePendingResolve = null;
-      this.#deleteFilePendingReject = null;
-    }
+    let pending = this.#deleteFolderPending.get(payload.requestId);
+    if(!pending) return;
+    
+    pending.resolve(payload.data);
+    this.#deleteFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder has been deleted successfully in the deleteFolder method within the files module. 
+   * Public method called by Swift when a folder could not be deleted
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original deleteFolder request.
+   *   - error {String} : The error message describing why the folder could not be deleted.
    */
-  _deleteFolderSuccess()
+  _deleteFolderFail(payload)
   {
-    if(this.#deleteFolderPendingResolve) 
-    {
-      this.#deleteFolderPendingResolve();
-      this.#deleteFolderPendingResolve = null;
-      this.#deleteFolderPendingReject = null;
-    }
+    let pending = this.#deleteFolderPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#deleteFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder has not been deleted successfully in the deleteFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be deleted.
+   * Public method called by Swift when a file has been successfully exported
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data typically represents metadata or confirmation information
+   * about the exported file from the native layer.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original exportFile request.
+   *   - data {Object} : Information related to the exported file.
    */
-  _deleteFolderFail(error)
-  {
-    if(this.#deleteFolderPendingReject) 
-    {
-      this.#deleteFolderPendingReject(error);
-      this.#deleteFolderPendingResolve = null;
-      this.#deleteFolderPendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file has been exported in the exportFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
-   */
-  _exportFileSuccess()
+  _exportFileSuccess(payload)
   {  
-    if(this.#exportFilePendingResolve) 
-    {
-      this.#exportFilePendingResolve();
-      this.#exportFilePendingResolve = null;
-      this.#exportFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a failure occurred when calling exportFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be exported.
-   */
-  _exportFileFail(error)
-  {
-    if(this.#exportFilePendingReject) 
-    {
-      this.#exportFilePendingReject(error);
-      this.#exportFilePendingResolve = null;
-      this.#exportFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when an absolute root path has been returned within the files module. 
-   * @param {object} data - Object with root and absolutePath.
-   */
-  _getAbsoluteRootPathSuccess(data)
-  {
-    if(this.#getAbsoluteRootPathPendingResolve) 
-    {
-      this.#getAbsoluteRootPathPendingResolve(data);
-      this.#getAbsoluteRootPathPendingResolve = null;
-      this.#getAbsoluteRootPathPendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when an absolute root path couldn't be returned within the files module. 
-   * @param {object} error - The error returned on why the absolute root path couldn't be returned.
-   */
-  _getAbsoluteRootPathFail(error) 
-  {
-    if(this.#getAbsoluteRootPathPendingReject) 
-    {
-      this.#getAbsoluteRootPathPendingReject(error);
-      this.#getAbsoluteRootPathPendingResolve = null;
-      this.#getAbsoluteRootPathPendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file has been found successfully in the getFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
-   */
-  _getFileSuccess(data)
-  {
-    data.type = this.#locationTypes.file;
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    let pending = this.#exportFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(this.#getFilePendingResolve) 
-    {
-      this.#getFilePendingResolve(data);
-      this.#getFilePendingResolve = null;
-      this.#getFilePendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#exportFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a failure occurred when calling getFile method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be found.
+   * Public method called by Swift when a file could not be exported
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original exportFile request.
+   *   - error {String} : The error message describing why the file could not be exported.
    */
-  _getFileFail(error) 
+  _exportFileFail(payload)
   {
-    if(this.#getFilePendingReject) 
-    {
-      this.#getFilePendingReject(error);
-      this.#getFilePendingResolve = null;
-      this.#getFilePendingReject = null;
-    }
+    let pending = this.#exportFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#exportFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when the absolute path of a root directory
+   * has been successfully retrieved via the files module. Resolves the
+   * corresponding Promise based on the requestId.
+   *
+   * The returned data represents the absolute file system path for the
+   * specified root location on the device (e.g., Documents, Library, tmp).
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original getAbsoluteRootPath request.
+   *   - data {Object} : Object containing the absolute path and root to the requested root directory.
+   */
+  _getAbsoluteRootPathSuccess(payload)
+  {
+    let pending = this.#getAbsoluteRootPathPending.get(payload.requestId);
+    if(!pending) return;
+    
+    pending.resolve(payload.data);
+    this.#getAbsoluteRootPathPending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when the absolute path of a root directory
+   * could not be retrieved via the files module. Rejects the corresponding
+   * Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original getAbsoluteRootPath request.
+   *   - error {String} : The error message describing why the root path could not be retrieved.
+   */
+  _getAbsoluteRootPathFail(payload) 
+  {
+    console.log(payload);
+    let pending = this.#getAbsoluteRootPathPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#getAbsoluteRootPathPending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when file information has been successfully
+   * retrieved via the files module. Resolves the corresponding Promise based
+   * on the requestId.
+   *
+   * The returned data represents the file metadata retrieved from the native
+   * file system. The method also assigns the appropriate location type to the
+   * file and its parent folder before resolving the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original getFile request.
+   *   - data {Object} : The file metadata retrieved from the native file system.
+   */
+  _getFileSuccess(payload)
+  {
+    let pending = this.#getFilePending.get(payload.requestId);
+    if(!pending) return;
+    
+    payload.data.type = this.#locationTypes.file;
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    pending.resolve(payload.data);
+    this.#getFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when file information could not be retrieved
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original getFile request.
+   *   - error {String} : The error message describing why the file could not be retrieved.
+   */
+  _getFileFail(payload) 
+  {
+    let pending = this.#getFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#getFilePending.delete(payload.requestId);
   }
   
   /** 
@@ -1917,113 +2065,146 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a file has been imported in the importFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
+   * Public method called by Swift when a file has been successfully imported
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data represents the imported file metadata retrieved from the
+   * native file picker or import operation. The method assigns the appropriate
+   * location type to the imported file and its parent folder before resolving
+   * the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original importFile request.
+   *   - data {Array} : An array containing metadata for the imported file(s).
    */
-  _importFileSuccess(data)
+  _importFileSuccess(payload)
   {
-    data.type = this.#locationTypes.file;
+    let pending = this.#importFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;  
-    if(this.#importFilePendingResolve) 
-    {
-      this.#importFilePendingResolve(data);
-      this.#importFilePendingResolve = null;
-      this.#importFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a failure occurred when calling importFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be imported.
-   */
-  _importFileFail(error)
-  {
-    if(this.#importFilePendingReject) 
-    {
-      this.#importFilePendingReject(error);
-      this.#importFilePendingResolve = null;
-      this.#importFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a file has been moved and returned in the moveFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
-   */
-  _moveFileSuccess(data)
-  {
-    data.type = this.#locationTypes.file;
+    payload.data.type = this.#locationTypes.file;
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;  
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(this.#moveFilePendingResolve) 
-    {
-      this.#moveFilePendingResolve(data);
-      this.#moveFilePendingResolve = null;
-      this.#moveFilePendingReject = null;
-    }
+    pending.resolve(payload.data[0]);
+    this.#importFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file could not be moved in the moveFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be moved.
+   * Public method called by Swift when a file could not be imported
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original importFile request.
+   *   - error {String} : The error message describing why the file could not be imported.
    */
-  _moveFileFail(error) 
+  _importFileFail(payload)
   {
-    if(this.#moveFilePendingReject) 
-    {
-      this.#moveFilePendingReject(error);
-      this.#moveFilePendingResolve = null;
-      this.#moveFilePendingReject = null;
-    }
+    let pending = this.#importFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#importFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder has been moved and returned in the moveFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
+   * Public method called by Swift when a file has been successfully moved
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data represents metadata about the moved file and its new
+   * location. The method assigns the appropriate location type to the file
+   * and its parent folder before resolving the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original moveFile request.
+   *   - data {Object} : The file metadata representing the moved file.
    */
-  _moveFolderSuccess(data)
+  _moveFileSuccess(payload)
   {
-    data.type = this.#locationTypes.folder;
+    let pending = this.#moveFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
+    payload.data.type = this.#locationTypes.file;
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    pending.resolve(payload.data);
+    this.#moveFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a file could not be moved
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original moveFile request.
+   *   - error {String} : The error message describing why the file could not be moved.
+   */
+  _moveFileFail(payload) 
+  {
+    let pending = this.#moveFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#moveFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a folder has been successfully moved
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data represents the folder metadata at its new location.
+   * The method assigns the appropriate location types to the folder,
+   * its parent folder, its subfolders, and its contained files before
+   * resolving the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original moveFolder request.
+   *   - data {Object} : The folder object representing the moved folder,
+   *                     including its subfolders and files.
+   */
+  _moveFolderSuccess(payload)
+  {
+    let pending = this.#moveFolderPending.get(payload.requestId);
+    if(!pending) return;
+    
+    payload.data.type = this.#locationTypes.folder;
+    
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(payload.data.subfolders.length !== 0) 
     {
-      for(let sub of data.subfolders) 
+      for(let sub of payload.data.subfolders) 
       {
         sub.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(data.files.length !== 0) 
+    if(payload.data.files.length !== 0) 
     {
-      for(let file of data.files) 
+      for(let file of payload.data.files) 
       {
         file.type = this.#locationTypes.file;
         if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(this.#moveFolderPendingResolve) 
-    {
-      this.#moveFolderPendingResolve(data);
-      this.#moveFolderPendingResolve = null;
-      this.#moveFolderPendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#moveFolderPending.delete(payload.requestId); 
   }
   
   /** 
-   * Public method that gets called from swift when a folder could not be moved in the moveFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be moved.
+   * Public method called by Swift when a folder could not be moved
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original moveFolder request.
+   *   - error {String} : The error message describing why the folder could not be moved.
    */
-  _moveFolderFail(error) 
+  _moveFolderFail(payload) 
   {
-    if(this.#moveFolderPendingReject) 
-    {
-      this.#moveFolderPendingReject(error);
-      this.#moveFolderPendingResolve = null;
-      this.#moveFolderPendingReject = null;
-    }
+    let pending = this.#moveFolderPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#moveFolderPending.delete(payload.requestId);
   }
   
   /** 
@@ -2061,140 +2242,189 @@ class FilesManager
   }
   
   /** 
-   * Public method that gets called from swift when a file has been renamed and returned in the renameFile method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
+   * Public method called by Swift when a file has been successfully renamed
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data represents the updated file metadata after the rename
+   * operation. The method assigns the appropriate location type to the file
+   * and its parent folder before resolving the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original renameFile request.
+   *   - data {Object} : The file metadata representing the renamed file.
    */
-  _renameFileSuccess(data)
+  _renameFileSuccess(payload) 
   {
-    data.type = this.#locationTypes.file;
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    let pending = this.#renameFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(this.#renameFilePendingResolve) 
-    {
-      this.#renameFilePendingResolve(data);
-      this.#renameFilePendingResolve = null;
-      this.#renameFilePendingReject = null;
-    }
+    payload.data.type = this.#locationTypes.file;
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    pending.resolve(payload.data);
+    this.#renameFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file could not be renamed in the renameFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be created.
+   * Public method called by Swift when a file could not be renamed
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original renameFile request.
+   *   - error {String} : The error message describing why the file could not be renamed.
    */
-  _renameFileFail(error) 
+  _renameFileFail(payload) 
   {
-    if(this.#renameFilePendingReject) 
-    {
-      this.#renameFilePendingReject(error);
-      this.#renameFilePendingResolve = null;
-      this.#renameFilePendingReject = null;
-    }
+    let pending = this.#renameFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#renameFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder has been renamed and returned in the renameFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the Folder data type.
+   * Public method called by Swift when a folder has been successfully renamed
+   * via the files module. Resolves the corresponding Promise based on the requestId.
+   *
+   * The returned data represents the updated folder metadata after the rename
+   * operation. The method assigns the appropriate location types to the folder,
+   * its parent folder, its subfolders, and its contained files before resolving
+   * the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original renameFolder request.
+   *   - data {Object} : The folder object representing the renamed folder,
+   *                     including its subfolders and files.
    */
-  _renameFolderSuccess(data)
+  _renameFolderSuccess(payload)
   {
-    data.type = this.#locationTypes.folder;
+    let pending = this.#renameFolderPending.get(payload.requestId);
+    if(!pending) return;
     
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
-    if(data.subfolders.length !== 0) 
+    payload.data.type = this.#locationTypes.folder;
+    
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    if(payload.data.subfolders.length !== 0) 
     {
-      for(let sub of data.subfolders) 
+      for(let sub of payload.data.subfolders) 
       {
         sub.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(data.files.length !== 0) 
+    if(payload.data.files.length !== 0) 
     {
-      for(let file of data.files) 
+      for(let file of payload.data.files) 
       {
         file.type = this.#locationTypes.file;
         if(file.parentFolder) file.parentFolder.type = this.#locationTypes.partialFolder;
       }
     }
     
-    if(this.#renameFolderPendingResolve) 
-    {
-      this.#renameFolderPendingResolve(data);
-      this.#renameFolderPendingResolve = null;
-      this.#renameFolderPendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#renameFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder could not be renamed in the renameFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be renamed.
+   * Public method called by Swift when a folder could not be renamed
+   * via the files module. Rejects the corresponding Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original renameFolder request.
+   *   - error {String} : The error message describing why the folder could not be renamed.
    */
-  _renameFolderFail(error) 
+  _renameFolderFail(payload) 
   {
-    if(this.#renameFolderPendingReject) 
-    {
-      this.#renameFolderPendingReject(error);
-      this.#renameFolderPendingResolve = null;
-      this.#renameFolderPendingReject = null;
-    }
-  }
+    let pending = this.#renameFolderPending.get(payload.requestId);
+    if(!pending) return;
   
-    /** 
-   * Public method that gets called from swift when a file has been successfully written to in the writeToFile method within the files module. 
-   */
-  _writeToFileSuccess()
-  {
-    if(this.#writeToFilePendingResolve) 
-    {
-      this.#writeToFilePendingResolve();
-      this.#writeToFilePendingResolve = null;
-      this.#writeToFilePendingReject = null;
-    }
+    pending.reject(payload.error);
+    this.#renameFolderPending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a file has not been successfully written to in the writeToFile method within the files module. 
-   * @param {object} error - The error returned on why the file could not be written to.
+   * Public method called by Swift when content has been successfully written
+   * to a file via the files module. Resolves the corresponding Promise based
+   * on the requestId.
+   *
+   * The returned data typically represents the updated file metadata or
+   * confirmation of the write operation, depending on the implementation
+   * returned by the native layer.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original writeToFile request.
+   *   - data {Object|String|Boolean} : The result of the write operation returned
+   *                                    from Swift.
    */
-  _writeToFileFail(error)
+  _writeToFileSuccess(payload)
   {
-    if(this.#writeToFilePendingReject) 
-    {
-      this.#writeToFilePendingReject(error);
-      this.#writeToFilePendingResolve = null;
-      this.#writeToFilePendingReject = null;
-    }
-  }
-  
-  /** 
-   * Public method that gets called from swift when a folder has been zipped in the zipFolder method within the files module. 
-   * @param {object} data - Object returned that conforms to the File data type.
-   */
-  _zipFolderSuccess(data)
-  {
-    data.type = this.#locationTypes.file;
-    if(data.parentFolder) data.parentFolder.type = this.#locationTypes.partialFolder;
+    let pending = this.#writeToFilePending.get(payload.requestId);
+    if(!pending) return;
     
-    if(this.#zipFolderPendingResolve) 
-    {
-      this.#zipFolderPendingResolve(data);
-      this.#zipFolderPendingResolve = null;
-      this.#zipFolderPendingReject = null;
-    }
+    pending.resolve(payload.data);
+    this.#writeToFilePending.delete(payload.requestId);
   }
   
   /** 
-   * Public method that gets called from swift when a folder could not be zipped in the zipFolder method within the files module. 
-   * @param {object} error - The error returned on why the folder could not be zipped.
+   * Public method called by Swift when content could not be written to a file
+   * via the files module. Rejects the corresponding Promise based on the
+   * requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original writeToFile request.
+   *   - error {String} : The error message describing why the write operation failed.
    */
-  _zipFolderFail(error) 
+  _writeToFileFail(payload)
   {
-    if(this.#zipFolderPendingReject) 
-    {
-      this.#zipFolderPendingReject(error);
-      this.#zipFolderPendingResolve = null;
-      this.#zipFolderPendingReject = null;
-    }
+    let pending = this.#writeToFilePending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#writeToFilePending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a folder has been successfully compressed
+   * into a ZIP archive via the files module. Resolves the corresponding Promise
+   * based on the requestId.
+   *
+   * The returned data represents the metadata of the newly created ZIP file.
+   * The method assigns the appropriate location types to the file and its
+   * parent folder before resolving the Promise.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original zipFolder request.
+   *   - data {Object} : The file metadata representing the created ZIP archive.
+   */
+  _zipFolderSuccess(payload)
+  {
+    let pending = this.#zipFolderPending.get(payload.requestId);
+    if(!pending) return;
+    
+    payload.data.type = this.#locationTypes.file;
+    if(payload.data.parentFolder) payload.data.parentFolder.type = this.#locationTypes.partialFolder;
+    
+    pending.resolve(payload.data);
+    this.#zipFolderPending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Public method called by Swift when a folder could not be compressed
+   * into a ZIP archive via the files module. Rejects the corresponding
+   * Promise based on the requestId.
+   *
+   * @param {Object} payload - The payload sent from Swift. Contains:
+   *   - requestId {Number} (optional) : The ID of the original zipFolder request.
+   *   - error {String} : The error message describing why the folder
+   *                     could not be zipped.
+   */
+  _zipFolderFail(payload) 
+  {
+    let pending = this.#zipFolderPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#zipFolderPending.delete(payload.requestId);
   }
 }
 
