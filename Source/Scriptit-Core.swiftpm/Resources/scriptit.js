@@ -7,6 +7,7 @@ class ConsoleManager
 {
   #errors;
   #originalConsole;
+  #history;
   static #instance = null;
 
   /** Creates the consoleManager object. **/
@@ -17,6 +18,8 @@ class ConsoleManager
       singleInstanceError: 'Console Manager Error: Only one ConsoleManager object can exist at a time.',
       postError: 'Console Manager Error: Could not post message to iOS.'
     };
+    
+    this.#history = [];
 
     if(ConsoleManager.#instance) console.error(this.#errors.singleInstanceError);
     else ConsoleManager.#instance = this;
@@ -36,22 +39,22 @@ class ConsoleManager
   /** Private method to post console.debug statements to iOS.*/
   #debug(...args)
   {
-    this.#postToNative("📘", "debug", args);
+    this.#postToNative("🐞", "Debug", args);
   }
 
   /** Private method to post console.error statements to iOS.*/
   #error(...args)
   {
-    this.#postToNative("📕", "error", args);
+    this.#postToNative("❌", "Error", args);
   }
 
   /** Private method to post console.log statements to iOS.*/
   #log(...args)
   {
-    this.#postToNative("📗", "log", args);
+    this.#postToNative("📗", "Log", args);
   }
 
-  /** Private method to override the original javascriot console to send messages to iOS.*/
+  /** Private method to override the original javascript console to send messages to iOS.*/
   #override()
   {
     console.log = (...args) => 
@@ -86,7 +89,7 @@ class ConsoleManager
     {
       try 
       {
-        let message = `${emoji} JS ${type}: ${Array.from(args)
+        let message = `${emoji} ${type}: ${Array.from(args)
           .map(v =>
             typeof v === "undefined" ? "undefined" :
             typeof v === "object" ? JSON.stringify(v) :
@@ -95,6 +98,7 @@ class ConsoleManager
           .map(v => v.substring(0, 3000))
           .join(", ")}`;
 
+        this.#history.push(message);
         window.webkit.messageHandlers.consoleMessageManager.postMessage(message);
       } 
       catch(err) { this.#originalConsole.error(this.#errors.postError, err); }
@@ -104,8 +108,9 @@ class ConsoleManager
   /** Private method to setup the uncaught error message event listener.*/
   #setupErrorListener() 
   {
-    window.addEventListener("error", (e) => {
-      let message = `${e.message} at ${e.filename}:${e.lineno}:${e.colno}`;
+    window.addEventListener("error",(e) => 
+    {
+      let message = e.message;
       this.#uncaught(message);
     });
   }
@@ -113,19 +118,34 @@ class ConsoleManager
   /** Private method to post uncaught error statements to iOS.*/
   #uncaught(message)
   {
-    this.#postToNative("💥", "uncaught", [message]);
+    this.#postToNative("❌", "Uncaught", [message]);
   }
 
   /** Private method to post console.warn statements to iOS.*/
   #warn(...args)
   {
-    this.#postToNative("📙", "warn", args);
+    this.#postToNative("⚠️", "Warning", args);
   }
 
   /** Static method to return a new ConsoleManager instance. Allows for Singleton+Module pattern. */
   static getInstance() 
   {
     return new ConsoleManager();
+  }
+  
+  /** 
+   * Get property to return the history of console statements.
+   * @return {Array} The stored history of console statements.
+   */
+  get history()
+  {
+    return this.#history;
+  }
+  
+  /** Public method to clear the console history.*/
+  clear()
+  {
+    this.#history = [];
   }
 }
 

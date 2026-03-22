@@ -7,28 +7,12 @@ class HomePage extends ui.Page
   
   onInit()
   {
-    // files.getFolder({ subpath: '' })
-    // .then(folder =>
-    // {
-    //   console.log(folder.subfolders);
-    // });
+    console.log('New Log');
+    console.error('New Error');
+    console.debug('New Debug');
+    console.warn('New Warning');
     
-    files.zipFolder({ subpath: 'New/', zippedFileName: 'new' })
-    .then(file =>
-    {
-      console.log(file.name);
-    });
-    
-    // files.writeToFile({ subpath: 'next.txt', content: 'New code...', replace: false, newline: true })
-    // .then(() =>
-    // {
-    //   console.log('Successfully wrote to next.txt');
-    //   files.readFile({ subpath: 'next.txt' })
-    //   .then(content =>
-    //   {
-    //     console.log(content);
-    //   });
-    // });
+    setTimeout(() => { console.log(consoleManager.history) }, 3000);
   }
 }
 
