@@ -621,16 +621,27 @@ class FilesManager
     
     this.#fileExtensions = 
     {
-      css: '.css',
+      // Images
+      gif: '.gif',
+      heic: '.heic',
+      heif: '.heif',
+      jpg: '.jpg',
+      jpeg: '.jpeg',
+      png: '.png',
+    
+      // Text
       csv: '.csv',
       html: '.html',
-      javascript: '.js',
       json: '.json',
       log: '.log',
       markdown: '.md',
       text: '.txt',
-      swift: '.swift',
-      xml: '.xml'
+      xml: '.xml',
+      
+      // Code
+      css: '.css',
+      javascript: '.js',
+      swift: '.swift'
     };
     
     this.#locationTypes = 

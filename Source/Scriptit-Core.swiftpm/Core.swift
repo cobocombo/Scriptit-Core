@@ -1390,7 +1390,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
    * Expected JavaScript input (dict):
    * - root (String): One of "Documents", "Library", or "tmp"
    * - subpath (String): Destination subpath relative to the root
-   * - fileExtensions ([String], optional): Allowed file extensions (e.g. ["js", "json"])
+   * - fileExtensions ([String], optional): Allowed file extensions (e.g. ["js", "json", "png"])
    *
    * JavaScript callbacks:
    * - files._importFileSuccess(data)
@@ -1399,6 +1399,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   func importFile(dict: [String: Any], webView: WKWebView)
   {
     self.importRequestId = dict["requestId"] as? Int;
+  
     guard let controller = self.presentingController else
     {
       let error = self.errors.controllerUnavailable.rawValue;
@@ -1428,13 +1429,43 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     }
   
     let extensions = dict["fileExtensions"] as? [String];
+  
     let normalizedExtensions = extensions?
-      .map { $0.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) }
+      .map 
+      {
+        $0
+          .lowercased()
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+      }
       .filter { !$0.isEmpty };
+  
     let contentTypes: [UTType];
+  
     if let exts = normalizedExtensions, !exts.isEmpty
     {
-      contentTypes = exts.compactMap { UTType(filenameExtension: $0) };
+      contentTypes = exts.compactMap
+      { ext in
+        switch ext
+        {
+          // 📱 iOS Images (critical)
+          case "heic": return .heic
+          case "heif": return .heif
+  
+          // 🖼 Common Images
+          case "png": return .png
+          case "jpg", "jpeg": return .jpeg
+          case "gif": return .gif
+  
+          // 🧠 Fallback (covers css, js, json, etc.)
+          default:
+            if let type = UTType(filenameExtension: ext)
+            {
+              return type
+            }
+            return nil
+        }
+      }
+  
       if contentTypes.isEmpty
       {
         let error = self.errors.invalidFileTypes.rawValue;
@@ -1442,20 +1473,31 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
         return;
       }
     }
-    else 
-    { 
+    else
+    {
+      // 🔥 Default supported types (mirrors your JS config)
       contentTypes =
       [
-        UTType(filenameExtension: "css")!,
+        // Images
+        .heic,
+        .heif,
+        .png,
+        .jpeg,
+        .gif,
+  
+        // Text
         .commaSeparatedText,
-        .html, 
-        UTType(filenameExtension: "js")!, 
-        .json, 
-        UTType(filenameExtension: "log")!, 
-        UTType(filenameExtension: "md")!, 
-        .plainText, 
-        UTType(filenameExtension: "swift")!,
-        .xml
+        .html,
+        .json,
+        UTType(filenameExtension: "log")!,
+        UTType(filenameExtension: "md")!,
+        .plainText,
+        .xml,
+  
+        // Code
+        UTType(filenameExtension: "css")!,
+        UTType(filenameExtension: "js")!,
+        UTType(filenameExtension: "swift")!
       ];
     }
   
@@ -1468,6 +1510,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     picker.delegate = self;
     picker.allowsMultipleSelection = false;
     picker.modalPresentationStyle = .formSheet;
+  
     controller.present(picker, animated: true);
   }
   
