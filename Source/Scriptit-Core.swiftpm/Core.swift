@@ -1399,7 +1399,6 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   func importFile(dict: [String: Any], webView: WKWebView)
   {
     self.importRequestId = dict["requestId"] as? Int;
-  
     guard let controller = self.presentingController else
     {
       let error = self.errors.controllerUnavailable.rawValue;
@@ -1429,39 +1428,37 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     }
   
     let extensions = dict["fileExtensions"] as? [String];
-  
     let normalizedExtensions = extensions?
-      .map 
-      {
-        $0
-          .lowercased()
-          .trimmingCharacters(in: .whitespacesAndNewlines)
-      }
+      .map { $0.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) }
       .filter { !$0.isEmpty };
   
     let contentTypes: [UTType];
-  
     if let exts = normalizedExtensions, !exts.isEmpty
     {
       contentTypes = exts.compactMap
       { ext in
         switch ext
         {
-          // 📱 iOS Images (critical)
+          // Images
           case "heic": return .heic
           case "heif": return .heif
-  
-          // 🖼 Common Images
           case "png": return .png
           case "jpg", "jpeg": return .jpeg
           case "gif": return .gif
   
-          // 🧠 Fallback (covers css, js, json, etc.)
+          // Audio
+          case "mp3": return .mp3
+          case "wav": return .wav
+          case "ogg": return UTType(filenameExtension: "ogg")
+  
+          // Video
+          case "mp4": return .mpeg4Movie
+          case "mov": return .quickTimeMovie
+          case "m4v": return UTType(filenameExtension: "m4v")
+  
+          // Fallback
           default:
-            if let type = UTType(filenameExtension: ext)
-            {
-              return type
-            }
+            if let type = UTType(filenameExtension: ext) { return type }
             return nil
         }
       }
@@ -1475,24 +1472,22 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     }
     else
     {
-      // 🔥 Default supported types (mirrors your JS config)
       contentTypes =
       [
         // Images
-        .heic,
-        .heif,
-        .png,
-        .jpeg,
-        .gif,
+        .heic, .heif, .png, .jpeg, .gif,
+  
+        // Audio
+        .mp3, .wav, UTType(filenameExtension: "ogg")!,
+  
+        // Video
+        .mpeg4Movie, .quickTimeMovie, UTType(filenameExtension: "m4v")!,
   
         // Text
-        .commaSeparatedText,
-        .html,
-        .json,
+        .commaSeparatedText, .html, .json,
         UTType(filenameExtension: "log")!,
         UTType(filenameExtension: "md")!,
-        .plainText,
-        .xml,
+        .plainText, .xml,
   
         // Code
         UTType(filenameExtension: "css")!,

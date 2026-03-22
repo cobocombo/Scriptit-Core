@@ -629,9 +629,18 @@ class FilesManager
       jpeg: '.jpeg',
       png: '.png',
     
+      // Audio
+      mp3: '.mp3',
+      ogg: '.ogg',
+      wav: '.wav',
+    
+      // Video
+      mp4: '.mp4',
+      mov: '.mov',
+      m4v: '.m4v',
+    
       // Text
       csv: '.csv',
-      html: '.html',
       json: '.json',
       log: '.log',
       markdown: '.md',
@@ -640,6 +649,7 @@ class FilesManager
       
       // Code
       css: '.css',
+      html: '.html',
       javascript: '.js',
       swift: '.swift'
     };
