@@ -7,11 +7,8 @@ class HomePage extends ui.Page
   
   onInit()
   {
-    files.importFile({ subpath: '' })
-    .then(file => 
-    {
-      console.log(file.name);
-    })
+    let sound = new Howl({ src: ['Coin_1.caf'] });
+    setTimeout(() => { sound.play(); }, 3000);
   }
 }
 
