@@ -39,19 +39,19 @@ class ConsoleManager
   /** Private method to post console.debug statements to iOS.*/
   #debug(...args)
   {
-    this.#postToNative("🐞", "Debug", args);
+    this.#postToNative("🐞", "DEBUG", args);
   }
 
   /** Private method to post console.error statements to iOS.*/
   #error(...args)
   {
-    this.#postToNative("❌", "Error", args);
+    this.#postToNative("❌", "ERROR", args);
   }
 
   /** Private method to post console.log statements to iOS.*/
   #log(...args)
   {
-    this.#postToNative("📗", "Log", args);
+    this.#postToNative("📗", "LOG", args);
   }
 
   /** Private method to override the original javascript console to send messages to iOS.*/
@@ -118,13 +118,13 @@ class ConsoleManager
   /** Private method to post uncaught error statements to iOS.*/
   #uncaught(message)
   {
-    this.#postToNative("❌", "Uncaught", [message]);
+    this.#postToNative("❌", "UNCAUGHT", [message]);
   }
 
   /** Private method to post console.warn statements to iOS.*/
   #warn(...args)
   {
-    this.#postToNative("⚠️", "Warning", args);
+    this.#postToNative("⚠️", "WARNING", args);
   }
 
   /** Static method to return a new ConsoleManager instance. Allows for Singleton+Module pattern. */
@@ -532,6 +532,7 @@ class FontManager
 class FilesManager
 {
   #errors;
+  #deleteInvalidFolderOverride;
   static #instance = null;
   #fileExtensions;
   #locationTypes;
@@ -599,6 +600,8 @@ class FilesManager
       absolutePathError: 'Files Error: Absolute paths are not allowed.',
       contentEmpty: 'Files Error: Content empty.',
       contentTypeError: 'Files Error: Expected type string for content.',
+      deleteInvalidFolderOverrideError: (subpath) => `Files Error: Cannot delete folder at path ${subpath} without an override.`,
+      deleteInvalidFolderOverrideTypeError: 'Files Error: Expected type boolean for delete projects override.',
       directoryTraversalError: 'Files Error: Directory traversal is not allowed.',
       excessiveLengthError: 'Files Error: Excessive length detected for segment of path.',
       fileNameEmpty: 'Files Error: File name empty.',
@@ -615,6 +618,8 @@ class FilesManager
       subpathTypeError: 'Files Error: Expected type string for subpath',
       windowsSlashesError: 'Files Error: Windows style slashes are not allowed.'
     };
+    
+    this.#deleteInvalidFolderOverride = false;
 
     if(FilesManager.#instance) console.error(this.#errors.singleInstanceError);
     else FilesManager.#instance = this;
@@ -675,6 +680,30 @@ class FilesManager
   static getInstance() 
   {
     return new FilesManager();
+  }
+  
+  /** 
+   * Get property to return the files delete projects override value.
+   * @return {Boolean} The delete projects override value of the files module.
+   */
+  get deleteInvalidFolderOverride()
+  {
+    return this.#deleteInvalidFolderOverride;
+  }
+  
+  /** 
+   * Set property to set the files delete invalid folder override value.
+   * @param {Boolean} The delete invalid folder override value.
+   */
+  set deleteInvalidFolderOverride(value)
+  {
+    if(!typechecker.check({ type: 'boolean', value: value }))
+    {
+      console.error(this.#errors.deleteInvalidFolderOverrideTypeError);
+      return;
+    }
+    
+    this.#deleteInvalidFolderOverride = value;
   }
   
   /** 
@@ -971,7 +1000,20 @@ class FilesManager
       console.error(this.#errors.invalidRootError);
       return;
     }
-      
+    
+    let containsProjectsSubString = subpath.toLowerCase().includes('projects');
+    let isCode = subpath.split('/').filter(Boolean).pop()?.toLowerCase() === 'code';
+    let isResources = subpath.split('/').filter(Boolean).pop()?.toLowerCase() === 'resources';
+    
+    if(containsProjectsSubString === true || isCode === true || isResources === true)
+    {
+      if(this.deleteInvalidFolderOverride === false) 
+      {
+        console.error(this.#errors.deleteInvalidFolderOverrideError(subpath));
+        return;
+      }
+    }
+  
     if(this.isValidSubpath({ subpath: subpath }))
     {
       return new Promise((resolve, reject) =>
