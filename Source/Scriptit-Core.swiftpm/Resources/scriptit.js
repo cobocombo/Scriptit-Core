@@ -633,6 +633,7 @@ class FilesManager
       mp3: '.mp3',
       ogg: '.ogg',
       wav: '.wav',
+      caf: '.caf',
     
       // Video
       mp4: '.mp4',

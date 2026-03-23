@@ -1450,6 +1450,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
           case "mp3": return .mp3
           case "wav": return .wav
           case "ogg": return UTType(filenameExtension: "ogg")
+          case "caf": return UTType(filenameExtension: "caf")
   
           // Video
           case "mp4": return .mpeg4Movie
@@ -1479,6 +1480,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   
         // Audio
         .mp3, .wav, UTType(filenameExtension: "ogg")!,
+        UTType(filenameExtension: "caf")!,
   
         // Video
         .mpeg4Movie, .quickTimeMovie, UTType(filenameExtension: "m4v")!,
