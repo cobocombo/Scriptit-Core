@@ -598,6 +598,7 @@ class FilesManager
     this.#errors = 
     {
       absolutePathError: 'Files Error: Absolute paths are not allowed.',
+      cannotCopyToBundleError: 'Files Error: Cannot copy file to bundle.',
       contentEmpty: 'Files Error: Content empty.',
       contentTypeError: 'Files Error: Expected type string for content.',
       deleteInvalidFolderOverrideError: (subpath) => `Files Error: Cannot delete folder at path ${subpath} without an override.`,
@@ -750,6 +751,12 @@ class FilesManager
     if(!typechecker.check({ type: 'string', value: newRoot }))
     {
       console.error(this.#errors.rootTypeError);
+      return;
+    }
+    
+    if(newRoot === this.roots.bundle)
+    {
+      console.error(this.#errors.cannotCopyToBundleError);
       return;
     }
    

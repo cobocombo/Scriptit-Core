@@ -770,22 +770,21 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
   func copyFile(dict: [String: Any], webView: WKWebView)
   {
     let requestId = dict["requestId"] as? Int;
-    guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
+    guard let oldRootString = dict["oldRoot"] as? String, let newRootString = dict["newRoot"] as? String else
     {
       let error = self.errors.invalidRoot.rawValue;
       self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
-    guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
+    guard let newBase = self.resolveBaseFolder(from: newRootString) else
     {
       let error = self.errors.invalidRoot.rawValue;
       self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
-    guard let oldSubpath = dict["oldSubpath"] as? String,
-          let newSubpath = dict["newSubpath"] as? String else
+    guard let oldSubpath = dict["oldSubpath"] as? String, let newSubpath = dict["newSubpath"] as? String else
     {
       let error = self.errors.subpathNotProvided.rawValue;
       self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
@@ -793,32 +792,68 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     }
   
     let customName = dict["copiedFileName"] as? String;
-  
-    let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
-    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
-  
-    let sourceFile: File;
-    let destinationFolder: Folder;
-  
-    do { sourceFile = try File(path: sourcePath); }
-    catch
+    let sourceURL: URL;
+    if oldRootString == "Bundle"
     {
-      let error = self.errors.fileNotFound.rawValue + " (\(sourcePath)).";
-      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
-      return;
+      let cleanPath = oldSubpath.trimmingCharacters(in: CharacterSet(charactersIn: "/"));
+      let pathComponents = cleanPath.split(separator: "/").map(String.init);
+      guard let fileName = pathComponents.last else
+      {
+        let error = self.errors.fileNotFound.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      let fileParts = fileName.split(separator: ".", maxSplits: 1).map(String.init);
+      let name = fileParts.first ?? fileName;
+      let ext = fileParts.count > 1 ? fileParts.last : nil
+      let subdirectory = pathComponents.dropLast().joined(separator: "/");
+  
+      guard let bundleURL = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: subdirectory.isEmpty ? nil : subdirectory) 
+      else
+      {
+        let error = self.errors.fileNotFound.rawValue + " (Bundle/\(oldSubpath))";
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      sourceURL = bundleURL;
+    }
+    else
+    {
+      guard let oldBase = self.resolveBaseFolder(from: oldRootString) else
+      {
+        let error = self.errors.invalidRoot.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+      do
+      {
+        let file = try File(path: sourcePath);
+        sourceURL = file.url;
+      }
+      catch
+      {
+        let error = self.errors.fileNotFound.rawValue + " (\(sourcePath))";
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
     }
   
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+    let destinationFolder: Folder
     do { destinationFolder = try Folder(path: destinationParentPath); }
     catch
     {
-      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath))";
       self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
       return;
     }
   
-    let fileExtension = sourceFile.extension ?? "";
-    let originalBaseName = sourceFile.nameExcludingExtension;
-  
+    let fileExtension = sourceURL.pathExtension;
+    let originalBaseName = sourceURL.deletingPathExtension().lastPathComponent;
     let baseName: String =
       customName?.isEmpty == false
         ? (customName!.hasSuffix(".\(fileExtension)") || fileExtension.isEmpty
@@ -830,21 +865,23 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     var counter = 0;
     repeat
     {
-      let suffix = counter == 0 ? "" : "(\(counter))";
+      let suffix = counter == 0 ? "" : "(\(counter))"
       uniqueName = fileExtension.isEmpty
         ? "\(baseName)\(suffix)"
         : "\(baseName)\(suffix).\(fileExtension)";
       counter += 1;
     }
-    while destinationFolder.containsFile(named: uniqueName);
-  
+    while destinationFolder.containsFile(named: uniqueName)
     do
     {
       let destinationFile = try destinationFolder.createFile(named: uniqueName);
-      try destinationFile.write(sourceFile.read());
+  
+      let data = try Data(contentsOf: sourceURL);
+      try destinationFile.write(data);
   
       let fileInfo = self.serializeFile(destinationFile, relativeTo: newBase);
       let jsonData = try JSONSerialization.data(withJSONObject: fileInfo);
+  
       guard let jsonString = String(data: jsonData, encoding: .utf8) else
       {
         let error = self.errors.jsonEncodingFailed.rawValue;
@@ -856,7 +893,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     }
     catch
     {
-      let error = self.errors.copyFileFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
+      let error = self.errors.copyFileFailed.rawValue + " (\(destinationParentPath + uniqueName))";
       self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
     }
   }
