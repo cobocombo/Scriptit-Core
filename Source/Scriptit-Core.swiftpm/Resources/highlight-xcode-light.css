@@ -1,0 +1,100 @@
+/*
+
+XCode style (c) Angel Garcia <angelgarcia.mail@gmail.com>
+
+*/
+
+.codeblock-theme-xcode-light .hljs {
+  background: #fff;
+  color: black;
+}
+
+/* Gray DOCTYPE selectors like WebKit */
+.codeblock-theme-xcode-light .xml .hljs-meta {
+  color: #c0c0c0;
+}
+
+.codeblock-theme-xcode-light .hljs-comment,
+.codeblock-theme-xcode-light .hljs-quote {
+  color: #007400;
+}
+
+.codeblock-theme-xcode-light .hljs-tag,
+.codeblock-theme-xcode-light .hljs-attribute,
+.codeblock-theme-xcode-light .hljs-keyword,
+.codeblock-theme-xcode-light .hljs-selector-tag,
+.codeblock-theme-xcode-light .hljs-literal,
+.codeblock-theme-xcode-light .hljs-name {
+  color: #aa0d91;
+}
+
+.codeblock-theme-xcode-light .hljs-variable,
+.codeblock-theme-xcode-light .hljs-template-variable {
+  color: #3F6E74;
+}
+
+.codeblock-theme-xcode-light .hljs-code,
+.codeblock-theme-xcode-light .hljs-string,
+.codeblock-theme-xcode-light .hljs-meta .hljs-string {
+  color: #c41a16;
+}
+
+.codeblock-theme-xcode-light .hljs-regexp,
+.codeblock-theme-xcode-light .hljs-link {
+  color: #0E0EFF;
+}
+
+.codeblock-theme-xcode-light .hljs-title,
+.codeblock-theme-xcode-light .hljs-symbol,
+.codeblock-theme-xcode-light .hljs-bullet,
+.codeblock-theme-xcode-light .hljs-number {
+  color: #1c00cf;
+}
+
+.codeblock-theme-xcode-light .hljs-section,
+.codeblock-theme-xcode-light .hljs-meta {
+  color: #643820;
+}
+
+.codeblock-theme-xcode-light .hljs-title.class_,
+.codeblock-theme-xcode-light .hljs-class .hljs-title,
+.codeblock-theme-xcode-light .hljs-type,
+.codeblock-theme-xcode-light .hljs-built_in,
+.codeblock-theme-xcode-light .hljs-params {
+  color: #5c2699;
+}
+
+.codeblock-theme-xcode-light .hljs-attr {
+  color: #836C28;
+}
+
+.codeblock-theme-xcode-light .hljs-subst {
+  color: #000;
+}
+
+.codeblock-theme-xcode-light .hljs-formula {
+  background-color: #eee;
+  font-style: italic;
+}
+
+.codeblock-theme-xcode-light .hljs-addition {
+  background-color: #baeeba;
+}
+
+.codeblock-theme-xcode-light .hljs-deletion {
+  background-color: #ffc8bd;
+}
+
+.codeblock-theme-xcode-light .hljs-selector-id,
+.codeblock-theme-xcode-light .hljs-selector-class {
+  color: #9b703f;
+}
+
+.codeblock-theme-xcode-light .hljs-doctag,
+.codeblock-theme-xcode-light .hljs-strong {
+  font-weight: bold;
+}
+
+.codeblock-theme-xcode-light .hljs-emphasis {
+  font-style: italic;
+}
