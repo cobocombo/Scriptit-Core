@@ -17,5 +17,5 @@ class HomePage extends ui.Page
   }
 }
 
-let js = `console.log('Hello World!');\nlet text = 'Hi!'\nconsole.log('Hello World!');`;
+let js = `console.log('Hello World!');\nconsole.log('Hello World!');`;
 app.present({ root: new HomePage() });

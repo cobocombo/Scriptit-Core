@@ -4995,17 +4995,12 @@ class _Codeblock_ extends Component
   /** Private method called when the user taps the copy button. */
   #copyToClipboard()
   {
-    navigator.clipboard.writeText(this.code)
-    .then(() =>
+    clipboard.write({ text: this.code })
+    .then(() => 
     {
       let originalIcon = this.#copyButton.icon;
       this.#copyButton.icon = 'fa-check';
       setTimeout(() => { this.#copyButton.icon = originalIcon; }, 1500);
-    })
-    .catch(err => 
-    {
-      console.error(this.#errors.copyFailedError);
-      return;
     });
   }
   
@@ -11208,6 +11203,96 @@ class ValidationManager
 }
 
 ///////////////////////////////////////////////////////////
+// CLIPBOARD MODULE
+///////////////////////////////////////////////////////////
+
+/** Singleton class representing the main clipboard object. */
+class ClipboardManager 
+{
+  #errors;
+  static #instance = null;
+
+  /** Creates the clipboard object. **/
+  constructor() 
+  {
+    this.#errors = 
+    {
+      singleInstanceError: 'Clipboard Manager Error: Only one ClipboardManager object can exist at a time.',
+      textTypeError: 'Clipboard Error: Expected type string for text.',
+      clipboardUnavailable: 'Clipboard API not available in this environment.'
+    };
+
+    if(ClipboardManager.#instance) 
+    {
+      console.error(this.#errors.singleInstanceError);
+      return ClipboardManager.#instance;
+    }
+
+    ClipboardManager.#instance = this;
+  }
+
+  /** Static method to return a singleton instance */
+  static getInstance() 
+  {
+    if(!ClipboardManager.#instance) 
+    {
+      ClipboardManager.#instance = new ClipboardManager();
+    }
+    return ClipboardManager.#instance;
+  }
+
+  /**
+   * Public method to write text to the clipboard.
+   * @param {string} value - Text to store in the clipboard.
+   * @returns {Promise<void>}
+   */
+  write({ text = '' }) 
+  {
+    return new Promise((resolve, reject) => 
+    {
+      if(!typechecker.check({ type: 'string', value: text })) 
+      {
+        console.error(this.#errors.textTypeError);
+        reject(this.#errors.textTypeError);
+        return;
+      }
+
+      if(!navigator.clipboard) 
+      {
+        console.error(this.#errors.clipboardUnavailable);
+        reject(this.#errors.clipboardUnavailable);
+        return;
+      }
+
+      navigator.clipboard.writeText(text)
+      .then(resolve)
+      .catch(err => reject('Clipboard write failed: ' + err));
+    });
+  }
+
+  /**
+   * Public method to read text from the clipboard.
+   * @returns {Promise<string>}
+   */
+  read() 
+  {
+    return new Promise((resolve, reject) => 
+    {
+      if(!navigator.clipboard) 
+      {
+        console.error(this.#errors.clipboardUnavailable);
+        reject(this.#errors.clipboardUnavailable);
+        return;
+      }
+
+      navigator.clipboard.readText()
+      .then(text => resolve(text))
+      .catch(err => reject('Clipboard read failed: ' + err));
+    });
+  }
+}
+
+///////////////////////////////////////////////////////////
 // PHASER
 ///////////////////////////////////////////////////////////
 
@@ -11258,6 +11343,7 @@ globalThis.browser = BrowserManager.getInstance();
 globalThis.device = DeviceManager.getInstance();
 globalThis.confetti = ConfettiManager.getInstance();
 globalThis.validator = ValidationManager.getInstance();
+globalThis.clipboard = ClipboardManager.getInstance();
 
 typechecker.register({ name: 'action-sheet', constructor: _ActionSheet_ });
 typechecker.register({ name: 'action-sheet-button', constructor: _ActionSheetButton_ });
