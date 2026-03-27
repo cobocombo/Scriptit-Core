@@ -465,7 +465,8 @@ class FontManager
       helveticaNeue: 'Helvetica Neue',
       menlo: 'Menlo',
       noteworthy: 'Noteworthy',
-      system: '-apple-system'
+      system: '-apple-system',
+      systemMono: 'ui-monospace'
     };
     
     this.#loaded = {};
