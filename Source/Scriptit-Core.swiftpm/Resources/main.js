@@ -7,15 +7,14 @@ class HomePage extends ui.Page
   
   onInit()
   { 
-    let code = new ui.Codeblock({ code: js });
-    code.font = code.fonts.systemMono;
-    code.fontSize = '15px';
-    code.theme = code.themes.xcodeLight;
-    code.marginLeft = '12px';
+    let groceryList = new ui.UnorderedList();
     
-    this.addComponents({ components: [ code ] });
+    groceryList.addItem({ item: 'Bread' });
+    groceryList.addItem({ item: 'Milk' });
+    groceryList.addItem({ item: 'Eggs' });
+    
+    this.addComponents({ components: [ groceryList ] });
   }
 }
 
-let js = `console.log('Hello World!');\nconsole.log('Hello World!');`;
 app.present({ root: new HomePage() });
