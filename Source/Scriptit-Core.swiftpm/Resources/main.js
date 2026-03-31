@@ -13,7 +13,7 @@ class HomePage extends ui.Page
   
     let linkList = new ui.UnorderedList();
     linkList.type = linkList.types.disc;
-    linkList.addItem({ item: exampleLink });
+    linkList.addItem({ item: 'Non-link' });
     
     this.addComponents({ components: [ linkList ] });
   }
