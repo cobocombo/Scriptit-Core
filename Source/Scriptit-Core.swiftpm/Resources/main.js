@@ -3,17 +3,18 @@ class HomePage extends ui.Page
   constructor()
   {
     super();
+    this.id = 'home';
   }
   
   onInit()
   { 
-    let groceryList = new ui.UnorderedList();
+    let newLink = new ui.Link();
+    newLink.type = newLink.types.web;
+    newLink.icon = 'fa-beer';
+    newLink.color = 'gold';
+    newLink.fontSize = '25px';
     
-    groceryList.addItem({ item: 'Bread' });
-    groceryList.addItem({ item: 'Milk' });
-    groceryList.addItem({ item: 'Eggs' });
-    
-    this.addComponents({ components: [ groceryList ] });
+    this.addComponentToCenter({ component: newLink });
   }
 }
 
