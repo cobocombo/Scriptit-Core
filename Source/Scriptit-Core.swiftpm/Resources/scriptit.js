@@ -7337,7 +7337,7 @@ class _OrderedList_ extends Component
    */
   addItem({ item })
   {
-    if(!typechecker.checkMultiple({ types: ['string', 'ordered-list', 'unordered-list'], value: item }))
+    if(!typechecker.checkMultiple({ types: ['string', 'link' ,'ordered-list', 'unordered-list'], value: item }))
     {
       console.error(this.#errors.itemTypeError);
       return;
@@ -7347,6 +7347,12 @@ class _OrderedList_ extends Component
     {
       let listItem = document.createElement('li');
       listItem.textContent = item;
+      this.element.appendChild(listItem);
+    }
+    else if(typechecker.check({ type: 'link', value: item }))
+    {
+      let listItem = document.createElement('li');
+      listItem.appendChild(item.element);
       this.element.appendChild(listItem);
     }
     else 
@@ -7383,7 +7389,7 @@ class _OrderedList_ extends Component
       return;
     }
     
-    if(!typechecker.checkMultiple({ types: ['string', 'ordered-list', 'unordered-list'], value: item })) 
+    if(!typechecker.checkMultiple({ types: ['string', 'link', 'ordered-list', 'unordered-list'], value: item })) 
     {
       console.error(this.#errors.itemTypeError);
       return;
@@ -7408,6 +7414,13 @@ class _OrderedList_ extends Component
       listItem.textContent = item;
       let beforeNode = this.element.children[index];
       this.element.insertBefore(listItem, beforeNode);
+    }
+    else if(typechecker.check({ type: 'link', value: item }))
+    {
+      let listItem = document.createElement('li');
+      listItem.appendChild(item.element);
+      let beforeNode = this.element.children[index];
+      this.element.insertBefore(item, beforeNode);
     }
     else 
     { 
@@ -10988,7 +11001,7 @@ class _UnorderedList_ extends Component
     this.#errors = 
     {
       invalidTypeError: (type) => `Unordered List Error: Invalid type for ordered list: ${type}.`,
-      itemTypeError: 'Unordered List Error: Expected type for item. Use String, OrderedList or Unorderedlist for item.',
+      itemTypeError: 'Unordered List Error: Expected type for item. Use String, Link, OrderedList or Unorderedlist for item.',
       itemsTypeError: 'Unordered List Error: Expected type array for items.',
       indentTypeError: 'Unordered List Error: Expected type number for indent.',
       indexOutOfBoundsError: 'Unordered List Error: Index provided was out of bounds of the list.',
@@ -11097,7 +11110,7 @@ class _UnorderedList_ extends Component
    */
   addItem({ item })
   {
-    if(!typechecker.checkMultiple({ types: ['string', 'ordered-list', 'unordered-list'], value: item }))
+    if(!typechecker.checkMultiple({ types: ['string', 'link', 'ordered-list', 'unordered-list'], value: item }))
     {
       console.error(this.#errors.itemTypeError);
       return;
@@ -11109,6 +11122,12 @@ class _UnorderedList_ extends Component
       listItem.textContent = item;
       this.element.appendChild(listItem);
     }
+    else if(typechecker.check({ type: 'link', value: item }))
+    {
+      let listItem = document.createElement('li');
+      listItem.appendChild(item.element);
+      this.element.appendChild(listItem);
+    }
     else 
     { 
       item.style.paddingLeft = this.#indent.toString() + 'px';
@@ -11118,7 +11137,7 @@ class _UnorderedList_ extends Component
   
   /** 
    * Public method to add multiple items to the ordered list at a time.
-   * @param {array} items - Array of items to be added to the list. Items must be of type String, OrderedList, or UnorderedList.
+   * @param {array} items - Array of items to be added to the list. Items must be of type String, Link, OrderedList, or UnorderedList.
    */
   addItems({ items } = {}) 
   {
@@ -11133,7 +11152,7 @@ class _UnorderedList_ extends Component
   /**
    * Public method to add a single item into the list at a specific index.
    * @param {number} index - Index at which to insert the item.
-   * @param {Component} item - Item to be inserted. Must be String, OrderedList, or UnorderedList.
+   * @param {Component} item - Item to be inserted. Must be String, link OrderedList, or UnorderedList.
    */
   addItemAtIndex({ item, index })
   {
@@ -11143,7 +11162,7 @@ class _UnorderedList_ extends Component
       return;
     }
     
-    if(!typechecker.checkMultiple({ types: ['string', 'ordered-list', 'unordered-list'], value: item })) 
+    if(!typechecker.checkMultiple({ types: ['string', 'link', 'ordered-list', 'unordered-list'], value: item })) 
     {
       console.error(this.#errors.itemTypeError);
       return;
@@ -11168,6 +11187,13 @@ class _UnorderedList_ extends Component
       listItem.textContent = item;
       let beforeNode = this.element.children[index];
       this.element.insertBefore(listItem, beforeNode);
+    }
+    else if(typechecker.check({ type: 'link', value: item }))
+    {
+      let listItem = document.createElement('li');
+      listItem.appendChild(item.element);
+      let beforeNode = this.element.children[index];
+      this.element.insertBefore(item, beforeNode);
     }
     else 
     { 

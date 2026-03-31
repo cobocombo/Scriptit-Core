@@ -8,13 +8,14 @@ class HomePage extends ui.Page
   
   onInit()
   { 
-    let newLink = new ui.Link();
-    newLink.type = newLink.types.web;
-    newLink.icon = 'fa-beer';
-    newLink.color = 'gold';
-    newLink.fontSize = '25px';
+    let exampleLink = new ui.Link({ text: 'Documentation', url: 'https://www.example.com', fontSize: '15px' });
+    exampleLink.target = exampleLink.targets.self;
+  
+    let linkList = new ui.UnorderedList();
+    linkList.type = linkList.types.disc;
+    linkList.addItem({ item: exampleLink });
     
-    this.addComponentToCenter({ component: newLink });
+    this.addComponents({ components: [ linkList ] });
   }
 }
 
