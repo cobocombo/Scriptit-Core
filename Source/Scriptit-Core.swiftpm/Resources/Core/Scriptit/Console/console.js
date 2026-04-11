@@ -15,6 +15,7 @@ class ConsoleManager
   {
     this.#errors = 
     {
+      clearingTempError: 'Console Manager Error: Clearing the temp file is only available on iOS.',
       singleInstanceError: 'Console Manager Error: Only one ConsoleManager object can exist at a time.',
       postError: 'Console Manager Error: Could not post message to iOS.',
       writeToTempFileTypeError: 'Console Manager Error: Expected type boolean for writeToTempFile.'
@@ -37,19 +38,19 @@ class ConsoleManager
     this.#setupErrorListener();
   }
 
-  /** Private method to post console.debug statements to iOS.*/
+  /** Private method to post console.debug statements to iOS. */
   #debug(...args)
   {
     this.#postToNative("🐞 ", "DEBUG", args);
   }
 
-  /** Private method to post console.error statements to iOS.*/
+  /** Private method to post console.error statements to iOS. */
   #error(...args)
   {
     this.#postToNative("❌ ", "ERROR", args);
   }
 
-  /** Private method to post console.log statements to iOS.*/
+  /** Private method to post console.log statements to iOS. */ 
   #log(...args)
   {
     this.#postToNative("📗 ", "LOG", args);
@@ -108,6 +109,7 @@ class ConsoleManager
           {
             files.writeToFile({ root: file.root, subpath: file.relativePath, content: message });
           })
+          .catch(error => { console.log(error); });
         }
       } 
       catch(err) { this.#originalConsole.error(this.#errors.postError, err); }
@@ -127,7 +129,7 @@ class ConsoleManager
   /** Private method to post uncaught error statements to iOS. */
   #uncaught(message)
   {
-    this.#postToNative("❌ ", "UNCAUGHT", [message]);
+    this.#postToNative("❌ ", "UNCAUGHT", [ message ]);
   }
 
   /** Private method to post console.warn statements to iOS. */
@@ -164,6 +166,24 @@ class ConsoleManager
     }
     
     this.#writeToTempFile = value;
+  }
+  
+  /** Private method to clear the temp file. */
+  clearTempFile()
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      if(this.writeToTempFile === true)
+      {
+        files.getFile({ root: files.roots.temporary, subpath: 'console.txt' })
+        .then(file => 
+        {
+          files.writeToFile({ root: file.root, subpath: file.relativePath, content: '', replace: true, newline: false });
+        })
+        .catch(error => { console.log(error); });
+      }
+    }
+    else { console.error(this.#errors.clearingTempError); }
   }
 }
 

@@ -29,6 +29,7 @@ class HomePage extends ui.Page
 }
 
 consoleManager.writeToTempFile = true;
+consoleManager.clearTempFile();
 
 files.getFile({ root: files.roots.temporary, subpath: 'console.txt' })
 .then(file => 
