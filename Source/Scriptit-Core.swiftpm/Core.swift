@@ -278,11 +278,7 @@ class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerD
     if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
     let js = "files.\(jsCallback)({ \(jsProps) });";
   
-    DispatchQueue.main.async 
-    {
-      print(error);
-      webView.evaluateJavaScript(js, completionHandler: nil);
-    }
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
   }
   
   /**

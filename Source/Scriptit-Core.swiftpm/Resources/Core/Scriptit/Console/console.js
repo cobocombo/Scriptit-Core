@@ -7,7 +7,7 @@ class ConsoleManager
 {
   #errors;
   #originalConsole;
-  #history;
+  #writeToTempFile;
   static #instance = null;
 
   /** Creates the consoleManager object. **/
@@ -16,13 +16,14 @@ class ConsoleManager
     this.#errors = 
     {
       singleInstanceError: 'Console Manager Error: Only one ConsoleManager object can exist at a time.',
-      postError: 'Console Manager Error: Could not post message to iOS.'
+      postError: 'Console Manager Error: Could not post message to iOS.',
+      writeToTempFileTypeError: 'Console Manager Error: Expected type boolean for writeToTempFile.'
     };
-    
-    this.#history = [];
 
     if(ConsoleManager.#instance) console.error(this.#errors.singleInstanceError);
     else ConsoleManager.#instance = this;
+    
+    this.#writeToTempFile = false;
 
     this.#originalConsole = 
     {
@@ -39,19 +40,19 @@ class ConsoleManager
   /** Private method to post console.debug statements to iOS.*/
   #debug(...args)
   {
-    this.#postToNative("🐞", "DEBUG", args);
+    this.#postToNative("🐞 ", "DEBUG", args);
   }
 
   /** Private method to post console.error statements to iOS.*/
   #error(...args)
   {
-    this.#postToNative("❌", "ERROR", args);
+    this.#postToNative("❌ ", "ERROR", args);
   }
 
   /** Private method to post console.log statements to iOS.*/
   #log(...args)
   {
-    this.#postToNative("📗", "LOG", args);
+    this.#postToNative("📗 ", "LOG", args);
   }
 
   /** Private method to override the original javascript console to send messages to iOS.*/
@@ -98,14 +99,22 @@ class ConsoleManager
           .map(v => v.substring(0, 3000))
           .join(", ")}`;
 
-        this.#history.push(message);
         window.webkit.messageHandlers.consoleMessageManager.postMessage(message);
+        
+        if(this.writeToTempFile === true)
+        {
+          files.getFile({ root: files.roots.temporary, subpath: 'console.txt' })
+          .then(file => 
+          {
+            files.writeToFile({ root: file.root, subpath: file.relativePath, content: message });
+          })
+        }
       } 
       catch(err) { this.#originalConsole.error(this.#errors.postError, err); }
     }
   }
 
-  /** Private method to setup the uncaught error message event listener.*/
+  /** Private method to setup the uncaught error message event listener. */
   #setupErrorListener() 
   {
     window.addEventListener("error",(e) => 
@@ -118,13 +127,13 @@ class ConsoleManager
   /** Private method to post uncaught error statements to iOS. */
   #uncaught(message)
   {
-    this.#postToNative("❌", "UNCAUGHT", [message]);
+    this.#postToNative("❌ ", "UNCAUGHT", [message]);
   }
 
   /** Private method to post console.warn statements to iOS. */
   #warn(...args)
   {
-    this.#postToNative("⚠️", "WARNING", args);
+    this.#postToNative("⚠️ ", "WARNING", args);
   }
 
   /** Static method to return a new ConsoleManager instance. Allows for Singleton+Module pattern. */
@@ -134,18 +143,27 @@ class ConsoleManager
   }
   
   /** 
-   * Get property to return the history of console statements.
-   * @return {Array} The stored history of console statements.
+   * Get property to get the write to temp file value.
+   * @return {Boolean} The write to temp file value.
    */
-  get history()
+  get writeToTempFile()
   {
-    return this.#history;
+    return this.#writeToTempFile;
   }
   
-  /** Public method to clear the console history.*/
-  clear()
+  /** 
+   * Set property to set the write to temp file value.
+   * @param {string} value - The write to temp file value.
+   */
+  set writeToTempFile(value)
   {
-    this.#history = [];
+    if(!typechecker.check({ type: 'boolean', value: value })) 
+    {
+      console.error(this.#errors.writeToTempFileTypeError);
+      return;
+    }
+    
+    this.#writeToTempFile = value;
   }
 }
 

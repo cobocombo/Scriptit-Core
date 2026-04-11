@@ -125,6 +125,7 @@ class _Icon_ extends Component
       console.error(this.#errors.colorTypeError);
       return;
     }
+    
     if(!color.isValid({ color: value })) 
     {
       console.error(this.#errors.colorInvalidError);
