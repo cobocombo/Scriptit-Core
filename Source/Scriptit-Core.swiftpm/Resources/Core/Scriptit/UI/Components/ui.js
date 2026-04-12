@@ -147,6 +147,12 @@ class UserInterface
     return _Img_;
   }
   
+  /** Get property to return a new instance of Inspector. */
+  get Inspector() 
+  {
+    return _Inspector_;
+  }
+  
   /** Get property to return a new instance of Label. */
   get Label() 
   {
