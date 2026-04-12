@@ -99,6 +99,12 @@ class UserInterface
     return _Codeblock_;
   }
   
+  /** Get property to return a new instance of CodeEditor. */
+  get CodeEditor() 
+  {
+    return _CodeEditor_;
+  }
+  
   /** Get property to return a new instance of ColorPicker. */
   get ColorPicker() 
   {
