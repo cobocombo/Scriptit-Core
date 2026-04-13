@@ -12,5 +12,4 @@ class HomePage extends ui.Page
   }
 }
 
-console.log(axios.VERSION);
 app.present({ root: new HomePage() });
