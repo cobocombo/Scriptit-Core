@@ -8,7 +8,7 @@ class HomePage extends ui.Page
   
   onInit()
   {     
-    
+    let d = new ui.PreviewDevice();
   }
 }
 

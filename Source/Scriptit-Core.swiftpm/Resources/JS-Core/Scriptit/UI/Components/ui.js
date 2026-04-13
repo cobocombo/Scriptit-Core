@@ -225,6 +225,12 @@ class UserInterface
     return _Popover_;
   }
   
+  /** Get property to return a new instance of PreviewDevice. */
+  get PreviewDevice() 
+  {
+    return _PreviewDevice_;
+  }
+  
   /** Get property to return a new instance of ProgressBar. */
   get ProgressBar() 
   {
