@@ -12,4 +12,5 @@ class HomePage extends ui.Page
   }
 }
 
+console.log(Papa);
 app.present({ root: new HomePage() });
