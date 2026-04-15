@@ -85,9 +85,9 @@ class _Tab_ extends Component
       console.error(this.#errors.colorTypeError);
       return;
     }
-    if(!color.isValid({ color: value })) c
+    if(!color.isValid({ color: value }))
     {
-      onsole.error(this.#errors.colorInvalidError);
+      console.error(this.#errors.colorInvalidError);
       return;
     }
     this.#color = value;

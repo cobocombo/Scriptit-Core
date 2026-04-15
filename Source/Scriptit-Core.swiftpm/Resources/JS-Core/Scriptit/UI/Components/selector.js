@@ -76,9 +76,9 @@ class _Selector_ extends Component
    */
   set onChange(value)
   {
-    if(!typechecker.check({ type: 'function', value: value })) c
+    if(!typechecker.check({ type: 'function', value: value }))
     {
-      onsole.error(this.#errors.onChangeTypeError);
+      console.error(this.#errors.onChangeTypeError);
       return;
     }
     if(this.#onChange) this.removeEventListener({ event: 'change', handler: this.#onChange });
@@ -177,9 +177,9 @@ class _Selector_ extends Component
    */
   set underbar(value)
   {
-    if(!typechecker.check({ type: 'boolean', value: value })) c
+    if(!typechecker.check({ type: 'boolean', value: value }))
     {
-      onsole.error(this.#errors.underbarTypeError);
+      console.error(this.#errors.underbarTypeError);
       return;
     }
     if(value == true) this.addModifier({ modifier: 'underbar' });

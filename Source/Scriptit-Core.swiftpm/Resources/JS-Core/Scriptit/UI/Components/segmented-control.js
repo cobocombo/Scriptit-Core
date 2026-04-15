@@ -144,9 +144,9 @@ class _SegmentedControl_ extends Component
    */
   set font(value)
   {
-    if(!typechecker.check({ type: 'string', value: value })) c
+    if(!typechecker.check({ type: 'string', value: value }))
     {
-      onsole.error(this.#errors.fontTypeError);
+      console.error(this.#errors.fontTypeError);
       return;
     }
     this.#font = value;
