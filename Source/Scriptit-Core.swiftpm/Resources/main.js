@@ -8,7 +8,8 @@ class HomePage extends ui.Page
   
   onInit()
   {     
-    let d = new ui.PreviewDevice();
+    this.navigationBarTitle = 'Home';
+    this.backgroundColor = 'red';
   }
 }
 

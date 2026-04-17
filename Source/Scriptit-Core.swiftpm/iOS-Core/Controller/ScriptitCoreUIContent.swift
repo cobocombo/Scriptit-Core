@@ -7,12 +7,15 @@ import SwiftUI
 
 struct ScriptitCoreUIContent: UIViewControllerRepresentable 
 {
-  func makeUIViewController(context: Context) -> ScriptitCoreController 
+  func makeUIViewController(context: Context) -> UIViewController 
   {
-    return ScriptitCoreController()
+    //return ScriptitCoreController()
+    
+    let main = ScriptitCoreController()
+    return TinyConsole.createViewController(rootViewController: main )
   }
   
-  func updateUIViewController(_ uiViewController: ScriptitCoreController, context: Context) 
+  func updateUIViewController(_ uiViewController: UIViewController, context: Context) 
   {
     
   }
