@@ -1,123 +1,138 @@
-//
-//  TinyConsoleController.swift
-//  TinyConsole
-//
-//  Created by Devran Uenal on 28.11.16.
-//
-//
+//=======================================================//
 
 import UIKit
 
-/// This UIViewController holds both, the `rootViewController`
-/// of your application and the `consoleViewController`.
-open class TinyConsoleController: UIViewController {
-    /// The kind of window modes that are supported by TinyConsole
-    ///
-    /// - collapsed: the console is hidden
-    /// - expanded: the console is shown
-    public enum WindowMode {
-        case collapsed
-        case expanded
+//=======================================================//
+
+/** Class representing the main tiny console controller object that wraps
+ the root controller and the console controller. */
+open class TinyConsoleController: UIViewController
+{
+  /** Enum representing the available console window modes. */
+  public enum WindowMode
+  {
+    case collapsed
+    case expanded
+  }
+  
+  var rootViewController: UIViewController
+  {
+    didSet
+    {
+      self.setupViewControllers();
+      self.setupConstraints();
     }
+  }
+  
+  private var animationDuration: Double = 0.25;
+  private var consoleViewController: TinyConsoleViewController =
+  {
+    TinyConsoleViewController();
+  }();
+  private lazy var consoleViewHeightConstraint: NSLayoutConstraint? =
+  {
+    return self.consoleViewController.view.heightAnchor
+      .constraint(equalToConstant: 0);
+  }();
+  
+  /** Property representing the console height when expanded. */
+  public var consoleHeight: CGFloat = 200
+  {
+    didSet
+    {
+      UIView.animate(withDuration: self.animationDuration)
+      {
+        self.updateHeightConstraint();
+        self.view.layoutIfNeeded();
+      }
+    }
+  }
+  
+  /** Property representing the current console window mode. */
+  public var consoleWindowMode: WindowMode = .collapsed
+  {
+    didSet
+    {
+      self.updateHeightConstraint();
+    }
+  }
+  
+  /** Creates the tiny console controller object. */
+  init()
+  {
+    self.rootViewController = UIViewController();
+    super.init(nibName: nil, bundle: nil);
+  }
+  
+  /** Required initializer for storyboard support. */
+  public required init?(coder aDecoder: NSCoder)
+  {
+    assertionFailure("Interface Builder is not supported");
+    self.rootViewController = UIViewController();
+    super.init(coder: aDecoder);
+  }
+  
+  /** Method called when the main view is loaded in the controller. */
+  open override func viewDidLoad()
+  {
+    super.viewDidLoad();
+    self.setupViewControllers();
+    self.setupConstraints();
+  }
+  
+  /** Method called when device motion begins. */
+  open override func motionBegan(_ motion: UIEvent.EventSubtype, with event: UIEvent?)
+  {
+    if(motion == .motionShake)
+    {
+      self.toggleWindowMode();
+    }
+  }
+  
+  /** Private method to update the console height constraint. */
+  private func updateHeightConstraint()
+  {
+    self.consoleViewHeightConstraint?.isActive = false;
+    self.consoleViewHeightConstraint?.constant = self.consoleWindowMode == .collapsed ? 0 : self.consoleHeight;
+    self.consoleViewHeightConstraint?.isActive = true;
+  }
+  
+  /** Internal method to toggle the console window mode. */
+  internal func toggleWindowMode()
+  {
+    self.consoleWindowMode = self.consoleWindowMode == .collapsed ? .expanded : .collapsed;
+    UIView.animate(withDuration: self.animationDuration) 
+    { 
+      self.view.layoutIfNeeded() 
+    }
+  }
+  
+  /** Private method to setup child view controllers. */
+  private func setupViewControllers()
+  {
+    self.removeAllChildren();
     
-    var rootViewController: UIViewController {
-        didSet {
-            setupViewControllers()
-            setupConstraints()
-        }
-    }
+    self.addChild(self.consoleViewController);
+    self.view.addSubview(self.consoleViewController.view);
+    self.consoleViewController.didMove(toParent: self);
     
-    // MARK: - Private Properties
+    self.addChild(self.rootViewController);
+    self.view.addSubview(self.rootViewController.view);
+    self.rootViewController.didMove(toParent: self);
+  }
+  
+  /** Private method to setup layout constraints. */
+  private func setupConstraints()
+  {
+    self.rootViewController.view.attach(anchor: .top, to: self.view);
     
-    private var animationDuration = 0.25
+    self.consoleViewController.view.attach(anchor: .bottom, to: self.view);
+    self.consoleViewHeightConstraint?.isActive = true;
     
-    private var consoleViewController: TinyConsoleViewController = {
-        TinyConsoleViewController()
-    }()
-
-    private lazy var consoleViewHeightConstraint: NSLayoutConstraint? = {
-        return consoleViewController.view.heightAnchor.constraint(equalToConstant: 0)
-    }()
-    
-    private func updateHeightConstraint() {
-        consoleViewHeightConstraint?.isActive = false
-        consoleViewHeightConstraint?.constant = consoleWindowMode == .collapsed ? 0 : consoleHeight
-        consoleViewHeightConstraint?.isActive = true
-    }
-    
-    // MARK: - Public Properties
-    
-    public var consoleHeight: CGFloat = 200 {
-        didSet {
-            UIView.animate(withDuration: animationDuration) {
-                self.updateHeightConstraint()
-                self.view.layoutIfNeeded()
-            }
-        }
-    }
-    
-    public var consoleWindowMode: WindowMode = .collapsed {
-        didSet {
-            updateHeightConstraint()
-        }
-    }
-
-    // MARK: - Initializer
-
-    init() {
-        rootViewController = UIViewController()
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    public required init?(coder aDecoder: NSCoder) {
-        assertionFailure("Interface Builder is not supported")
-        rootViewController = UIViewController()
-        super.init(coder: aDecoder)
-    }
-
-    // MARK: - Public Methods
-
-    open override func viewDidLoad() {
-        super.viewDidLoad()
-
-        setupViewControllers()
-        setupConstraints()
-    }
-
-    open override func motionBegan(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-        if motion == .motionShake {
-            toggleWindowMode()
-        }
-    }
-
-    // MARK: - Private Methods
-    
-    internal func toggleWindowMode() {
-        consoleWindowMode = consoleWindowMode == .collapsed ? .expanded : .collapsed
-        UIView.animate(withDuration: animationDuration) {
-            self.view.layoutIfNeeded()
-        }
-    }
-
-    private func setupViewControllers() {
-        removeAllChildren()
-        
-        addChild(consoleViewController)
-        view.addSubview(consoleViewController.view)
-        consoleViewController.didMove(toParent: self)
-
-        addChild(rootViewController)
-        view.addSubview(rootViewController.view)
-        rootViewController.didMove(toParent: self)
-    }
-
-    private func setupConstraints() {
-        rootViewController.view.attach(anchor: .top, to: view)
-
-        consoleViewController.view.attach(anchor: .bottom, to: view)
-        consoleViewHeightConstraint?.isActive = true
-
-        rootViewController.view.bottomAnchor.constraint(equalTo: consoleViewController.view.topAnchor).isActive = true
-    }
+    self.rootViewController.view.bottomAnchor
+      .constraint(equalTo: self.consoleViewController.view.topAnchor)
+      .isActive = true;
+  }
 }
 
+//=======================================================//

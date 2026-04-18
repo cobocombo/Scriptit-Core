@@ -1,29 +1,45 @@
-//
-//  UIViewExtensions.swift
-//  TinyConsole
-//
-//  Created by Devran on 29.09.19.
-//
+//=======================================================//
 
 import Foundation
 import UIKit
 
-internal extension UIView {
-    enum Anchor {
-        case top
-        case bottom
+//=======================================================//
+
+/** Internal extension adding layout helper utilities to UIView. */
+internal extension UIView
+{
+  enum Anchor
+  {
+    case top
+    case bottom
+  }
+  
+  /** Method to pin the view to another view using the selected anchor. */
+  func attach(anchor: Anchor, to view: UIView)
+  {
+    self.translatesAutoresizingMaskIntoConstraints = false;
+    
+    switch(anchor)
+    {
+      case .top:
+        self.topAnchor
+          .constraint(equalTo: view.topAnchor)
+          .isActive = true;
+      
+      case .bottom:
+        self.bottomAnchor
+          .constraint(equalTo: view.bottomAnchor)
+          .isActive = true;
     }
     
-    func attach(anchor: Anchor, to view: UIView) {
-        translatesAutoresizingMaskIntoConstraints = false
-        switch anchor {
-        case .top:
-            topAnchor.constraint(equalTo: view.topAnchor).isActive = true
-        case .bottom:
-            bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-        }
-        
-        leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-        rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
-    }
+    self.leftAnchor
+      .constraint(equalTo: view.leftAnchor)
+      .isActive = true;
+    
+    self.rightAnchor
+      .constraint(equalTo: view.rightAnchor)
+      .isActive = true;
+  }
 }
+
+//=======================================================//
