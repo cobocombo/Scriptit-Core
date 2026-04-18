@@ -82,3 +82,54 @@ class TinyConsoleViewController: UIViewController
 }
 
 //=======================================================//
+
+/** Internal extension adding styling helpers to UIButton. */
+internal extension UIButton
+{
+  /** Method to apply the tiny console mini button style. */
+  func applyMiniStyle()
+  {
+    self.contentEdgeInsets = UIEdgeInsets(
+      top: 8,
+      left: 8,
+      bottom: 8,
+      right: 8
+    );
+    
+    self.backgroundColor = UIColor(
+      white: 1.0,
+      alpha: 0.1
+    );
+    
+    self.layer.cornerRadius = 4;
+  }
+}
+
+//=======================================================//
+
+/** Internal extension adding helper utilities to UITextView. */
+internal extension UITextView
+{
+  static let console: UITextView =
+  {
+    let textView = UITextView();
+    textView.backgroundColor = UIColor.black;
+    textView.isEditable = false;
+    textView.alwaysBounceVertical = true;
+    return textView;
+  }();
+  
+  /** Method to clear the text view contents. */
+  func clear()
+  {
+    self.text = "";
+  }
+  
+  /** Method returning whether content height exceeds bounds height. */
+  func boundsHeightLessThenContentSizeHeight() -> Bool
+  {
+    return self.bounds.height < self.contentSize.height;
+  }
+}
+
+//=======================================================//
