@@ -57,20 +57,14 @@ open class TinyConsole
   /** Static method to scroll the console to the bottom. */
   public static func scrollToBottom()
   {
-    guard let textView = self.shared.textView,
-          textView.boundsHeightLessThenContentSizeHeight()
+    guard let textView = self.shared.textView, textView.boundsHeightLessThenContentSizeHeight()
     else
     {
       return;
     }
     
     textView.layoutManager.ensureLayout(for: textView.textContainer);
-    
-    let offset = CGPoint(
-      x: 0,
-      y: (textView.contentSize.height - textView.frame.size.height)
-    );
-    
+    let offset = CGPoint(x: 0, y: (textView.contentSize.height - textView.frame.size.height));
     textView.setContentOffset(offset, animated: true);
   }
   
@@ -84,32 +78,16 @@ open class TinyConsole
   }
   
   /** Static method to print plain text to the console. */
-  public static func print(
-    _ text: String,
-    color: UIColor = UIColor.white,
-    global: Bool = true
-  )
+  public static func print(_ text: String, color: UIColor = UIColor.white, global: Bool = true)
   {
     let formattedText = NSMutableAttributedString(string: text);
-    formattedText.addAttributes(
-      self.textAppearance,
-      range: formattedText.range
-    );
-    
-    formattedText.addAttribute(
-      .foregroundColor,
-      value: color,
-      range: formattedText.range
-    );
-    
+    formattedText.addAttributes(self.textAppearance, range: formattedText.range);
+    formattedText.addAttribute(.foregroundColor, value: color, range: formattedText.range);
     self.print(formattedText, global: global);
   }
   
   /** Static method to print attributed text to the console. */
-  public static func print(
-    _ text: NSAttributedString,
-    global: Bool = true
-  )
+  public static func print(_ text: NSAttributedString, global: Bool = true)
   {
     defer
     {
@@ -127,29 +105,14 @@ open class TinyConsole
     
     DispatchQueue.main.async
     {
-      let timeStamped =
-        NSMutableAttributedString(
-          string: "\(self.shared.currentTimeStamp) "
-        );
-      
-      let range = NSRange(
-        location: 0,
-        length: timeStamped.length
-      );
-      
-      timeStamped.addAttributes(
-        self.textAppearance,
-        range: range
-      );
+      let timeStamped = NSMutableAttributedString(string: "\(self.shared.currentTimeStamp)");
+      let range = NSRange(location: 0,length: timeStamped.length);
+      timeStamped.addAttributes(self.textAppearance, range: range);
       
       timeStamped.append(text);
       timeStamped.append(.breakLine());
       
-      let newText =
-        NSMutableAttributedString(
-          attributedString: textView.attributedText
-        );
-      
+      let newText = NSMutableAttributedString(attributedString: textView.attributedText);
       newText.append(timeStamped);
       textView.attributedText = newText;
       
@@ -171,12 +134,6 @@ open class TinyConsole
   public static func error(_ text: String)
   {
     self.print(text, color: UIColor.red);
-  }
-  
-  /** Static method to print a separator line. */
-  public static func addLine()
-  {
-    self.print("-----------", color: UIColor.red);
   }
   
   /** Static method to set the console height. */
