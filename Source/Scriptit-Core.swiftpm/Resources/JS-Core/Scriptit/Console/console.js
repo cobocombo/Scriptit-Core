@@ -7,7 +7,6 @@ class ConsoleManager
 {
   #errors;
   #originalConsole;
-  #writeToTempFile;
   static #instance = null;
 
   /** Creates the consoleManager object. **/
@@ -17,14 +16,11 @@ class ConsoleManager
     {
       clearingTempError: 'Console Manager Error: Clearing the temp file is only available on iOS.',
       singleInstanceError: 'Console Manager Error: Only one ConsoleManager object can exist at a time.',
-      postError: 'Console Manager Error: Could not post message to iOS.',
-      writeToTempFileTypeError: 'Console Manager Error: Expected type boolean for writeToTempFile.'
+      postError: 'Console Manager Error: Could not post message to iOS.'
     };
 
     if(ConsoleManager.#instance) console.error(this.#errors.singleInstanceError);
     else ConsoleManager.#instance = this;
-    
-    this.#writeToTempFile = false;
 
     this.#originalConsole = 
     {
@@ -101,16 +97,6 @@ class ConsoleManager
           .join(", ")}`;
 
         window.webkit.messageHandlers.consoleMessageManager.postMessage(message);
-        
-        if(this.writeToTempFile === true)
-        {
-          files.getFile({ root: files.roots.temporary, subpath: 'console.txt' })
-          .then(file => 
-          {
-            files.writeToFile({ root: file.root, subpath: file.relativePath, content: message });
-          })
-          .catch(error => { console.log(error); });
-        }
       } 
       catch(err) { this.#originalConsole.error(this.#errors.postError, err); }
     }
@@ -142,48 +128,6 @@ class ConsoleManager
   static getInstance() 
   {
     return new ConsoleManager();
-  }
-  
-  /** 
-   * Get property to get the write to temp file value.
-   * @return {Boolean} The write to temp file value.
-   */
-  get writeToTempFile()
-  {
-    return this.#writeToTempFile;
-  }
-  
-  /** 
-   * Set property to set the write to temp file value.
-   * @param {string} value - The write to temp file value.
-   */
-  set writeToTempFile(value)
-  {
-    if(!typechecker.check({ type: 'boolean', value: value })) 
-    {
-      console.error(this.#errors.writeToTempFileTypeError);
-      return;
-    }
-    
-    this.#writeToTempFile = value;
-  }
-  
-  /** Private method to clear the temp file. */
-  clearTempFile()
-  {
-    if(window.webkit?.messageHandlers?.consoleMessageManager) 
-    {
-      if(this.writeToTempFile === true)
-      {
-        files.getFile({ root: files.roots.temporary, subpath: 'console.txt' })
-        .then(file => 
-        {
-          files.writeToFile({ root: file.root, subpath: file.relativePath, content: '', replace: true, newline: false });
-        })
-        .catch(error => { console.log(error); });
-      }
-    }
-    else { console.error(this.#errors.clearingTempError); }
   }
 }
 
