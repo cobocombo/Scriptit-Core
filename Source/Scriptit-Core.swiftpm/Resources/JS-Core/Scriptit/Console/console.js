@@ -129,6 +129,14 @@ class ConsoleManager
   {
     return new ConsoleManager();
   }
+  
+  toggle()
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'toggle' });
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////

@@ -79,16 +79,7 @@ open class TinyConsoleController: UIViewController
     self.setupViewControllers();
     self.setupConstraints();
   }
-  
-  /** Method called when device motion begins. */
-  open override func motionBegan(_ motion: UIEvent.EventSubtype, with event: UIEvent?)
-  {
-    if(motion == .motionShake)
-    {
-      self.toggleWindowMode();
-    }
-  }
-  
+
   /** Private method to update the console height constraint. */
   private func updateHeightConstraint()
   {

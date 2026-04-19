@@ -10,6 +10,8 @@ class HomePage extends ui.Page
   {     
     this.navigationBarTitle = 'Home';
     this.backgroundColor = 'red';
+    
+    setTimeout(() => { consoleManager.toggle(); }, 5000)
   }
 }
 
