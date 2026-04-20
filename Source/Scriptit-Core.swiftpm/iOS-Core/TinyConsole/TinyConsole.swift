@@ -130,16 +130,40 @@ open class TinyConsole
     }
   }
   
+  /** Static method to print a debug message. */
+  public static func debug(_ text: String)
+  {
+    self.print(text, color: UIColor.orange);
+  }
+  
   /** Static method to print an error message. */
   public static func error(_ text: String)
   {
     self.print(text, color: UIColor.red);
   }
   
+  /** Static method to print a log message. */
+  public static func log(_ text: String)
+  {
+    self.print(text, color: UIColor.white);
+  }
+  
   /** Static method to set the console height. */
   public static func setHeight(height: CGFloat)
   {
     self.shared.consoleController.consoleHeight = height;
+  }
+  
+  /** Static method to print an uncaught error message. */
+  public static func uncaught(_ text: String)
+  {
+    self.print(text, color: UIColor.red);
+  }
+  
+  /** Static method to print a debug message. */
+  public static func warn(_ text: String)
+  {
+    self.print(text, color: UIColor.yellow);
   }
 }
 

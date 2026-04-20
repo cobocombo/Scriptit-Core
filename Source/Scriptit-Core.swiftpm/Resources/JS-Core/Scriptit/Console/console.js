@@ -33,73 +33,55 @@ class ConsoleManager
     this.#override();
     this.#setupErrorListener();
   }
-
-  /** Private method to post console.debug statements to iOS. */
-  #debug(...args)
-  {
-    this.#postToNative("🐞 ", "DEBUG", args);
-  }
-
-  /** Private method to post console.error statements to iOS. */
-  #error(...args)
-  {
-    this.#postToNative("❌ ", "ERROR", args);
-  }
-
-  /** Private method to post console.log statements to iOS. */ 
-  #log(...args)
-  {
-    this.#postToNative("📗 ", "LOG", args);
-  }
-
+  
   /** Private method to override the original javascript console to send messages to iOS.*/
   #override()
   {
+    console.clear = () => 
+    {
+      this.clear();
+    };
+    
+    console.debug = (...args) => 
+    {
+      this.debug(...args);
+      this.#originalConsole.debug(...args);
+    };
+    
     console.log = (...args) => 
     {
-      this.#log(...args);
+      this.log(...args);
       this.#originalConsole.log(...args);
     };
 
     console.warn = (...args) => 
     {
-      this.#warn(...args);
+      this.warn(...args);
       this.#originalConsole.warn(...args);
     };
 
     console.error = (...args) => 
     {
-      this.#error(...args);
+      this.error(...args);
       this.#originalConsole.error(...args);
     };
 
-    console.debug = (...args) => 
+    console.toggle = () => 
     {
-      this.#debug(...args);
-      this.#originalConsole.debug(...args);
+      this.toggle();
     };
   }
 
-  /** Private method to post javascript messages to iOS.*/
-  #postToNative(emoji, type, args) 
+  /** Private method to santize multiple messages arguments and combine them into one before sending to the applicable console method. */
+  #sanitize(...args)
   {
-    if(window.webkit?.messageHandlers?.consoleMessageManager) 
-    {
-      try 
-      {
-        let message = `${emoji} ${type}: ${Array.from(args)
-          .map(v =>
-            typeof v === "undefined" ? "undefined" :
-            typeof v === "object" ? JSON.stringify(v) :
-            v.toString()
-          )
-          .map(v => v.substring(0, 3000))
-          .join(", ")}`;
-
-        window.webkit.messageHandlers.consoleMessageManager.postMessage(message);
-      } 
-      catch(err) { this.#originalConsole.error(this.#errors.postError, err); }
-    }
+    let message = `${Array.from(args)
+      .map(v => 
+        typeof v === "undefined" ? "undefined" : 
+        typeof v === "object" ? JSON.stringify(v) : v.toString())
+      .map(v => v.substring(0, 3000))
+      .join(", ")}`;
+    return message;
   }
 
   /** Private method to setup the uncaught error message event listener. */
@@ -115,13 +97,10 @@ class ConsoleManager
   /** Private method to post uncaught error statements to iOS. */
   #uncaught(message)
   {
-    this.#postToNative("❌ ", "UNCAUGHT", [ message ]);
-  }
-
-  /** Private method to post console.warn statements to iOS. */
-  #warn(...args)
-  {
-    this.#postToNative("⚠️ ", "WARNING", args);
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'uncaught', message: ' ' + message });
+    }
   }
 
   /** Static method to return a new ConsoleManager instance. Allows for Singleton+Module pattern. */
@@ -130,11 +109,61 @@ class ConsoleManager
     return new ConsoleManager();
   }
   
+  /** Public method to clear the console window. */
+  clear()
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'clear' });
+    }
+  }
+  
+  /** Public method to display a debug statement to the console. */
+  debug(...args)
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      let message = this.#sanitize(...args);
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'debug', message: ' ' + message });
+    }
+  }
+  
+  /** Public method to display an error statement to the console. */
+  error(...args)
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      let message = this.#sanitize(...args);
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'error', message: ' ' + message });
+    }
+  }
+  
+  /** Public method to display a log statement to the console. */
+  log(...args)
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      let message = this.#sanitize(...args);
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'log', message: ' ' + message });
+    }
+  }
+  
+  /** Public method to toggle the console window. */
   toggle()
   {
     if(window.webkit?.messageHandlers?.consoleMessageManager) 
     {
       window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'toggle' });
+    }
+  }
+  
+  /** Public method to display a warn statement to the console. */
+  warn(...args)
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      let message = this.#sanitize(...args);
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'warn', message: ' ' + message });
     }
   }
 }

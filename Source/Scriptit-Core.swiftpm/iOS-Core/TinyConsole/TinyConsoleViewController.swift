@@ -67,15 +67,17 @@ class TinyConsoleViewController: UIViewController
   /** Private method to setup action buttons. */
   private func setupButtons()
   {
-    let customTextButton = UIButton(type: .system);
-    customTextButton.setTitle("Close", for: .normal);
-    customTextButton.addTarget(self, action: #selector(self.customText(sender:)), for: .touchUpInside );
-    customTextButton.applyMiniStyle();
-    self.stackView.addArrangedSubview(customTextButton);
+    let closeButton = UIButton(type: .system);
+    let image = UIImage(systemName: "xmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14,weight: .bold));
+    closeButton.setImage(image, for: .normal);
+    closeButton.tintColor = UIColor.white;
+    closeButton.addTarget(self, action: #selector(self.close(sender:)), for: .touchUpInside);
+    closeButton.applyMiniStyle();
+    self.stackView.addArrangedSubview(closeButton);
   }
   
-  /** Method called to show custom text prompt. */
-  @objc func customText(sender: AnyObject)
+  /** Method called to close the console. */
+  @objc func close(sender: AnyObject)
   {
     TinyConsole.toggleWindowMode();
   }
@@ -89,18 +91,8 @@ internal extension UIButton
   /** Method to apply the tiny console mini button style. */
   func applyMiniStyle()
   {
-    self.contentEdgeInsets = UIEdgeInsets(
-      top: 8,
-      left: 8,
-      bottom: 8,
-      right: 8
-    );
-    
-    self.backgroundColor = UIColor(
-      white: 1.0,
-      alpha: 0.1
-    );
-    
+    self.contentEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8,right: 8);
+    self.backgroundColor = UIColor(white: 1.0, alpha: 0.1);
     self.layer.cornerRadius = 4;
   }
 }

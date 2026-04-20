@@ -13,6 +13,7 @@ class ConsoleMessageManager: JavascriptMessageManager
     case invalidMessageBody = "Console Error: Invalid message body."
     case commandNotProvided = "Console Error: Command not provided."
     case invalidCommand = "Console Error: Invalid command."
+    case messageNotProvided = "Console Error: Message not provided."
   }
   
   let errors = Errors.self;
@@ -36,8 +37,50 @@ class ConsoleMessageManager: JavascriptMessageManager
     
     switch command
     {
+      case "clear":
+        TinyConsole.clear();
+      case "debug":
+        guard let message = dict["message"] as? String else
+        {
+          let error = self.errors.messageNotProvided.rawValue;
+          print(error);
+          return;
+        }
+        TinyConsole.debug(message);
+      case "error":
+        guard let message = dict["message"] as? String else
+        {
+          let error = self.errors.messageNotProvided.rawValue;
+          print(error);
+          return;
+        }
+        TinyConsole.error(message);
+      case "log":
+        guard let message = dict["message"] as? String else
+        {
+          let error = self.errors.messageNotProvided.rawValue;
+          print(error);
+          return;
+        }
+        TinyConsole.log(message);
       case "toggle":
         TinyConsole.toggleWindowMode();
+      case "uncaught":
+        guard let message = dict["message"] as? String else
+        {
+          let error = self.errors.messageNotProvided.rawValue;
+          print(error);
+          return;
+        }
+        TinyConsole.uncaught(message);
+      case "warn":
+        guard let message = dict["message"] as? String else
+        {
+          let error = self.errors.messageNotProvided.rawValue;
+          print(error);
+          return;
+        }
+        TinyConsole.warn(message);
       default:
         let error = self.errors.invalidCommand.rawValue + " (\(command)).";
         print(error);
