@@ -10,6 +10,7 @@ class ConsoleMessageManager: JavascriptMessageManager
 {
   enum Errors: String
   {
+    case heightNotProvided = "Console Error: Height value not provided."
     case invalidMessageBody = "Console Error: Invalid message body."
     case commandNotProvided = "Console Error: Command not provided."
     case invalidCommand = "Console Error: Invalid command."
@@ -55,6 +56,16 @@ class ConsoleMessageManager: JavascriptMessageManager
           return;
         }
         TinyConsole.error(message);
+      case "fullscreen":
+        TinyConsole.fullscreen();
+      case "height":
+        guard let value = dict["value"] as? CGFloat else
+        {
+          let error = self.errors.heightNotProvided.rawValue;
+          print(error);
+          return;
+        }
+        TinyConsole.setHeight(height: value);
       case "log":
         guard let message = dict["message"] as? String else
         {

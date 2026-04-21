@@ -88,6 +88,20 @@ open class TinyConsoleController: UIViewController
     self.consoleViewHeightConstraint?.isActive = true;
   }
   
+  /** Method called when the main view is changes in the controller. Handles orientation changes */
+  open override func viewDidLayoutSubviews()
+  {
+    super.viewDidLayoutSubviews();
+    
+    if self.consoleWindowMode == .expanded
+    {
+      if self.consoleHeight > 500
+      {
+        self.fullscreen();
+      }
+    }
+  }
+  
   /** Internal method to toggle the console window mode. */
   internal func toggleWindowMode()
   {
@@ -95,6 +109,23 @@ open class TinyConsoleController: UIViewController
     UIView.animate(withDuration: self.animationDuration) 
     { 
       self.view.layoutIfNeeded() 
+    }
+  }
+  
+  /** Internal method to expand the console to fullscreen height. */
+  internal func fullscreen()
+  {
+    let safeTop = self.view.safeAreaInsets.top;
+    let safeBottom = self.view.safeAreaInsets.bottom;
+    
+    let availableHeight = self.view.bounds.height - safeTop - safeBottom;
+    
+    self.consoleHeight = availableHeight;
+    self.consoleWindowMode = .expanded;
+    
+    UIView.animate(withDuration: self.animationDuration)
+    {
+      self.view.layoutIfNeeded();
     }
   }
   

@@ -8,16 +8,10 @@ import MessageUI
 /** Class representing the tiny console view controller object. */
 class TinyConsoleViewController: UIViewController
 {
-  private let stackView: UIStackView =
-  {
-    let stackView = UIStackView();
-    stackView.axis = .vertical;
-    stackView.alignment = .fill;
-    stackView.spacing = 4;
-    return stackView;
-  }();
-  
   private let consoleTextView = UITextView.console;
+  
+  private let closeButton = UIButton(type: .system);
+  private let clearButton = UIButton(type: .system);
   
   /** Method called when the main view is loaded in the controller. */
   open override func viewDidLoad()
@@ -27,16 +21,31 @@ class TinyConsoleViewController: UIViewController
     TinyConsole.shared.textView = self.consoleTextView;
     
     self.view.addSubview(self.consoleTextView);
-    self.view.addSubview(self.stackView);
+    self.view.addSubview(self.closeButton);
+    self.view.addSubview(self.clearButton);
     
     self.setupConstraints();
     self.setupButtons();
+    self.updateClearButtonState();
+    
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(self.consoleTextDidChange),
+      name: UITextView.textDidChangeNotification,
+      object: self.consoleTextView
+    );
+  }
+  
+  deinit
+  {
+    NotificationCenter.default.removeObserver(self);
   }
   
   /** Private method to setup layout constraints. */
   private func setupConstraints()
   {
     self.consoleTextView.translatesAutoresizingMaskIntoConstraints = false;
+    
     self.consoleTextView.topAnchor
       .constraint(equalTo: self.view.topAnchor)
       .isActive = true;
@@ -53,27 +62,96 @@ class TinyConsoleViewController: UIViewController
       .constraint(equalTo: self.consoleTextView.bottomAnchor)
       .isActive = true;
     
-    self.stackView.translatesAutoresizingMaskIntoConstraints = false;
+    self.closeButton.translatesAutoresizingMaskIntoConstraints = false;
     
-    self.stackView.topAnchor
-      .constraint(equalTo: self.view.topAnchor, constant: 8)
+    self.closeButton.leftAnchor
+      .constraint(equalTo: self.view.safeAreaLayoutGuide.leftAnchor, constant: 8)
       .isActive = true;
     
+    self.view.safeAreaLayoutGuide.bottomAnchor
+      .constraint(equalTo: self.closeButton.bottomAnchor, constant: 8)
+      .isActive = true;
+    
+    self.clearButton.translatesAutoresizingMaskIntoConstraints = false;
+    
     self.view.safeAreaLayoutGuide.rightAnchor
-      .constraint(equalTo: self.stackView.rightAnchor, constant: 8)
+      .constraint(equalTo: self.clearButton.rightAnchor, constant: 8)
+      .isActive = true;
+    
+    self.view.safeAreaLayoutGuide.bottomAnchor
+      .constraint(equalTo: self.clearButton.bottomAnchor, constant: 8)
       .isActive = true;
   }
   
   /** Private method to setup action buttons. */
   private func setupButtons()
   {
-    let closeButton = UIButton(type: .system);
-    let image = UIImage(systemName: "xmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14,weight: .bold));
-    closeButton.setImage(image, for: .normal);
-    closeButton.tintColor = UIColor.white;
-    closeButton.addTarget(self, action: #selector(self.close(sender:)), for: .touchUpInside);
-    closeButton.applyMiniStyle();
-    self.stackView.addArrangedSubview(closeButton);
+    let closeImage = UIImage(
+      systemName: "xmark",
+      withConfiguration: UIImage.SymbolConfiguration(
+        pointSize: 14,
+        weight: .bold
+      )
+    );
+    
+    self.closeButton.setImage(closeImage, for: .normal);
+    self.closeButton.tintColor = UIColor.white;
+    self.closeButton.addTarget(
+      self,
+      action: #selector(self.close(sender:)),
+      for: .touchUpInside
+    );
+    self.closeButton.applyMiniStyle();
+    
+    let clearImage = UIImage(
+      systemName: "trash",
+      withConfiguration: UIImage.SymbolConfiguration(
+        pointSize: 14,
+        weight: .bold
+      )
+    );
+    
+    self.clearButton.setImage(clearImage, for: .normal);
+    self.clearButton.tintColor = UIColor.red;
+    self.clearButton.addTarget(
+      self,
+      action: #selector(self.clear(sender:)),
+      for: .touchUpInside
+    );
+    self.clearButton.applyMiniStyle();
+  }
+  
+  /** Private method to enable or disable clear button state. */
+  private func updateClearButtonState()
+  {
+    let hasText = !(self.consoleTextView.text ?? "").isEmpty;
+    
+    self.clearButton.isEnabled = true;
+    self.clearButton.alpha = 1.0;
+  }
+  
+  /** Method called to clear the console. */
+  @objc func clear(sender: AnyObject)
+  {
+    let hasText = !(self.consoleTextView.text ?? "").isEmpty;
+    
+    if(!hasText)
+    {
+      return;
+    }
+    
+    TinyConsole.clear();
+    
+    DispatchQueue.main.async
+    {
+      self.updateClearButtonState();
+    }
+  }
+  
+  /** Method called when console text changes. */
+  @objc func consoleTextDidChange()
+  {
+    self.updateClearButtonState();
   }
   
   /** Method called to close the console. */
@@ -91,8 +169,18 @@ internal extension UIButton
   /** Method to apply the tiny console mini button style. */
   func applyMiniStyle()
   {
-    self.contentEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8,right: 8);
-    self.backgroundColor = UIColor(white: 1.0, alpha: 0.1);
+    self.contentEdgeInsets = UIEdgeInsets(
+      top: 8,
+      left: 8,
+      bottom: 8,
+      right: 8
+    );
+    
+    self.backgroundColor = UIColor(
+      white: 1.0,
+      alpha: 0.1
+    );
+    
     self.layer.cornerRadius = 4;
   }
 }
@@ -115,6 +203,11 @@ internal extension UITextView
   func clear()
   {
     self.text = "";
+    
+    NotificationCenter.default.post(
+      name: UITextView.textDidChangeNotification,
+      object: self
+    );
   }
   
   /** Method returning whether content height exceeds bounds height. */

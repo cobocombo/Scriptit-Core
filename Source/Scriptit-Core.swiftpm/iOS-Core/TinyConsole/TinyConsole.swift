@@ -77,6 +77,15 @@ open class TinyConsole
     }
   }
   
+  /** Static method to expand the console fullscreen. */
+  public static func fullscreen()
+  {
+    DispatchQueue.main.async
+    {
+      self.shared.consoleController.fullscreen();
+    }
+  }
+  
   /** Static method to print plain text to the console. */
   public static func print(_ text: String, color: UIColor = UIColor.white, global: Bool = true)
   {

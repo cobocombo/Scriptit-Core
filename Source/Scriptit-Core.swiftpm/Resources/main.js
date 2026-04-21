@@ -11,12 +11,13 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.backgroundColor = 'red';
     
-    setTimeout(() => { console.toggle(); }, 3000);
-    setTimeout(() => { console.log("This is a log"); }, 5000);
-    setTimeout(() => { console.error("This is an error"); }, 6000);
-    setTimeout(() => { console.debug("This is a debug statement"); }, 8000);
-    setTimeout(() => { console.warn("This is a warning"); }, 10000);
-    setTimeout(() => { console.clear(); }, 12000);
+    let consoleButton = new ui.BarButton({ icon: 'ion-ios-hammer' });
+    consoleButton.onTap = () => 
+    { 
+      console.fullscreen();
+      setTimeout(() => { console.log("Hello World"); }, 3000);
+    }
+    this.toolbarButtonsRight = [ consoleButton ];
   }
 }
 
