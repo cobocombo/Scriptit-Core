@@ -124,6 +124,11 @@ open class TinyConsole
       let newText = NSMutableAttributedString(attributedString: textView.attributedText);
       newText.append(timeStamped);
       textView.attributedText = newText;
+
+      NotificationCenter.default.post(
+        name: UITextView.textDidChangeNotification,
+        object: textView
+      );
       
       self.scrollToBottom();
     }

@@ -13,6 +13,17 @@ class TinyConsoleViewController: UIViewController
   private let closeButton = UIButton(type: .system);
   private let clearButton = UIButton(type: .system);
   
+  private let emptyLabel: UILabel =
+  {
+    let label = UILabel();
+    label.text = "Console empty";
+    label.textColor = UIColor.white.withAlphaComponent(0.45);
+    label.font = UIFont.systemFont(ofSize: 16, weight: .medium);
+    label.textAlignment = .center;
+    label.alpha = 1.0;
+    return label;
+  }();
+  
   /** Method called when the main view is loaded in the controller. */
   open override func viewDidLoad()
   {
@@ -21,12 +32,13 @@ class TinyConsoleViewController: UIViewController
     TinyConsole.shared.textView = self.consoleTextView;
     
     self.view.addSubview(self.consoleTextView);
+    self.view.addSubview(self.emptyLabel);
     self.view.addSubview(self.closeButton);
     self.view.addSubview(self.clearButton);
     
     self.setupConstraints();
     self.setupButtons();
-    self.updateClearButtonState();
+    self.updateConsoleState();
     
     NotificationCenter.default.addObserver(
       self,
@@ -60,6 +72,16 @@ class TinyConsoleViewController: UIViewController
     
     self.view.bottomAnchor
       .constraint(equalTo: self.consoleTextView.bottomAnchor)
+      .isActive = true;
+    
+    self.emptyLabel.translatesAutoresizingMaskIntoConstraints = false;
+    
+    self.emptyLabel.centerXAnchor
+      .constraint(equalTo: self.view.centerXAnchor)
+      .isActive = true;
+    
+    self.emptyLabel.centerYAnchor
+      .constraint(equalTo: self.view.centerYAnchor)
       .isActive = true;
     
     self.closeButton.translatesAutoresizingMaskIntoConstraints = false;
@@ -112,7 +134,6 @@ class TinyConsoleViewController: UIViewController
     );
     
     self.clearButton.setImage(clearImage, for: .normal);
-    self.clearButton.tintColor = UIColor.red;
     self.clearButton.addTarget(
       self,
       action: #selector(self.clear(sender:)),
@@ -121,13 +142,16 @@ class TinyConsoleViewController: UIViewController
     self.clearButton.applyMiniStyle();
   }
   
-  /** Private method to enable or disable clear button state. */
-  private func updateClearButtonState()
+  /** Private method to update console UI state. */
+  private func updateConsoleState()
   {
     let hasText = !(self.consoleTextView.text ?? "").isEmpty;
     
-    self.clearButton.isEnabled = true;
-    self.clearButton.alpha = 1.0;
+    self.emptyLabel.alpha = hasText ? 0.0 : 1.0;
+    
+    self.clearButton.tintColor = hasText
+      ? UIColor.red
+      : UIColor.systemRed.withAlphaComponent(0.35);
   }
   
   /** Method called to clear the console. */
@@ -144,14 +168,14 @@ class TinyConsoleViewController: UIViewController
     
     DispatchQueue.main.async
     {
-      self.updateClearButtonState();
+      self.updateConsoleState();
     }
   }
   
   /** Method called when console text changes. */
   @objc func consoleTextDidChange()
   {
-    self.updateClearButtonState();
+    self.updateConsoleState();
   }
   
   /** Method called to close the console. */
