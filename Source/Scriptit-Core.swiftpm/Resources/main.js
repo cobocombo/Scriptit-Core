@@ -15,9 +15,17 @@ class HomePage extends ui.Page
     consoleButton.onTap = () => 
     { 
       console.fullscreen();
-      setTimeout(() => { console.log("Hello World"); }, 3000);
+      setTimeout(() => { this.stress(); }, 3000);
     }
     this.toolbarButtonsRight = [ consoleButton ];
+  }
+  
+  stress()
+  {
+    for (let i = 1; i <= 105; i++) 
+    {
+      console.log(i);
+    }
   }
 }
 

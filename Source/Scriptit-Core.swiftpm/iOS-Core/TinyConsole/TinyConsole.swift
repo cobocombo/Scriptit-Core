@@ -41,6 +41,31 @@ open class TinyConsole
     self.consoleController = TinyConsoleController();
   }
   
+  /** Static method to limit console output to max line count. */
+  private static func enforceLineLimit(
+    textView: UITextView,
+    maxLines: Int = 2000
+  )
+  {
+    let fullText = textView.text ?? "";
+    let lines = fullText.components(separatedBy: "\n");
+    
+    if(lines.count <= maxLines)
+    {
+      return;
+    }
+    
+    let trimmedLines = Array(lines.suffix(maxLines));
+    let trimmedText = trimmedLines.joined(separator: "\n");
+    
+    let attributed = NSAttributedString(
+      string: trimmedText,
+      attributes: self.textAppearance
+    );
+    
+    textView.attributedText = attributed;
+  }
+  
   /** Static method to create the wrapped root view controller. */
   public static func createViewController(rootViewController: UIViewController) -> UIViewController
   {
@@ -124,7 +149,12 @@ open class TinyConsole
       let newText = NSMutableAttributedString(attributedString: textView.attributedText);
       newText.append(timeStamped);
       textView.attributedText = newText;
-
+      
+      self.enforceLineLimit(
+        textView: textView,
+        maxLines: 100
+      );
+      
       NotificationCenter.default.post(
         name: UITextView.textDidChangeNotification,
         object: textView
