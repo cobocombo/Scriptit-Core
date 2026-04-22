@@ -25,8 +25,7 @@ class ConsoleManager
       heightTypeError: 'Console Error: Expected type number for height.',
       heightRangeError: 'Console Error: Expected type number for height within range 0-500.',
       invalidFontError: (font) => `Console Error: Font ${font} provided is invalid.`,
-      singleInstanceError: 'Console Error: Only one ConsoleManager object can exist at a time.',
-      postError: 'Console Error: Could not post message to iOS.'
+      singleInstanceError: 'Console Error: Only one ConsoleManager object can exist at a time.'
     };
 
     if(ConsoleManager.#instance) console.error(this.#errors.singleInstanceError);
