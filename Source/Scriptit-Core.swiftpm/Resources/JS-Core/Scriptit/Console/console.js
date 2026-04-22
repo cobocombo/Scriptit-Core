@@ -6,6 +6,9 @@
 class ConsoleManager
 {
   #errors;
+  #font;
+  #fonts;
+  #fontSize;
   #height;
   #originalConsole;
   #windowMode;
@@ -16,15 +19,25 @@ class ConsoleManager
   {
     this.#errors = 
     {
-      clearingTempError: 'Console Manager Error: Clearing the temp file is only available on iOS.',
-      heightTypeError: 'Console Manager Error: Expected type number for height.',
-      heightRangeError: 'Console Manager Error: Expected type number within range 0-500.',
-      singleInstanceError: 'Console Manager Error: Only one ConsoleManager object can exist at a time.',
-      postError: 'Console Manager Error: Could not post message to iOS.'
+      fontTypeError: 'Console Error: Expected type string for font.',
+      fontSizeTypeError: 'Console Error: Expected type number for fontSize',
+      fontSizeRangeError: 'Console Error: Expected type number for fontSize within range 10-18.',
+      heightTypeError: 'Console Error: Expected type number for height.',
+      heightRangeError: 'Console Error: Expected type number for height within range 0-500.',
+      invalidFontError: (font) => `Console Error: Font ${font} provided is invalid.`,
+      singleInstanceError: 'Console Error: Only one ConsoleManager object can exist at a time.',
+      postError: 'Console Error: Could not post message to iOS.'
     };
 
     if(ConsoleManager.#instance) console.error(this.#errors.singleInstanceError);
     else ConsoleManager.#instance = this;
+    
+    this.#fonts = 
+    {
+      systemMono: 'systemMono',
+      menlo: 'Menlo',
+      courier: 'Courier'
+    };
     
     this.#height = 200;
     this.#originalConsole = 
@@ -38,6 +51,9 @@ class ConsoleManager
 
     this.#override();
     this.#setupErrorListener();
+    
+    this.#font = this.#fonts.systemMono;
+    this.#fontSize = 12;
   }
   
   /** Private method to override the original javascript console to send messages to iOS.*/
@@ -65,6 +81,38 @@ class ConsoleManager
       set:(value) =>
       {
         this.height = value;
+      },
+      configurable: true
+    });
+    Object.defineProperty(console, 'font',
+    {
+      get:() =>
+      {
+        return this.font;
+      },
+      set:(value) =>
+      {
+        this.font = value;
+      },
+      configurable: true
+    });
+    Object.defineProperty(console, 'fonts',
+    {
+      get: () =>
+      {
+        return this.fonts;
+      },
+      configurable: true
+    });
+    Object.defineProperty(console, 'fontSize',
+    {
+      get:() =>
+      {
+        return this.fontSize;
+      },
+      set:(value) =>
+      {
+        this.fontSize = value;
       },
       configurable: true
     });
@@ -120,6 +168,84 @@ class ConsoleManager
   }
   
   /** 
+   * Get property to return the console font value.
+   * @return {string} The console font value.
+   */
+  get font()
+  {
+    return this.#font;
+  }
+  
+  /** 
+   * Set property to set the console font value.
+   * @param {string} value - The console font value.
+   */
+  set font(value)
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      if(!typechecker.check({ type: 'string', value: value }))
+      {
+        console.error(this.#errors.fontTypeError);
+        return;
+      }
+      
+      if(!Object.values(this.#fonts).includes(value))
+      {
+        console.error(this.#errors.invalidFontError(value));
+        return;
+      }
+      
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'font', value: value });
+      this.#font = value;
+    }
+  }
+  
+  /** 
+   * Get property to return the console's supported fonts.
+   * @return {Object} The console's supported fonts.
+   */
+  get fonts()
+  {
+    return this.#fonts;
+  }
+  
+  /** 
+   * Get property to return the console's current font size.
+   * @return {Number} The console's current font size.
+   */
+  get fontSize()
+  {
+    return this.#fontSize;
+  }
+  
+  /** 
+   * Set property to set the editor's font size.
+   * @param {Number} value - Font size in pixels.
+   */
+  set fontSize(value)
+  {
+    if(window.webkit?.messageHandlers?.consoleMessageManager) 
+    {
+      if(!typechecker.check({ type: 'number', value: value }))
+      {
+        console.error(this.#errors.fontSizeTypeError);
+        return;
+      }
+      
+      if(!validator.isNumberInRange({ number: value, min: 10, max: 18 }))
+      {
+        console.error(this.#errors.fontSizeRangeError);
+        return;
+      }
+    
+      if(this.#fontSize === value) return;
+      window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'fontSize', value: value });
+      this.#fontSize = value;
+    }
+  }
+  
+  /** 
    * Get property to return the console height value.
    * @return {number} The console height value.
    */
@@ -171,7 +297,7 @@ class ConsoleManager
       else 
       { 
         window.webkit.messageHandlers.consoleMessageManager.postMessage({ command: 'toggle' });
-        this.windowMode = 'closed'; 
+        this.#windowMode = 'closed'; 
       }  
     } 
   }

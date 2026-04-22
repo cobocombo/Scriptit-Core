@@ -12,15 +12,16 @@ open class TinyConsole
   var textView: UITextView?;
   var consoleController: TinyConsoleController;
   
-  static var textAppearance: [NSAttributedString.Key: Any] =
+  static var textFont: UIFont = UIFont.monospacedSystemFont(ofSize: 12.0, weight: .regular);
+  static var textColor: UIColor = UIColor.white;
+  static var textAppearance: [NSAttributedString.Key: Any]
   {
     return
     [
-      .font: UIFont(name: "Menlo", size: 12.0),
-      .foregroundColor: UIColor.white
-    ]
-    .compactMapValues({ $0 });
-  }();
+      .font: self.textFont,
+      .foregroundColor: self.textColor
+    ];
+  }
   
   private lazy var dateFormatter: DateFormatter =
   {
@@ -91,6 +92,55 @@ open class TinyConsole
     textView.layoutManager.ensureLayout(for: textView.textContainer);
     let offset = CGPoint(x: 0, y: (textView.contentSize.height - textView.frame.size.height));
     textView.setContentOffset(offset, animated: true);
+  }
+  
+  /** Static method to set font by UIFont. */
+  public static func setFont(_ font: UIFont)
+  {
+    self.textFont = font;
+    self.refreshTextAppearance();
+  }
+  
+  /** Static method to set font by name and size. */
+  public static func setFont(name: String)
+  {
+    let fontSize = textFont.pointSize;
+    guard let font = UIFont(name: name, size: fontSize)
+    else
+    {
+      return;
+    }
+    
+    self.setFont(font);
+  }
+  
+  /** Static method to set only font size. */
+  public static func setFontSize(_ size: CGFloat)
+  {
+    let fontName = self.textFont.fontName;
+    if let font = UIFont(name: fontName, size: size)
+    {
+      self.setFont(font);
+    }
+  }
+  
+  /** Static method to refresh existing console text. */
+  private static func refreshTextAppearance()
+  {
+    guard let textView = self.shared.textView
+    else
+    {
+      return;
+    }
+    
+    let text = textView.text ?? "";
+    
+    let attributed = NSMutableAttributedString(
+      string: text,
+      attributes: self.textAppearance
+    );
+    
+    textView.attributedText = attributed;
   }
   
   /** Static method to toggle the console window mode. */
