@@ -57,30 +57,30 @@ class ConsoleMessageManager: JavascriptMessageManager
     }
   }
   
-  /** Private method called by handleMessage to clear TinyConsole. */
+  /** Private method called by handleMessage to clear Console. */
   private func clear()
   {
-    TinyConsole.clear();
+    Console.clear();
   }
   
-  /** Private method called by handleMessage to call the debug method of TinyConsole. */
+  /** Private method called by handleMessage to call the debug method of Console. */
   private func debug(_ dict: [String: Any])
   {
     guard let message = self.getMessage(dict) else { return }
-    TinyConsole.debug(message);
+    Console.debug(message);
   }
   
-  /** Private method called by handleMessage to call the error method of TinyConsole. */
+  /** Private method called by handleMessage to call the error method of Console. */
   private func error(_ dict: [String: Any])
   {
     guard let message = self.getMessage(dict) else { return }
-    TinyConsole.error(message);
+    Console.error(message);
   }
   
-  /** Private method called by handleMessage to call the fullscreen method of TinyConsole. */
+  /** Private method called by handleMessage to call the fullscreen method of Console. */
   private func fullscreen()
   {
-    TinyConsole.fullscreen();
+    Console.fullscreen();
   }
   
   /** Private method to extract the message property from the dict variable passed into handleMessage. */
@@ -94,20 +94,20 @@ class ConsoleMessageManager: JavascriptMessageManager
     return message
   }
   
-  /** Private method called by handleMessage to call the log method of TinyConsole. */
+  /** Private method called by handleMessage to call the log method of Console. */
   private func log(_ dict: [String: Any])
   {
     guard let message = self.getMessage(dict) else { return }
-    TinyConsole.log(message);
+    Console.log(message);
   }
   
-  /** Private method called by handleMessage to call the toggle method of TinyConsole. */
+  /** Private method called by handleMessage to call the toggle method of Console. */
   private func toggle()
   {
-    TinyConsole.toggleWindowMode();
+    Console.toggleWindowMode();
   }
   
-  /** Private method called by handleMessage to call the setFont method of TinyConsole. */
+  /** Private method called by handleMessage to call the setFont method of Console. */
   private func setFont(_ dict: [String: Any])
   {
     guard let value = dict["value"] as? String else
@@ -116,10 +116,10 @@ class ConsoleMessageManager: JavascriptMessageManager
       print(error);
       return;
     }
-    TinyConsole.setFont(name: value);
+    Console.setFont(name: value);
   }
   
-  /** Private method called by handleMessage to call the setFontSize method of TinyConsole. */
+  /** Private method called by handleMessage to call the setFontSize method of Console. */
   private func setFontSize(_ dict: [String: Any])
   {
     guard let value = dict["value"] as? CGFloat else
@@ -128,10 +128,10 @@ class ConsoleMessageManager: JavascriptMessageManager
       print(error);
       return;
     }
-    TinyConsole.setFontSize(value);
+    Console.setFontSize(value);
   }
   
-  /** Private method called by handleMessage to call the setHeight method of TinyConsole. */
+  /** Private method called by handleMessage to call the setHeight method of Console. */
   private func setHeight(_ dict: [String: Any])
   {
     guard let value = dict["value"] as? CGFloat else
@@ -140,21 +140,21 @@ class ConsoleMessageManager: JavascriptMessageManager
       print(error);
       return;
     }
-    TinyConsole.setHeight(height: value);
+    Console.setHeight(height: value);
   }
   
-  /** Private method called by handleMessage to call the uncaught method of TinyConsole. */
+  /** Private method called by handleMessage to call the uncaught method of Console. */
   private func uncaught(_ dict: [String: Any])
   {
     guard let message = self.getMessage(dict) else { return }
-    TinyConsole.uncaught(message);
+    Console.uncaught(message);
   }
   
-  /** Private method called by handleMessage to call the warn method of TinyConsole. */
+  /** Private method called by handleMessage to call the warn method of Console. */
   private func warn(_ dict: [String: Any])
   {
     guard let message = self.getMessage(dict) else { return }
-    TinyConsole.warn(message);
+    Console.warn(message);
   }
 }
 

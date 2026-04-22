@@ -4,9 +4,8 @@ import UIKit
 
 //=======================================================//
 
-/** Class representing the main tiny console controller object that wraps
- the root controller and the console controller. */
-open class TinyConsoleController: UIViewController
+/** Class representing the main tiny console controller object that wraps the root controller and the console controller. */
+open class ConsoleController: UIViewController
 {
   /** Enum representing the available console window modes. */
   public enum WindowMode
@@ -15,6 +14,7 @@ open class TinyConsoleController: UIViewController
     case expanded
   }
   
+  /** Property representing the root view controller. */
   var rootViewController: UIViewController
   {
     didSet
@@ -23,17 +23,6 @@ open class TinyConsoleController: UIViewController
       self.setupConstraints();
     }
   }
-  
-  private var animationDuration: Double = 0.25;
-  private var consoleViewController: TinyConsoleViewController =
-  {
-    TinyConsoleViewController();
-  }();
-  private lazy var consoleViewHeightConstraint: NSLayoutConstraint? =
-  {
-    return self.consoleViewController.view.heightAnchor
-      .constraint(equalToConstant: 0);
-  }();
   
   /** Property representing the console height when expanded. */
   public var consoleHeight: CGFloat = 200
@@ -57,6 +46,17 @@ open class TinyConsoleController: UIViewController
     }
   }
   
+  private var animationDuration: Double = 0.25;
+  private var consoleViewController: ConsoleViewController =
+  {
+    ConsoleViewController();
+  }();
+  private lazy var consoleViewHeightConstraint: NSLayoutConstraint? =
+  {
+    return self.consoleViewController.view.heightAnchor
+      .constraint(equalToConstant: 0);
+  }();
+
   /** Creates the tiny console controller object. */
   init()
   {
@@ -72,61 +72,17 @@ open class TinyConsoleController: UIViewController
     super.init(coder: aDecoder);
   }
   
-  /** Method called when the main view is loaded in the controller. */
-  open override func viewDidLoad()
+  /** Private method to setup layout constraints. */
+  private func setupConstraints()
   {
-    super.viewDidLoad();
-    self.setupViewControllers();
-    self.setupConstraints();
-  }
-
-  /** Private method to update the console height constraint. */
-  private func updateHeightConstraint()
-  {
-    self.consoleViewHeightConstraint?.isActive = false;
-    self.consoleViewHeightConstraint?.constant = self.consoleWindowMode == .collapsed ? 0 : self.consoleHeight;
+    self.rootViewController.view.attach(anchor: .top, to: self.view);
+    
+    self.consoleViewController.view.attach(anchor: .bottom, to: self.view);
     self.consoleViewHeightConstraint?.isActive = true;
-  }
-  
-  /** Method called when the main view is changes in the controller. Handles orientation changes */
-  open override func viewDidLayoutSubviews()
-  {
-    super.viewDidLayoutSubviews();
     
-    if self.consoleWindowMode == .expanded
-    {
-      if self.consoleHeight > 500
-      {
-        self.fullscreen();
-      }
-    }
-  }
-  
-  /** Internal method to toggle the console window mode. */
-  internal func toggleWindowMode()
-  {
-    self.consoleWindowMode = self.consoleWindowMode == .collapsed ? .expanded : .collapsed;
-    UIView.animate(withDuration: self.animationDuration) 
-    { 
-      self.view.layoutIfNeeded() 
-    }
-  }
-  
-  /** Internal method to expand the console to fullscreen height. */
-  internal func fullscreen()
-  {
-    let safeTop = self.view.safeAreaInsets.top;
-    let safeBottom = self.view.safeAreaInsets.bottom;
-    
-    let availableHeight = self.view.bounds.height - safeTop - safeBottom;
-    
-    self.consoleHeight = availableHeight;
-    self.consoleWindowMode = .expanded;
-    
-    UIView.animate(withDuration: self.animationDuration)
-    {
-      self.view.layoutIfNeeded();
-    }
+    self.rootViewController.view.bottomAnchor
+      .constraint(equalTo: self.consoleViewController.view.topAnchor)
+      .isActive = true;
   }
   
   /** Private method to setup child view controllers. */
@@ -143,17 +99,62 @@ open class TinyConsoleController: UIViewController
     self.rootViewController.didMove(toParent: self);
   }
   
-  /** Private method to setup layout constraints. */
-  private func setupConstraints()
+  /** Private method to update the console height constraint. */
+  private func updateHeightConstraint()
   {
-    self.rootViewController.view.attach(anchor: .top, to: self.view);
-    
-    self.consoleViewController.view.attach(anchor: .bottom, to: self.view);
+    self.consoleViewHeightConstraint?.isActive = false;
+    self.consoleViewHeightConstraint?.constant =
+      self.consoleWindowMode == .collapsed ? 0 : self.consoleHeight;
     self.consoleViewHeightConstraint?.isActive = true;
+  }
+  
+  /** Expands the console to fullscreen height. */
+  internal func fullscreen()
+  {
+    let safeTop = self.view.safeAreaInsets.top;
+    let safeBottom = self.view.safeAreaInsets.bottom;
     
-    self.rootViewController.view.bottomAnchor
-      .constraint(equalTo: self.consoleViewController.view.topAnchor)
-      .isActive = true;
+    let availableHeight = self.view.bounds.height - safeTop - safeBottom;
+    
+    self.consoleHeight = availableHeight;
+    self.consoleWindowMode = .expanded;
+    
+    UIView.animate(withDuration: self.animationDuration)
+    {
+      self.view.layoutIfNeeded();
+    }
+  }
+  
+  /** Called when the view finishes layout. Handles orientation changes. */
+  open override func viewDidLayoutSubviews()
+  {
+    super.viewDidLayoutSubviews();
+    
+    if self.consoleWindowMode == .expanded
+    {
+      if self.consoleHeight > 500
+      {
+        self.fullscreen();
+      }
+    }
+  }
+  
+  /** Called when the main view is loaded. */
+  open override func viewDidLoad()
+  {
+    super.viewDidLoad();
+    self.setupViewControllers();
+    self.setupConstraints();
+  }
+  
+  /** Toggles the console window between collapsed and expanded. */
+  internal func toggleWindowMode()
+  {
+    self.consoleWindowMode = self.consoleWindowMode == .collapsed ? .expanded : .collapsed;
+    UIView.animate(withDuration: self.animationDuration)
+    {
+      self.view.layoutIfNeeded();
+    }
   }
 }
 
@@ -162,7 +163,7 @@ open class TinyConsoleController: UIViewController
 /** Internal extension adding helper utilities to UIViewController. */
 internal extension UIViewController
 {
-  /** Method to remove all child view controllers and subviews. */
+  /** Removes all child view controllers and subviews. */
   func removeAllChildren()
   {
     self.children.forEach
@@ -193,7 +194,7 @@ internal extension UIView
     case bottom
   }
   
-  /** Method to pin the view to another view using the selected anchor. */
+  /** Attaches the view to another view using the selected anchor. */
   func attach(anchor: Anchor, to view: UIView)
   {
     self.translatesAutoresizingMaskIntoConstraints = false;
@@ -204,7 +205,6 @@ internal extension UIView
         self.topAnchor
           .constraint(equalTo: view.topAnchor)
           .isActive = true;
-      
       case .bottom:
         self.bottomAnchor
           .constraint(equalTo: view.bottomAnchor)
@@ -214,7 +214,6 @@ internal extension UIView
     self.leftAnchor
       .constraint(equalTo: view.leftAnchor)
       .isActive = true;
-    
     self.rightAnchor
       .constraint(equalTo: view.rightAnchor)
       .isActive = true;

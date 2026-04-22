@@ -1,18 +1,15 @@
 //=======================================================//
 
 import UIKit
-import MessageUI
 
 //=======================================================//
 
-/** Class representing the tiny console view controller object. */
-class TinyConsoleViewController: UIViewController
+/** Class representing the console view controller object. */
+class ConsoleViewController: UIViewController
 {
   private let consoleTextView = UITextView.console;
-  
   private let closeButton = UIButton(type: .system);
   private let clearButton = UIButton(type: .system);
-  
   private let emptyLabel: UILabel =
   {
     let label = UILabel();
@@ -23,13 +20,13 @@ class TinyConsoleViewController: UIViewController
     label.alpha = 1.0;
     return label;
   }();
-  
-  /** Method called when the main view is loaded in the controller. */
+
+  /** Initializes the view controller lifecycle. */
   open override func viewDidLoad()
   {
     super.viewDidLoad();
     
-    TinyConsole.shared.textView = self.consoleTextView;
+    Console.shared.textView = self.consoleTextView;
     
     self.view.addSubview(self.consoleTextView);
     self.view.addSubview(self.emptyLabel);
@@ -48,64 +45,52 @@ class TinyConsoleViewController: UIViewController
     );
   }
   
+  /** Cleans up observers on deallocation. */
   deinit
   {
     NotificationCenter.default.removeObserver(self);
   }
   
-  /** Private method to setup layout constraints. */
+  /** Sets up layout constraints. */
   private func setupConstraints()
   {
     self.consoleTextView.translatesAutoresizingMaskIntoConstraints = false;
-    
     self.consoleTextView.topAnchor
       .constraint(equalTo: self.view.topAnchor)
       .isActive = true;
-    
     self.consoleTextView.leftAnchor
       .constraint(equalTo: self.view.safeAreaLayoutGuide.leftAnchor)
       .isActive = true;
-    
     self.view.safeAreaLayoutGuide.rightAnchor
       .constraint(equalTo: self.consoleTextView.rightAnchor)
       .isActive = true;
-    
     self.view.bottomAnchor
       .constraint(equalTo: self.consoleTextView.bottomAnchor)
       .isActive = true;
-    
     self.emptyLabel.translatesAutoresizingMaskIntoConstraints = false;
-    
     self.emptyLabel.centerXAnchor
       .constraint(equalTo: self.view.centerXAnchor)
       .isActive = true;
-    
     self.emptyLabel.centerYAnchor
       .constraint(equalTo: self.view.centerYAnchor)
       .isActive = true;
-    
     self.closeButton.translatesAutoresizingMaskIntoConstraints = false;
-    
     self.closeButton.leftAnchor
       .constraint(equalTo: self.view.safeAreaLayoutGuide.leftAnchor, constant: 8)
       .isActive = true;
-    
     self.view.safeAreaLayoutGuide.bottomAnchor
       .constraint(equalTo: self.closeButton.bottomAnchor, constant: 8)
       .isActive = true;
-    
     self.clearButton.translatesAutoresizingMaskIntoConstraints = false;
-    
     self.view.safeAreaLayoutGuide.rightAnchor
       .constraint(equalTo: self.clearButton.rightAnchor, constant: 8)
       .isActive = true;
-    
     self.view.safeAreaLayoutGuide.bottomAnchor
       .constraint(equalTo: self.clearButton.bottomAnchor, constant: 8)
       .isActive = true;
   }
   
-  /** Private method to setup action buttons. */
+  /** Sets up button styles and actions. */
   private func setupButtons()
   {
     let closeImage = UIImage(
@@ -142,46 +127,42 @@ class TinyConsoleViewController: UIViewController
     self.clearButton.applyMiniStyle();
   }
   
-  /** Private method to update console UI state. */
+  /** Updates UI based on console content state. */
   private func updateConsoleState()
   {
     let hasText = !(self.consoleTextView.text ?? "").isEmpty;
-    
     self.emptyLabel.alpha = hasText ? 0.0 : 1.0;
-    
     self.clearButton.tintColor = hasText
       ? UIColor.red
       : UIColor.systemRed.withAlphaComponent(0.35);
   }
   
-  /** Method called to clear the console. */
+  /** Clears the console if it has content. */
   @objc func clear(sender: AnyObject)
   {
     let hasText = !(self.consoleTextView.text ?? "").isEmpty;
-    
     if(!hasText)
     {
       return;
     }
     
-    TinyConsole.clear();
-    
+    Console.clear();
     DispatchQueue.main.async
     {
       self.updateConsoleState();
     }
   }
   
-  /** Method called when console text changes. */
+  /** Handles console text updates. */
   @objc func consoleTextDidChange()
   {
     self.updateConsoleState();
   }
   
-  /** Method called to close the console. */
+  /** Closes the console view. */
   @objc func close(sender: AnyObject)
   {
-    TinyConsole.toggleWindowMode();
+    Console.toggleWindowMode();
   }
 }
 
@@ -190,22 +171,21 @@ class TinyConsoleViewController: UIViewController
 /** Internal extension adding styling helpers to UIButton. */
 internal extension UIButton
 {
-  /** Method to apply the tiny console mini button style. */
+  /** Applies the mini button style used in the console. */
   func applyMiniStyle()
   {
-    self.contentEdgeInsets = UIEdgeInsets(
+    var config = UIButton.Configuration.plain()
+    
+    config.contentInsets = NSDirectionalEdgeInsets(
       top: 8,
-      left: 8,
+      leading: 8,
       bottom: 8,
-      right: 8
-    );
+      trailing: 8
+    )
     
-    self.backgroundColor = UIColor(
-      white: 1.0,
-      alpha: 0.1
-    );
-    
-    self.layer.cornerRadius = 4;
+    config.background.backgroundColor = UIColor(white: 1.0, alpha: 0.1)
+    config.background.cornerRadius = 4
+    self.configuration = config
   }
 }
 
@@ -223,7 +203,7 @@ internal extension UITextView
     return textView;
   }();
   
-  /** Method to clear the text view contents. */
+  /** Clears the text view contents. */
   func clear()
   {
     self.text = "";
@@ -234,7 +214,7 @@ internal extension UITextView
     );
   }
   
-  /** Method returning whether content height exceeds bounds height. */
+  /** Returns whether content height exceeds bounds height. */
   func boundsHeightLessThenContentSizeHeight() -> Bool
   {
     return self.bounds.height < self.contentSize.height;
