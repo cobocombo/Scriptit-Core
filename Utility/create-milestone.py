@@ -30,7 +30,7 @@ TOKEN_FILE = "github-token.txt"
 ############################################################
 
 def fail(message):
-  """ Print error message and exit. """
+  """Print error message and exit."""
   
   print(f"❌ {message}")
   sys.exit(1)
@@ -38,14 +38,14 @@ def fail(message):
 ########################################
   
 def status(message):
-  """ Print status message. """
+  """Print status message."""
   
   print(f"➡️  {message}")
   
 ########################################
 
 def get_args():
-  """ Parse CLI arguments. """
+  """Parse CLI arguments."""
   
   parser = argparse.ArgumentParser(description="Create GitHub milestone")
   parser.add_argument("--name", required=True, help="Milestone name")
@@ -56,7 +56,7 @@ def get_args():
 ########################################
 
 def validate_environment():
-  """ Ensure script is run from Utility folder. """
+  """Ensure script is run from Utility folder."""
   
   current_dir = os.getcwd()
   if os.path.basename(current_dir) != "Utility":
@@ -65,7 +65,7 @@ def validate_environment():
 ########################################
     
 def get_token():
-  """ Read GitHub token from file. """
+  """Read GitHub token from file."""
   
   if not os.path.isfile(TOKEN_FILE):
     fail("github-token.txt not found in Utility folder.")
@@ -78,7 +78,7 @@ def get_token():
 ########################################  
   
 def create_milestone(name, description, date, token):
-  """ Call GitHub API to create a milestone. """
+  """Call GitHub API to create a milestone."""
   
   url = f"https://api.github.com/repos/{OWNER}/{REPO}/milestones"
 
@@ -103,7 +103,7 @@ def create_milestone(name, description, date, token):
 ###################################################
 
 def main():
-  """ Main execution flow. """
+  """Main execution flow."""
   
   validate_environment()
   args = get_args()
