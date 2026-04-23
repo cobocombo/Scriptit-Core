@@ -1,0 +1,2201 @@
+//=======================================================//
+
+import UIKit
+import WebKit
+import UniformTypeIdentifiers
+
+//=======================================================//
+
+/** Class that manages messages the files module. */
+class FilesMessageManager: NSObject, JavascriptMessageManager, UIDocumentPickerDelegate
+{
+  var presentingController: UIViewController?;
+  var webView: WKWebView?;
+  var importDestinationRoot: String?;
+  var importDestinationSubpath: String?;
+  var importAllowedExtensions: [String]?;
+  var exportRequestId: Int?;
+  var importRequestId: Int?;
+  
+  enum Errors: String
+  {
+    case controllerUnavailable = "Files Error: Presenting controller not available."
+    case copyFileFailed        = "Files Error: File could not be copied at path:"
+    case copyFolderFailed      = "Files Error: Folder could not be copied at path:"
+    case createFileFailed      = "Files Error: File could not be created at path:"
+    case createFolderFailed    = "Files Error: Folder could not be created at path:"
+    case deleteFileFailed      = "Files Error: File could not be deleted at path:"
+    case deleteFolderFailed    = "Files Error: Folder could not be deleted at path:"
+    case fileNotFound          = "Files Error: File not found at path:"
+    case folderNotFound        = "Files Error: Folder not found at path:"
+    case importFileFailed      = "Files Error: File could not be imported at path:"
+    case invalidFileTypes      = "Files Error: Invalid file type."
+    case invalidMessageBody    = "Files Error: Message body not found."
+    case invalidRoot           = "Files Error: Invalid root provided."
+    case jsonEncodingFailed    = "Files Error: Failed to encode JSON."
+    case missingCommand        = "Files Error: Command not found."
+    case missingFileName       = "Files Error: File name was not found."
+    case missingFolderName     = "Files Error: Folder name was not found."
+    case moveFileFailed        = "Files Error: File could not be moved at path:"
+    case moveFolderFailed      = "Files Error: Folder could not be moved at path:"
+    case operationCancelled    = "Files Error: Import or export operation cancelled."
+    case parentFolderNotFound  = "Files Error: Parent folder not found."
+    case readFileFailed        = "Files Error: File could not be read at path:"
+    case renameFileFailed      = "Files Error: File could not be renamed at path:"
+    case renameFolderFailed    = "Files Error: Folder could not be renamed at path:"
+    case rootNotProvided       = "Files Error: Root was not provided."
+    case subpathNotProvided    = "Files Error: Subpath was not provided."
+    case unknownCommand        = "Files Error: Unknown command."
+    case writeToFileFailed     = "Files Error: File could not be written to at path:"
+    case zipFolderFailed       = "Files Error: Folder could not be zipped:"
+    case zipFailed             = "Files Error: Zip failed at path:"
+  }
+  
+  let errors = Errors.self;
+  
+  /**
+   * Public method to send a failure message from Swift back to JavaScript.
+   *
+   * This method constructs a JavaScript callback invocation containing an
+   * error message describing why the requested operation failed. The error
+   * string is escaped to ensure it can be safely injected into the evaluated
+   * JavaScript code.
+   *
+   * An optional requestId may be included to associate the response with the
+   * original asynchronous request made from JavaScript. This is used by methods
+   * that support multiple concurrent operations such as reading, copying,
+   * moving, or deleting files and folders.
+   *
+   * The error payload is sent to the specified JavaScript failure callback
+   * as an object containing the error message and optional request identifier.
+   *
+   * This method is typically used when a file system operation cannot be
+   * completed due to invalid paths, missing files, permission issues,
+   * or other runtime errors.
+   *
+   * @param error A string describing the reason the operation failed.
+   * @param jsCallback The name of the JavaScript failure callback function to invoke
+   *                   (e.g., "_readFileFail", "_createFolderFail").
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   * @param requestId An optional request identifier used to match the response with the
+   *                  original JavaScript request.
+   */
+  func dispatchFailure(error: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  {
+    var jsProps = "error: '\(self.escapeForJavaScript(error))'";
+    if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
+    let js = "files.\(jsCallback)({ \(jsProps) });";
+  
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  }
+  
+  /**
+   * Public method to send a success message from Swift back to JavaScript
+   * when the payload is structured JSON data.
+   *
+   * This method expects the provided data to already be serialized as a JSON
+   * string representing a valid JavaScript object or array. The JSON is injected
+   * directly into the JavaScript callback without additional escaping so that it
+   * is received as a native JavaScript object.
+   *
+   * An optional requestId may be included to associate the response with the
+   * original asynchronous request made from JavaScript. This is used by methods
+   * that support multiple concurrent operations such as reading folders or files.
+   *
+   * This method is typically used for operations that return structured data,
+   * such as folder listings, file metadata, or other serialized objects.
+   *
+   * @param data A JSON string representing the structured data to pass back to JavaScript.
+   * @param jsCallback The name of the JavaScript success callback function to invoke
+   *                   (e.g., "_getFolderSuccess", "_getFilesSuccess").
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   * @param requestId An optional request identifier used to match the response with the
+   *                  original JavaScript request.
+   */
+  func dispatchSuccessJSON(data: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  {
+    var jsProps = "data: \(data)";
+    if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
+    let js = "files.\(jsCallback)({ \(jsProps) });";
+  
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  }
+  
+  /**
+   * Public method to send a success message from Swift back to JavaScript
+   * when the payload is a plain string.
+   *
+   * The provided string is escaped to ensure it can be safely embedded within
+   * a JavaScript string literal before being passed to the specified callback.
+   * This prevents issues with characters such as quotes, backslashes, or
+   * newlines that could otherwise break the injected JavaScript.
+   *
+   * An optional requestId may be included to associate the response with the
+   * original asynchronous request made from JavaScript. This is commonly used
+   * by methods that read file contents or return raw text data.
+   *
+   * This method is typically used for operations that return unstructured text,
+   * such as file contents read from disk.
+   *
+   * @param data The string data to pass back to JavaScript.
+   * @param jsCallback The name of the JavaScript success callback function to invoke
+   *                   (e.g., "_readFileSuccess").
+   * @param webView The WKWebView instance on which the JavaScript callback should be executed.
+   * @param requestId An optional request identifier used to match the response with the
+   *                  original JavaScript request.
+   */
+  func dispatchSuccessString(data: String, jsCallback: String, webView: WKWebView, requestId: Int? = nil) 
+  {
+    var jsProps = "data: '\(self.escapeForJavaScript(data))'";
+    if let id = requestId { jsProps = "requestId: \(id), " + jsProps; }
+    let js = "files.\(jsCallback)({ \(jsProps) });";
+  
+    DispatchQueue.main.async { webView.evaluateJavaScript(js, completionHandler: nil); }
+  }
+  
+  /**
+  * Public method to escape special characters in a Swift string for safe injection into JavaScript.
+  *
+  * This method ensures that backslashes, single quotes, and newline characters are properly escaped,
+  * preventing syntax errors or unexpected behavior when the string is evaluated in a WKWebView.
+  *
+  * Typical use cases include sending error messages, file paths, or other dynamic strings
+  * from Swift to JavaScript callbacks.
+  *
+  * @param value The Swift string to be escaped.
+  * @return A new string with special characters escaped for JavaScript.
+  */
+  func escapeForJavaScript(_ value: String) -> String
+  {
+    return value
+      .replacingOccurrences(of: "\\", with: "\\\\")
+      .replacingOccurrences(of: "'", with: "\\'")
+      .replacingOccurrences(of: "\n", with: "\\n")
+      .replacingOccurrences(of: "\r", with: "\\r");
+  }
+  
+  /**
+  * Public method to handle messages received from JavaScript for the Files module.
+  *
+  * This method parses the message body, determines the intended command, and calls the appropriate
+  * internal file or folder operation. It ensures that required parameters (like fileName, folderName,
+  * or root paths) are present and logs errors if any are missing.
+  *
+  * Supported commands:
+  * - copyFile, copyFolder, createFile, createFolder, deleteFile, deleteFolder
+  * - exportFile, getFile, getFolder, importFile
+  * - moveFile, moveFolder
+  * - readFile, renameFile, renameFolder
+  * - writeToFile
+  *
+  * @param message The WKScriptMessage object containing the command and arguments from JavaScript.
+  * @param webView The WKWebView instance used for evaluating JavaScript callbacks.
+  */
+  func handleMessage(_ message: WKScriptMessage, webView: WKWebView)
+  {
+    guard let dict = message.body as? [String: Any] else
+    {
+      print(self.errors.invalidMessageBody.rawValue);
+      return;
+    }
+  
+    guard let command = dict["command"] as? String else
+    {
+      print(self.errors.missingCommand.rawValue);
+      return;
+    }
+  
+    switch command
+    {
+      case "copyFile":
+        self.copyFile(dict: dict, webView: webView);
+      case "copyFolder":
+        self.copyFolder(dict: dict, webView: webView);
+      case "createFile":
+        if let fileName = dict["fileName"] as? String { self.createFile(dict: dict, webView: webView, fileName: fileName); }
+        else { print(self.errors.missingFileName.rawValue); }  
+      case "createFolder":
+        if let folderName = dict["folderName"] as? String { self.createFolder(dict: dict, webView: webView, folderName: folderName); }
+        else { print(self.errors.missingFolderName.rawValue); }
+      case "deleteFile":
+        self.deleteFile(dict: dict, webView: webView);
+      case "deleteFolder":
+        self.deleteFolder(dict: dict, webView: webView);
+      case "exportFile":
+        self.exportFile(dict: dict, webView: webView);
+      case "getAbsoluteRootPath":
+        self.getAbsoluteRootPath(dict: dict, webView: webView);
+      case "getFile":
+        self.getFile(dict: dict, webView: webView);
+      case "getFolder":
+        self.getFolder(dict: dict, webView: webView);
+      case "importFile":
+        self.importFile(dict: dict, webView: webView);
+      case "moveFile":
+        self.moveFile(dict: dict, webView: webView);
+      case "moveFolder":
+        self.moveFolder(dict: dict, webView: webView);
+      case "readFile":
+        self.readFile(dict: dict, webView: webView);
+      case "renameFile":
+        if let fileName = dict["fileName"] as? String { self.renameFile(dict: dict, webView: webView, fileName: fileName); }
+        else { print(self.errors.missingFileName.rawValue); }
+      case "renameFolder":
+        if let folderName = dict["folderName"] as? String { self.renameFolder(dict: dict, webView: webView, folderName: folderName); }
+        else { print(self.errors.missingFolderName.rawValue); }
+      case "writeToFile":
+        self.writeToFile(dict: dict, webView: webView);
+      case "zipFolder":
+        self.zipFolder(dict: dict, webView: webView);
+      default:
+        print(self.errors.unknownCommand.rawValue);
+    }
+  }
+  
+  /**
+  * Public method used to resolve a base Folder instance from a JavaScript-provided root string.
+  *
+  * This method accepts a root identifier string (e.g., "Documents", "Library", "tmp")
+  * and returns the corresponding Folder object from the Files package.
+  * If the root string is nil or unrecognized, the method logs an error and returns nil.
+  *
+  * Supported root strings:
+  * - "Documents" -> Folder.documents
+  * - "Library"   -> Folder.library
+  * - "tmp"       -> Folder.temporary
+  *
+  * Any other value will trigger a printed error message.
+  *
+  * @param root Optional string representing the root folder name from JavaScript.
+  * @return A Folder instance corresponding to the root, or nil if invalid.
+  */
+  func resolveBaseFolder(from root: String?) -> Folder?
+  {
+    guard let root = root else
+    {
+      print(self.errors.rootNotProvided.rawValue);
+      return nil;
+    }
+  
+    switch root
+    {
+      case "Documents":
+        return Folder.documents;
+      case "Library":
+        return Folder.library;
+      case "tmp":
+        return Folder.temporary;
+      default:
+        print(self.errors.invalidRoot.rawValue);
+        return nil;
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to retrieve the absolute URL
+   * for a given root at runtime.
+   *
+   * This method accepts a root identifier string and resolves it to
+   * its corresponding absolute filesystem URL on the device.
+   * The resolved URL is returned to JavaScript as a string.
+   *
+   * Supported root values:
+   * - "Documents"
+   * - "Library"
+   * - "tmp"
+   * - "Bundle"
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The root to resolve.
+   *
+   * JavaScript callbacks:
+   * - files._getAbsoluteRootPathSuccess(data)
+   * - files._getAbsoluteRootPathFail(error)
+   *
+   * @param dict Dictionary of arguments passed from JavaScript.
+   * @param webView WKWebView instance used for callbacks.
+   */
+  func getAbsoluteRootPath(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let root = dict["root"] as? String else
+    {
+      let error = self.errors.rootNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let resolvedURL: URL?;
+    switch root
+    {
+      case "Documents":
+        resolvedURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first;
+      case "Library":
+        resolvedURL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first;
+      case "tmp":
+        resolvedURL = FileManager.default.temporaryDirectory;
+      case "Bundle":
+        resolvedURL = Bundle.main.bundleURL;
+      default:
+        let error = self.errors.invalidRoot.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
+        return;
+    }
+  
+    guard let url = resolvedURL else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let payload: [String: Any] =
+    [
+      "root": root,
+      "absolutePath": url.absoluteString
+    ];
+  
+    do
+    {
+      let jsonData = try JSONSerialization.data(withJSONObject: payload);
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
+        return;
+      }
+
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getAbsoluteRootPathSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getAbsoluteRootPathFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  /**
+   * Internal method used to serialize a File into a dictionary representation.
+   *
+   * This method converts a File instance into a lightweight metadata object
+   * suitable for passing back to JavaScript or for internal processing.
+   * It determines the file’s root directory using the provided base folder
+   * and calculates paths relative to that root when possible.
+   *
+   * The returned dictionary includes:
+   * - File name and extension information
+   * - The file’s relative path from the resolved root folder
+   * - The normalized root identifier ("Documents", "Library", "tmp")
+   * - Parent folder metadata when available
+   *
+   * @param file The File instance to serialize.
+   * @param baseFolder The resolved base Folder the file is relative to.
+   * @return A dictionary containing serialized file metadata.
+   */
+  func serializeFile(_ file: File, relativeTo baseFolder: Folder) -> [String: Any]
+  {
+    let rootPath = baseFolder.path;
+    let rootName: String;
+  
+    switch baseFolder
+    {
+      case Folder.documents:
+        rootName = "Documents"
+      case Folder.library:
+        rootName = "Library"
+      case Folder.temporary:
+        rootName = "tmp"
+      default:
+        rootName = "Unknown"
+    }
+  
+    let relativePath: String;
+    if file.path.hasPrefix(rootPath) { relativePath = String(file.path.dropFirst(rootPath.count)); }
+    else { relativePath = file.path; }
+  
+    var fileInfo: [String: Any] =
+    [
+      "name": file.name,
+      "nameExcludingExtension": file.nameExcludingExtension,
+      "extension": file.extension as Any,
+      "relativePath": relativePath,
+      "root": rootName
+    ]
+  
+    if let parent = file.parent
+    {
+      let parentRelativePath: String
+      if parent.path.hasPrefix(rootPath) { parentRelativePath = String(parent.path.dropFirst(rootPath.count)); }
+      else { parentRelativePath = parent.path; }
+      
+      fileInfo["parentFolder"] =
+      [
+        "name": parent.name,
+        "relativePath": parentRelativePath,
+        "root": rootName
+      ]
+    }
+    else { fileInfo["parentFolder"] = NSNull(); }
+    return fileInfo;
+  }
+
+  /**
+    * Internal method used to serialize a Folder into a dictionary representation.
+    *
+    * This method converts a Folder instance into a lightweight metadata object
+    * suitable for passing back to JavaScript or for internal processing.
+    * It determines the folder’s root directory using the provided base path
+    * and calculates paths relative to that root when possible.
+    *
+    * The returned dictionary includes:
+    * - Folder name
+    * - Relative path from the resolved root folder
+    * - The normalized root identifier ("Documents", "Library", "tmp")
+    * - Parent folder metadata when available
+    * - An array of subfolders and files, each serialized with the same structure
+    *
+    * @param folder The Folder instance to serialize.
+    * @param rootPath The resolved base path the folder is relative to.
+    * @return A dictionary containing serialized folder metadata.
+    */
+  func serializeFolder(_ folder: Folder, relativeTo rootPath: String) -> [String: Any]
+  {
+    func normalizedRootName(from path: String) -> String
+    {
+      if path.contains("/Documents") { return "Documents"; }
+      if path.contains("/Library") { return "Library"; }
+      if path.contains("/tmp") { return "tmp"; }
+      return "Unknown";
+    }
+  
+    let rootName = normalizedRootName(from: rootPath);
+    let relativePath: String;
+    if folder.path.hasPrefix(rootPath) { relativePath = String(folder.path.dropFirst(rootPath.count)); }
+    else { relativePath = folder.path; }
+  
+    var folderInfo: [String: Any] = [
+      "name": folder.name,
+      "relativePath": relativePath,
+      "root": rootName
+    ];
+  
+    if let parent = folder.parent
+    {
+      let parentRelativePath: String;
+      if parent.path.hasPrefix(rootPath) { parentRelativePath = String(parent.path.dropFirst(rootPath.count)); }
+      else { parentRelativePath = parent.path; }
+  
+      folderInfo["parentFolder"] = [
+        "name": parent.name,
+        "relativePath": parentRelativePath,
+        "root": rootName
+      ];
+    }
+    else { folderInfo["parentFolder"] = NSNull(); }
+    let subfolderArray: [[String: Any]] = folder.subfolders.map
+    {
+      subfolder in
+      let subRelativePath: String;
+      if subfolder.path.hasPrefix(rootPath) { subRelativePath = String(subfolder.path.dropFirst(rootPath.count)); }
+      else { subRelativePath = subfolder.path; }
+  
+      return [
+        "name": subfolder.name,
+        "relativePath": subRelativePath,
+        "root": rootName
+      ];
+    }
+  
+    folderInfo["subfolders"] = subfolderArray;
+    let fileArray: [[String: Any]] = folder.files.map
+    {
+      file in
+      let fileRelativePath: String;
+      if file.path.hasPrefix(rootPath) { fileRelativePath = String(file.path.dropFirst(rootPath.count)); }
+      else { fileRelativePath = file.path; }
+  
+      var fileInfo: [String: Any] = [
+        "name": file.name,
+        "nameExcludingExtension": file.nameExcludingExtension,
+        "extension": file.extension as Any,
+        "relativePath": fileRelativePath,
+        "root": rootName
+      ];
+  
+      if let parent = file.parent
+      {
+        let parentRelativePath: String;
+        if parent.path.hasPrefix(rootPath) { parentRelativePath = String(parent.path.dropFirst(rootPath.count)); }
+        else { parentRelativePath = parent.path; }
+  
+        fileInfo["parentFolder"] = [
+          "name": parent.name,
+          "relativePath": parentRelativePath,
+          "root": rootName
+        ];
+      }
+      else { fileInfo["parentFolder"] = NSNull(); }
+      return fileInfo;
+    }
+  
+    folderInfo["files"] = fileArray;
+    return folderInfo;
+  }
+  
+  /**
+   * Public method called from JavaScript to copy a file from one location to another.
+   *
+   * This method resolves the source and destination base folders using JavaScript-
+   * provided root values, constructs the full source and destination paths, and
+   * copies the file while ensuring name uniqueness at the destination.
+   *
+   * If a copiedFileName is provided, it is used as the base name.
+   * Otherwise, "(copy)" is appended to the original filename.
+   * A numeric counter is appended when needed to ensure uniqueness.
+   *
+   * If the copy succeeds, the new file is serialized and returned to JavaScript
+   * via a success callback. If any step fails, a standardized error message is
+   * dispatched back to JavaScript and logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - oldRoot (String): Source base directory ("Documents", "Library", "tmp").
+   * - oldSubpath (String): Relative path to the source file.
+   * - newRoot (String): Destination base directory.
+   * - newSubpath (String): Relative path to the destination folder.
+   * - copiedFileName (String, optional): Custom name for the copied file.
+   *
+   * JavaScript callbacks:
+   * - files._copyFileSuccess(fileInfo): Called when the file is successfully copied.
+   * - files._copyFileFail(error): Called when the file cannot be copied.
+   *
+   * @param dict Dictionary of arguments from JavaScript.
+   * @param webView WKWebView to evaluate JavaScript callbacks.
+   */
+  func copyFile(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let oldRootString = dict["oldRoot"] as? String, let newRootString = dict["newRoot"] as? String else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let newBase = self.resolveBaseFolder(from: newRootString) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let oldSubpath = dict["oldSubpath"] as? String, let newSubpath = dict["newSubpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let customName = dict["copiedFileName"] as? String;
+    let sourceURL: URL;
+    if oldRootString == "Bundle"
+    {
+      let cleanPath = oldSubpath.trimmingCharacters(in: CharacterSet(charactersIn: "/"));
+      let pathComponents = cleanPath.split(separator: "/").map(String.init);
+      guard let fileName = pathComponents.last else
+      {
+        let error = self.errors.fileNotFound.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      let fileParts = fileName.split(separator: ".", maxSplits: 1).map(String.init);
+      let name = fileParts.first ?? fileName;
+      let ext = fileParts.count > 1 ? fileParts.last : nil
+      let subdirectory = pathComponents.dropLast().joined(separator: "/");
+  
+      guard let bundleURL = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: subdirectory.isEmpty ? nil : subdirectory) 
+      else
+      {
+        let error = self.errors.fileNotFound.rawValue + " (Bundle/\(oldSubpath))";
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      sourceURL = bundleURL;
+    }
+    else
+    {
+      guard let oldBase = self.resolveBaseFolder(from: oldRootString) else
+      {
+        let error = self.errors.invalidRoot.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+      do
+      {
+        let file = try File(path: sourcePath);
+        sourceURL = file.url;
+      }
+      catch
+      {
+        let error = self.errors.fileNotFound.rawValue + " (\(sourcePath))";
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+    }
+  
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+    let destinationFolder: Folder
+    do { destinationFolder = try Folder(path: destinationParentPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath))";
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let fileExtension = sourceURL.pathExtension;
+    let originalBaseName = sourceURL.deletingPathExtension().lastPathComponent;
+    let baseName: String =
+      customName?.isEmpty == false
+        ? (customName!.hasSuffix(".\(fileExtension)") || fileExtension.isEmpty
+            ? String(customName!.dropLast(fileExtension.isEmpty ? 0 : fileExtension.count + 1))
+            : customName!)
+        : "\(originalBaseName)(copy)";
+  
+    var uniqueName: String;
+    var counter = 0;
+    repeat
+    {
+      let suffix = counter == 0 ? "" : "(\(counter))"
+      uniqueName = fileExtension.isEmpty
+        ? "\(baseName)\(suffix)"
+        : "\(baseName)\(suffix).\(fileExtension)";
+      counter += 1;
+    }
+    while destinationFolder.containsFile(named: uniqueName)
+    do
+    {
+      let destinationFile = try destinationFolder.createFile(named: uniqueName);
+  
+      let data = try Data(contentsOf: sourceURL);
+      try destinationFile.write(data);
+  
+      let fileInfo = self.serializeFile(destinationFile, relativeTo: newBase);
+      let jsonData = try JSONSerialization.data(withJSONObject: fileInfo);
+  
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_copyFileSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.copyFileFailed.rawValue + " (\(destinationParentPath + uniqueName))";
+      self.dispatchFailure(error: error, jsCallback: "_copyFileFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to copy a folder from one location to another.
+   *
+   * This method resolves the source and destination base folders using JavaScript-
+   * provided root values, constructs the full source and destination paths, and
+   * copies the folder recursively while ensuring name uniqueness at the destination.
+   *
+   * If copiedFolderName is provided, it is used as the base name.
+   * Otherwise, "(copy)" is appended to the source folder’s name.
+   * A numeric counter is appended when needed to ensure uniqueness.
+   *
+   * If the copy succeeds, the new folder is serialized and returned to JavaScript
+   * via a success callback. If any step fails, a standardized error message is
+   * dispatched back to JavaScript.
+   */
+  func copyFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+      return
+    };
+  
+    guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let oldSubpath = dict["oldSubpath"] as? String,
+          let newSubpath = dict["newSubpath"] as? String
+    else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let customName = dict["copiedFolderName"] as? String;
+    let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+    let sourceFolder: Folder;
+    let destinationParent: Folder;
+    do { sourceFolder = try Folder(path: sourcePath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(sourcePath)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do { destinationParent = try Folder(path: destinationParentPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let baseName: String = customName?.isEmpty == false ? customName! : "\(sourceFolder.name)(copy)";
+  
+    var uniqueName: String;
+    var counter = 0;
+    repeat
+    {
+      let suffix = counter == 0 ? "" : "(\(counter))";
+      uniqueName = "\(baseName)\(suffix)";
+      counter += 1;
+    }
+    while destinationParent.containsSubfolder(named: uniqueName)
+  
+    do
+    {
+      let destinationFolder = try destinationParent.createSubfolder(named: uniqueName);
+      try sourceFolder.copy(to: destinationFolder);
+      let folderInfo = self.serializeFolder(destinationFolder, relativeTo: newBase.path);
+      
+      let jsonData = try JSONSerialization.data(withJSONObject: folderInfo);
+      guard let jsonString = String(data: jsonData, encoding: .utf8)
+      else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+        return;
+      }
+  
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_copyFolderSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.copyFolderFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_copyFolderFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to create a new file at a specified path.
+   *
+   * This method resolves the base folder using a JavaScript-provided root value,
+   * appends the provided subpath, and attempts to create a new file within the
+   * target directory. If a file with the same name already exists, a unique
+   * filename is generated automatically.
+   *
+   * Upon successful creation, the newly created file is serialized and returned
+   * to JavaScript via a success callback. If any step fails, a standardized error
+   * is dispatched back to JavaScript and logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The base directory to resolve ("Documents", "Library", "tmp").
+   * - subpath (String): The relative path to the target directory.
+   *
+   * JavaScript callbacks:
+   * - files._createFileSuccess(fileInfo): Called when the file is successfully created.
+   * - files._createFileFail(error): Called when file creation fails.
+   *
+   * @param dict A dictionary of arguments passed from JavaScript.
+   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   * @param fileName The desired name of the file to be created.
+   */
+  func createFile(dict: [String: Any], webView: WKWebView, fileName: String)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let targetFolder: Folder;
+    do { targetFolder = try Folder(path: targetPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    var uniqueName = fileName;
+    var counter = 1;
+    while targetFolder.containsFile(named: uniqueName)
+    {
+      uniqueName = "\(fileName)(\(counter))";
+      counter += 1;
+    }
+  
+    let createdFile: File;
+    do { createdFile = try targetFolder.createFile(named: uniqueName); }
+    catch
+    {
+      let error = self.errors.createFileFailed.rawValue + " (\(uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let fileInfo = self.serializeFile(createdFile, relativeTo: baseFolder)
+    let jsonData: Data;
+    do { jsonData = try JSONSerialization.data(withJSONObject: fileInfo); }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let jsonString = String(data: jsonData, encoding: .utf8) else
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_createFileSuccess", webView: webView, requestId: requestId);
+  }
+
+  /**
+    * Public method called from JavaScript to create a new folder at a specified path.
+    *
+    * This method resolves the base folder using a JavaScript-provided root value,
+    * appends the provided subpath, and attempts to create a new folder within the
+    * target directory. If a folder with the same name already exists, a unique
+    * folder name is generated automatically.
+    *
+    * Upon successful creation, the newly created folder is serialized and returned
+    * to JavaScript via a success callback. If any step fails, a standardized error
+    * is dispatched back to JavaScript and logged to the console.
+    *
+    * Expected JavaScript input (dict):
+    * - root (String): The base directory to resolve ("Documents", "Library", "tmp").
+    * - subpath (String): The relative path to the target directory.
+    * - folderName (String): The desired name of the folder to be created.
+    *
+    * JavaScript callbacks:
+    * - files._createFolderSuccess(folderInfo): Called when the folder is successfully created.
+    * - files._createFolderFail(error): Called when folder creation fails.
+    *
+    * @param dict A dictionary of arguments passed from JavaScript.
+    * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+    * @param folderName The desired name of the folder to create.
+    */
+  func createFolder(dict: [String: Any], webView: WKWebView, folderName: String)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let targetFolder: Folder;
+    do { targetFolder = try Folder(path: targetPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    var uniqueName = folderName;
+    var counter = 1;
+    while targetFolder.containsSubfolder(named: uniqueName)
+    {
+      uniqueName = "\(folderName)(\(counter))";
+      counter += 1;
+    }
+  
+    let createdFolder: Folder;
+    do { createdFolder = try targetFolder.createSubfolder(named: uniqueName); }
+    catch
+    {
+      let error = self.errors.createFolderFailed.rawValue + " (\(uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let folderInfo = self.serializeFolder(createdFolder, relativeTo: baseFolder.path);
+    let jsonData: Data;
+    do { jsonData = try JSONSerialization.data(withJSONObject: folderInfo); }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let jsonString = String(data: jsonData, encoding: .utf8) else
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_createFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_createFolderSuccess", webView: webView, requestId: requestId);
+  }
+  
+  /**
+   * Public method called from JavaScript to delete a file at a specified path.
+   *
+   * This method resolves the base folder using a JavaScript-provided root value,
+   * appends the provided subpath, and attempts to locate and delete the file.
+   * If successful, a success callback is invoked in JavaScript. If any step
+   * fails, a standardized error message is dispatched back to JavaScript and
+   * logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The base directory to resolve ("Documents", "Library", "tmp").
+   * - subpath (String): The relative path to the file within the base directory.
+   *
+   * JavaScript callbacks:
+   * - files._deleteFileSuccess(): Called when the file is successfully deleted.
+   * - files._deleteFileFail(error): Called when the file cannot be deleted.
+   *
+   * @param dict A dictionary of arguments passed from JavaScript.
+   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   */
+  func deleteFile(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let targetFile: File;
+    do { targetFile = try File(path: targetPath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do { try targetFile.delete(); }
+    catch
+    {
+      let error = self.errors.deleteFileFailed.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_deleteFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    self.dispatchSuccessJSON(data: "{}", jsCallback: "_deleteFileSuccess", webView: webView, requestId: requestId);
+  }
+
+  /**
+    * Public method called from JavaScript to delete a folder at a specified path.
+    *
+    * This method resolves the base folder using a JavaScript-provided root value,
+    * appends the provided subpath, and attempts to delete the folder at that path.
+    * Any failure during folder resolution or deletion is reported back to JavaScript
+    * via the standardized `dispatchFailure` method.
+    *
+    * Expected JavaScript input (dict):
+    * - root (String): The base directory ("Documents", "Library", "tmp").
+    * - subpath (String): The relative path to the folder to be deleted.
+    *
+    * JavaScript callbacks:
+    * - files._deleteFolderSuccess(): Called when the folder is successfully deleted.
+    * - files._deleteFolderFail(error): Called when folder deletion fails.
+    *
+    * @param dict A dictionary of arguments passed from JavaScript.
+    * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+    */
+  func deleteFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let targetFolder: Folder;
+    do { targetFolder = try Folder(path: targetPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do
+    {
+      try targetFolder.delete();
+      self.dispatchSuccessJSON(data: "{}", jsCallback: "_deleteFolderSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.deleteFolderFailed.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_deleteFolderFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to retrieve a file at a specified path.
+   *
+   * This method resolves the base folder using a JavaScript-provided root value,
+   * appends the provided subpath, and attempts to locate and serialize the file.
+   * If successful, the file metadata is returned to JavaScript via a success
+   * callback. If any step fails, a standardized error is dispatched back to
+   * JavaScript and logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The base directory to resolve ("Documents", "Library", "tmp").
+   * - subpath (String): The relative path to the file within the base directory.
+   *
+   * JavaScript callbacks:
+   * - files._getFileSuccess(data): Called when the file is successfully found.
+   * - files._getFileFail(error): Called when the file cannot be resolved or processed.
+   *
+   * @param dict A dictionary of arguments passed from JavaScript.
+   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   */
+  func getFile(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else { return }
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+    
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let resolvedFile: File;
+      
+    do { resolvedFile = try File(path: targetPath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+    
+    let fileInfo = self.serializeFile(resolvedFile, relativeTo: baseFolder)
+    let jsonData: Data;
+    do { jsonData = try JSONSerialization.data(withJSONObject: fileInfo); }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+    
+    guard let jsonString = String(data: jsonData, encoding: .utf8) else
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getFileSuccess", webView: webView, requestId: requestId);
+  }
+
+  /**
+    * Public method called from JavaScript to retrieve a folder at a specified path.
+    *
+    * This method resolves the base folder using a JavaScript-provided root value,
+    * appends the provided subpath, attempts to locate the folder using the Files
+    * package, serializes it, and returns the result to JavaScript.
+    *
+    * Any failure during folder resolution, lookup, or serialization is reported
+    * back to JavaScript via the standardized `dispatchFailure` method.
+    *
+    * Expected JavaScript input (dict):
+    * - root (String): The base directory ("Documents", "Library", "tmp").
+    * - subpath (String): The relative path to the folder.
+    *
+    * JavaScript callbacks:
+    * - files._getFolderSuccess(folderInfo): Called when the folder is found.
+    * - files._getFolderFail(error): Called when the folder cannot be found.
+    *
+    * @param dict A dictionary of arguments passed from JavaScript.
+    * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+    */
+  func getFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let resolvedFolder: Folder;
+  
+    do { resolvedFolder = try Folder(path: targetPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do
+    {
+      let folderInfo = self.serializeFolder(resolvedFolder, relativeTo: baseFolder.path);
+      let jsonData = try JSONSerialization.data(withJSONObject: folderInfo);
+  
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+        return;
+      }
+      
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_getFolderSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_getFolderFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to import a file using the system document picker.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): One of "Documents", "Library", or "tmp"
+   * - subpath (String): Destination subpath relative to the root
+   * - fileExtensions ([String], optional): Allowed file extensions (e.g. ["js", "json", "png"])
+   *
+   * JavaScript callbacks:
+   * - files._importFileSuccess(data)
+   * - files._importFileFail(error)
+   */
+  func importFile(dict: [String: Any], webView: WKWebView)
+  {
+    self.importRequestId = dict["requestId"] as? Int;
+    guard let controller = self.presentingController else
+    {
+      let error = self.errors.controllerUnavailable.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
+      return;
+    }
+  
+    guard let root = dict["root"] as? String else
+    {
+      let error = self.errors.rootNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
+      return;
+    }
+  
+    guard let _ = self.resolveBaseFolder(from: root) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
+      return;
+    }
+  
+    let extensions = dict["fileExtensions"] as? [String];
+    let normalizedExtensions = extensions?
+      .map { $0.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty };
+  
+    let contentTypes: [UTType];
+    if let exts = normalizedExtensions, !exts.isEmpty
+    {
+      contentTypes = exts.compactMap
+      { ext in
+        switch ext
+        {
+          // Images
+          case "heic": return .heic
+          case "heif": return .heif
+          case "png": return .png
+          case "jpg", "jpeg": return .jpeg
+          case "gif": return .gif
+  
+          // Audio
+          case "mp3": return .mp3
+          case "wav": return .wav
+          case "ogg": return UTType(filenameExtension: "ogg")
+          case "caf": return UTType(filenameExtension: "caf")
+  
+          // Video
+          case "mp4": return .mpeg4Movie
+          case "mov": return .quickTimeMovie
+          case "m4v": return UTType(filenameExtension: "m4v")
+  
+          // Fallback
+          default:
+            if let type = UTType(filenameExtension: ext) { return type }
+            return nil
+        }
+      }
+  
+      if contentTypes.isEmpty
+      {
+        let error = self.errors.invalidFileTypes.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
+        return;
+      }
+    }
+    else
+    {
+      contentTypes =
+      [
+        // Images
+        .heic, .heif, .png, .jpeg, .gif,
+  
+        // Audio
+        .mp3, .wav, UTType(filenameExtension: "ogg")!,
+        UTType(filenameExtension: "caf")!,
+  
+        // Video
+        .mpeg4Movie, .quickTimeMovie, UTType(filenameExtension: "m4v")!,
+  
+        // Text
+        .commaSeparatedText, .html, .json,
+        UTType(filenameExtension: "log")!,
+        UTType(filenameExtension: "md")!,
+        .plainText, .xml,
+  
+        // Code
+        UTType(filenameExtension: "css")!,
+        UTType(filenameExtension: "js")!,
+        UTType(filenameExtension: "swift")!
+      ];
+    }
+  
+    self.webView = webView;
+    self.importDestinationRoot = root;
+    self.importDestinationSubpath = subpath;
+    self.importAllowedExtensions = normalizedExtensions;
+  
+    let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes, asCopy: true);
+    picker.delegate = self;
+    picker.allowsMultipleSelection = false;
+    picker.modalPresentationStyle = .formSheet;
+  
+    controller.present(picker, animated: true);
+  }
+  
+  /**
+   * Public method called from JavaScript to export a file
+   * to the system Files app using the document exporter.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): One of "Documents", "Library", or "tmp"
+   * - subpath (String): Relative path to the file to export
+   *
+   * JavaScript callbacks:
+   * - files._exportFileSuccess()
+   * - files._exportFileFail(error)
+   */
+  func exportFile(dict: [String: Any], webView: WKWebView)
+  {
+    self.exportRequestId = dict["requestId"] as? Int;
+    guard let controller = self.presentingController else
+    {
+      let error = self.errors.controllerUnavailable.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
+      return;
+    }
+  
+    guard let root = dict["root"] as? String else
+    {
+      let error = self.errors.rootNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
+      return;
+    }
+  
+    guard let baseFolder = self.resolveBaseFolder(from: root) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let file: File;
+    do { file = try File(path: targetPath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId);
+      return;
+    }
+  
+    let fileURL = URL(fileURLWithPath: file.path);
+    self.webView = webView;
+  
+    let picker = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true);
+    picker.delegate = self;
+    picker.modalPresentationStyle = .formSheet;
+    controller.present(picker, animated: true);
+  }
+  
+  /**
+   * UIDocumentPicker delegate callback invoked after the user
+   * completes an import or export operation.
+   *
+   * This method is shared by both importFile and exportFile flows.
+   */
+  func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL])
+  {
+    guard let webView = self.webView else { return; }
+  
+    // ---------------------------------------------
+    // IMPORT FLOW
+    // ---------------------------------------------
+    if
+      let root = self.importDestinationRoot,
+      let subpath = self.importDestinationSubpath,
+      let baseFolder = self.resolveBaseFolder(from: root)
+    {
+      let destinationPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+  
+      do
+      {
+        let destinationFolder = try Folder(path: destinationPath);
+        var importedFiles: [[String: Any]] = [];
+  
+        for url in urls
+        {
+          let ext = url.pathExtension.lowercased();
+          if let allowed = self.importAllowedExtensions,
+             !allowed.contains(ext) { continue; }
+  
+          let baseName = url.deletingPathExtension().lastPathComponent;
+          var index = 0;
+          var finalName = "\(baseName).\(ext)";
+  
+          while destinationFolder.containsFile(named: finalName)
+          {
+            index += 1;
+            finalName = "\(baseName)(\(index)).\(ext)";
+          }
+  
+          let importedFile = try destinationFolder.createFile(named: finalName, contents: try Data(contentsOf: url));
+          let info = self.serializeFile(importedFile, relativeTo: baseFolder);
+          importedFiles.append(info);
+        }
+  
+        let jsonData = try JSONSerialization.data(withJSONObject: importedFiles);
+        let jsonString = String(data: jsonData, encoding: .utf8)!;
+        self.dispatchSuccessJSON(data: jsonString, jsCallback: "_importFileSuccess", webView: webView, requestId: self.importRequestId);
+      }
+      catch
+      {
+        let error = self.errors.importFileFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId);
+      }
+  
+      self.importDestinationRoot = nil;
+      self.importDestinationSubpath = nil;
+      self.importAllowedExtensions = nil;
+      self.webView = nil;
+      self.importRequestId = nil;
+      return;
+    }
+  
+    // ---------------------------------------------
+    // EXPORT FLOW
+    // ---------------------------------------------
+    self.dispatchSuccessJSON(data: "{}", jsCallback: "_exportFileSuccess", webView: webView, requestId: self.exportRequestId);
+    self.webView = nil;
+    self.exportRequestId = nil;
+  }
+  
+  /**
+   * UIDocumentPicker delegate callback invoked when the user
+   * cancels the document picker.
+   *
+   * This is shared by both import and export flows.
+   * Import triggers a failure callback.
+   * Export triggers a failure callback.
+   */
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController)
+  {
+    guard let webView = self.webView else { return; }
+  
+    let error = self.errors.operationCancelled.rawValue;
+    if self.importDestinationRoot != nil { self.dispatchFailure(error: error, jsCallback: "_importFileFail", webView: webView, requestId: self.importRequestId); }
+    else { self.dispatchFailure(error: error, jsCallback: "_exportFileFail", webView: webView, requestId: self.exportRequestId); }
+  
+    self.importDestinationRoot = nil;
+    self.importDestinationSubpath = nil;
+    self.importAllowedExtensions = nil;
+    self.importRequestId = nil;
+    self.exportRequestId = nil;
+    self.webView = nil;
+  }
+  
+  /**
+   * Public method called from JavaScript to move a file from one location to another.
+   *
+   * This method resolves the source and destination base folders using JavaScript-
+   * provided root values, constructs the full source and destination paths, and
+   * moves the file while ensuring name uniqueness at the destination.
+   *
+   * If the move succeeds, the moved file is serialized and returned to JavaScript
+   * via a success callback. If any step fails, a standardized error message is
+   * dispatched back to JavaScript and logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - oldRoot (String): The source base directory ("Documents", "Library", "tmp").
+   * - oldSubpath (String): Relative path to the source file.
+   * - newRoot (String): The destination base directory.
+   * - newSubpath (String): Relative path to the destination folder.
+   *
+   * JavaScript callbacks:
+   * - files._moveFileSuccess(fileInfo): Called when the file is successfully moved.
+   * - files._moveFileFail(error): Called when the file cannot be moved.
+   *
+   * @param dict A dictionary of arguments passed from JavaScript.
+   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   */
+  func moveFile(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let oldBase = self.resolveBaseFolder(from: dict["oldRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let newBase = self.resolveBaseFolder(from: dict["newRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let oldSubpath = dict["oldSubpath"] as? String,
+          let newSubpath = dict["newSubpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+    let sourceFile: File;
+    let destinationFolder: Folder;
+    do { sourceFile = try File(path: sourcePath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(sourcePath)).";
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do { destinationFolder = try Folder(path: destinationParentPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let fileExtension = sourceFile.extension ?? "";
+    let baseName = sourceFile.nameExcludingExtension;
+    var uniqueName = sourceFile.name;
+    var counter = 1;
+  
+    while destinationFolder.containsFile(named: uniqueName)
+    {
+      uniqueName = fileExtension.isEmpty
+        ? "\(baseName)(\(counter))"
+        : "\(baseName)(\(counter)).\(fileExtension)";
+      counter += 1;
+    }
+  
+    do
+    {
+      _ = destinationFolder.path + uniqueName;
+      let destinationFile = try destinationFolder.createFile(named: uniqueName);
+      try destinationFile.write(sourceFile.read());
+      try sourceFile.delete();
+      let fileInfo = self.serializeFile(destinationFile, relativeTo: newBase);
+      let jsonData = try JSONSerialization.data(withJSONObject: fileInfo);
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+        return;
+      }
+      
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_moveFileSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.moveFileFailed.rawValue + " (\(destinationParentPath + uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_moveFileFail", webView: webView, requestId: requestId);
+    }
+  }
+
+  /**
+    * Public method called from JavaScript to move a folder from one path to another.
+    *
+    * This method resolves the source and destination base folders using JavaScript-provided root values,
+    * constructs the full source and destination paths, ensures the folder name is unique at the destination,
+    * moves the folder by copying all files and subfolders inline, deletes the original folder,
+    * serializes the result, and returns it to JavaScript. Any failure is reported via `dispatchFailure`.
+    *
+    * Expected JavaScript input (dict):
+    * - oldRoot (String): Source base directory ("Documents", "Library", "tmp").
+    * - oldSubpath (String): Relative path to the source folder.
+    * - newRoot (String): Destination base directory.
+    * - newSubpath (String): Relative path to the destination folder.
+    *
+    * JavaScript callbacks:
+    * - files._moveFolderSuccess(folderInfo): Called on successful move.
+    * - files._moveFolderFail(null): Called on failure.
+    *
+    * @param dict Dictionary of arguments from JavaScript.
+    * @param webView WKWebView to evaluate JavaScript callbacks.
+    */
+  func moveFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let oldBase = resolveBaseFolder(from: dict["oldRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let newBase = resolveBaseFolder(from: dict["newRoot"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let oldSubpath = dict["oldSubpath"] as? String,
+          let newSubpath = dict["newSubpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let sourcePath = oldSubpath.isEmpty ? oldBase.path : oldBase.path + oldSubpath;
+    let destinationParentPath = newSubpath.isEmpty ? newBase.path : newBase.path + newSubpath;
+    let sourceFolder: Folder;
+    let destinationParent: Folder;
+  
+    do { sourceFolder = try Folder(path: sourcePath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(sourcePath)).";
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do { destinationParent = try Folder(path: destinationParentPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(destinationParentPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    var uniqueName = sourceFolder.name;
+    var counter = 1;
+    while destinationParent.containsSubfolder(named: uniqueName)
+    {
+      uniqueName = "\(sourceFolder.name)(\(counter))";
+      counter += 1;
+    }
+  
+    do
+    {
+      let destinationFolder = try destinationParent.createSubfolder(named: uniqueName);
+      for file in sourceFolder.files
+      {
+        let destFile = try destinationFolder.createFile(named: file.name);
+        try destFile.write(file.read());
+      }
+      
+      var foldersToCopy: [(source: Folder, destination: Folder)] = [(sourceFolder, destinationFolder)];
+      while !foldersToCopy.isEmpty
+      {
+        let (currentSource, currentDest) = foldersToCopy.removeFirst()
+        for sub in currentSource.subfolders
+        {
+          let newSub = try currentDest.createSubfolder(named: sub.name);
+          for file in sub.files
+          {
+            let destFile = try newSub.createFile(named: file.name);
+            try destFile.write(file.read());
+          }
+          foldersToCopy.append((sub, newSub));
+        }
+      }
+  
+      try sourceFolder.delete();
+      let folderInfo = self.serializeFolder(destinationFolder, relativeTo: newBase.path);
+      let jsonData = try JSONSerialization.data(withJSONObject: folderInfo);
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+        return;
+      }
+      
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_moveFolderSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.moveFolderFailed.rawValue + " (\(sourcePath) → \(destinationParent.path + uniqueName)).";
+      self.dispatchFailure(error: error, jsCallback: "_moveFolderFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  /**
+   * Public method called from JavaScript to read a file as a UTF-8 string.
+   *
+   * Each call generates a unique requestId passed from JavaScript.
+   * The method resolves the specified root folder, appends the provided subpath,
+   * and attempts to read the file content. On completion, a payload containing
+   * the requestId and either the file data or an error is sent back to JavaScript.
+   *
+   * Expected JavaScript input (dict):
+   * - requestId (Int, optional): Unique ID for this read request.
+   * - root (String): Base directory to read from ("Documents", "Library", "tmp").
+   * - subpath (String): Relative path to the file within the root.
+   *
+   * JavaScript callbacks:
+   * - files._readFileSuccess(payload): Called when the file is successfully read.
+   *   The payload includes { requestId, data }.
+   * - files._readFileFail(payload): Called when the file cannot be read.
+   *   The payload includes { requestId, error }.
+   *
+   * @param dict Dictionary of arguments passed from JavaScript.
+   * @param webView WKWebView instance used to evaluate JavaScript callbacks.
+   */
+  func readFile(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+    
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let file: File;
+    let content: String;
+  
+    do { file = try File(path: targetPath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do { content = try file.readAsString(); }
+    catch
+    {
+      let error = self.errors.readFileFailed.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_readFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    self.dispatchSuccessString(data: content, jsCallback: "_readFileSuccess", webView: webView, requestId: requestId);
+  }
+
+  /**
+   * Public method called from JavaScript to rename a file at a specified path.
+   *
+   * This method resolves the base folder using a JavaScript-provided root value,
+   * locates the target file, and renames it within its parent folder. If a file
+   * with the requested name already exists, a unique name is generated.
+   *
+   * On success, the renamed file is serialized and returned to JavaScript via a
+   * success callback. If any step fails, a standardized error is dispatched back
+   * to JavaScript and logged to the console.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The base directory ("Documents", "Library", "tmp").
+   * - subpath (String): Relative path to the file to rename.
+   *
+   * JavaScript callbacks:
+   * - files._renamedFileSuccess(data): Called when the file is successfully renamed.
+   * - files._renamedFileFail(error): Called when the file cannot be renamed.
+   *
+   * @param dict A dictionary of arguments passed from JavaScript.
+   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   * @param fileName The new desired file name (without uniqueness guarantees).
+   */
+  func renameFile(dict: [String: Any], webView: WKWebView, fileName: String)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let targetFile: File;
+    do { targetFile = try File(path: targetPath); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let parentFolder = targetFile.parent else
+    {
+      let error = self.errors.parentFolderNotFound.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let fileExtension = targetFile.extension ?? "";
+    let baseName = fileName.contains(".")
+      ? fileName.components(separatedBy: ".").dropLast().joined(separator: ".")
+      : fileName;
+    var uniqueName = fileName;
+    var counter = 1;
+    while parentFolder.containsFile(named: uniqueName)
+    {
+      uniqueName = fileExtension.isEmpty
+        ? "\(baseName)(\(counter))"
+        : "\(baseName)(\(counter)).\(fileExtension)";
+      counter += 1;
+    }
+  
+    let newPath = parentFolder.path + uniqueName;
+    do { try FileManager.default.moveItem(atPath: targetFile.path, toPath: newPath); }
+    catch
+    {
+      let error = self.errors.renameFileFailed.rawValue + " (\(newPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)
+    {
+      do
+      {
+        let renamedFile = try File(path: newPath);
+        let fileInfo = self.serializeFile(renamedFile, relativeTo: baseFolder);
+        let jsonData = try JSONSerialization.data(withJSONObject: fileInfo);
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else
+        {
+          let error = self.errors.jsonEncodingFailed.rawValue;
+          self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+          return;
+        }
+
+        self.dispatchSuccessJSON(data: jsonString, jsCallback: "_renameFileSuccess", webView: webView, requestId: requestId);
+      }
+      catch
+      {
+        let error = self.errors.fileNotFound.rawValue + " (\(newPath)).";
+        self.dispatchFailure(error: error, jsCallback: "_renameFileFail", webView: webView, requestId: requestId);
+      }
+    }
+  }
+
+  /**
+    * Public method called from JavaScript to rename a folder at a specified path.
+    *
+    * This method resolves the base folder using a JavaScript-provided root value,
+    * appends the provided subpath, ensures the new name is unique within the parent
+    * directory, renames the folder using the Files package, and returns the updated
+    * folder info to JavaScript.
+    *
+    * Any failure during resolution, renaming, or serialization is reported via the
+    * standardized `dispatchFailure` method.
+    *
+    * Expected JavaScript input (dict):
+    * - root (String): The base directory ("Documents", "Library", "tmp").
+    * - subpath (String): The relative path to the folder being renamed.
+    *
+    * JavaScript callbacks:
+    * - files._renameFolderSuccess(folderInfo): Called when the folder is successfully renamed.
+    * - files._renameFolderFail(error): Called when the folder cannot be renamed.
+    *
+    * @param dict A dictionary of arguments passed from JavaScript.
+    * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+    * @param folderName The desired new name for the folder.
+    */
+  func renameFolder(dict: [String: Any], webView: WKWebView, folderName: String)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let targetFolder: Folder;
+  
+    do { targetFolder = try Folder(path: targetPath); }
+    catch
+    {
+      let error = self.errors.folderNotFound.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let parentFolder = targetFolder.parent else
+    {
+      let error = self.errors.folderNotFound.rawValue + " (parent).";
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    var uniqueName = folderName;
+    var counter = 1;
+    while parentFolder.containsSubfolder(named: uniqueName)
+    {
+      uniqueName = "\(folderName)(\(counter))";
+      counter += 1;
+    }
+  
+    do
+    {
+      try targetFolder.rename(to: uniqueName);
+  
+      let renamedFolder = try Folder(path: parentFolder.path + uniqueName + "/");
+      let folderInfo = self.serializeFolder(renamedFolder, relativeTo: baseFolder.path);
+      let jsonData = try JSONSerialization.data(withJSONObject: folderInfo);
+  
+      guard let jsonString = String(data: jsonData, encoding: .utf8) else
+      {
+        let error = self.errors.jsonEncodingFailed.rawValue;
+        self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
+        return;
+      }
+    
+      self.dispatchSuccessJSON(data: jsonString, jsCallback: "_renameFolderSuccess", webView: webView, requestId: requestId);
+    }
+    catch
+    {
+      let error = self.errors.renameFolderFailed.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_renameFolderFail", webView: webView, requestId: requestId);
+    }
+  }
+  
+  
+  /**
+   * Public method called from JavaScript to write string data to a file.
+   *
+   * This method resolves the base folder, locates the target file, and writes
+   * content to it. The content may either replace the file entirely or be appended
+   * to the existing contents. An optional newline may be inserted before appending.
+   *
+   * On success, a JavaScript success callback is invoked. On failure, a standardized
+   * error is logged and dispatched back to JavaScript.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): The base directory ("Documents", "Library", "tmp").
+   * - subpath (String): Relative path to the target file.
+   * - content (String): The content to write to the file.
+   * - replace (Bool, optional): Whether to overwrite the file (default: false).
+   * - newline (Bool, optional): Whether to prepend a newline when appending (default: true).
+   *
+   * JavaScript callbacks:
+   * - files._fileWrittenTo(): Called when the write succeeds.
+   * - files._fileNotWrittenTo(error): Called when the write fails.
+   *
+   * @param dict A dictionary of arguments passed from JavaScript.
+   * @param webView The WKWebView instance used to evaluate JavaScript callbacks.
+   */
+  func writeToFile(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let baseFolder = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let content = dict["content"] as? String ?? "";
+    let replace = dict["replace"] as? Bool ?? false;
+    let newline = dict["newline"] as? Bool ?? true;
+    let targetPath = subpath.isEmpty ? baseFolder.path : baseFolder.path + subpath;
+    let fileURL = URL(fileURLWithPath: targetPath);
+    let parentFolderPath = fileURL.deletingLastPathComponent().path;
+    let fileName = fileURL.lastPathComponent;
+    let parentFolder: Folder;
+    let file: File;
+    
+    do { parentFolder = try Folder(path: parentFolderPath); }
+    catch
+    {
+      let error = self.errors.parentFolderNotFound.rawValue + " (\(parentFolderPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    do { file = try parentFolder.file(named: fileName); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(fileName)).";
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    var finalContent = "";
+    do
+    {
+      if replace { finalContent = content; }
+      else
+      {
+        var existingContent = try file.readAsString();
+        if newline && !existingContent.isEmpty { existingContent.append("\n"); }
+        existingContent.append(content);
+        finalContent = existingContent;
+      }
+  
+      try file.write(finalContent);
+    }
+    catch
+    {
+      let error = self.errors.writeToFileFailed.rawValue + " (\(targetPath)).";
+      self.dispatchFailure(error: error, jsCallback: "_writeToFileFail", webView: webView, requestId: requestId);
+      return;
+    }
+    
+    self.dispatchSuccessJSON(data: "{}", jsCallback: "_writeToFileSuccess", webView: webView, requestId: requestId);
+  }
+  
+  /**
+   * Public method called from JavaScript to zip a folder in-place.
+   *
+   * This method resolves the base folder using a JavaScript-provided root value,
+   * constructs the full path to the source folder, zips the folder using
+   * NSFileCoordinator (.forUploading), saves the resulting zip file in the same
+   * directory as the source folder, serializes the zip as a File, and returns
+   * it to JavaScript.
+   *
+   * Any failure is reported via the standardized `dispatchFailure` method.
+   *
+   * Expected JavaScript input (dict):
+   * - root (String): Base directory ("Documents", "Library", "tmp").
+   * - subpath (String): Relative path to the folder to zip.
+   * - zippedFileName (String): Name of the resulting zip file (e.g. "project.zip").
+   *
+   * JavaScript callbacks:
+   * - files._zipFolderSuccess(fileInfo): Called on successful zip.
+   * - files._zipFolderFail(error): Called on failure.
+   *
+   * @param dict Dictionary of arguments from JavaScript.
+   * @param webView WKWebView to evaluate JavaScript callbacks.
+   */
+  func zipFolder(dict: [String: Any], webView: WKWebView)
+  {
+    let requestId = dict["requestId"] as? Int;
+    guard let base = self.resolveBaseFolder(from: dict["root"] as? String) else
+    {
+      let error = self.errors.invalidRoot.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let subpath = dict["subpath"] as? String else
+    {
+      let error = self.errors.subpathNotProvided.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+    
+    guard let zipName = dict["zippedFileName"] as? String else
+    {
+      let error = self.errors.missingFileName.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let sourcePath = subpath.isEmpty ? base.path : base.path + subpath;
+    let sourceURL = URL(fileURLWithPath: sourcePath);
+    let parentDirectoryURL = sourceURL.deletingLastPathComponent();
+    let fileManager = FileManager.default;
+    let baseName = (zipName as NSString).deletingPathExtension;
+    let fileExtension = (zipName as NSString).pathExtension.isEmpty ? "zip" : (zipName as NSString).pathExtension;
+  
+    var uniqueZipName = "\(baseName).\(fileExtension)";
+    var destinationZipURL = parentDirectoryURL.appendingPathComponent(uniqueZipName);
+    var counter = 1;
+    while fileManager.fileExists(atPath: destinationZipURL.path)
+    {
+      uniqueZipName = "\(baseName)(\(counter)).\(fileExtension)";
+      destinationZipURL = parentDirectoryURL.appendingPathComponent(uniqueZipName);
+      counter += 1;
+    }
+  
+    let coordinator = NSFileCoordinator();
+    var coordinationError: NSError?;
+    coordinator.coordinate(readingItemAt: sourceURL, options: [.forUploading], error: &coordinationError)
+    { 
+      tempZipURL in
+      do { try fileManager.moveItem(at: tempZipURL, to: destinationZipURL); }
+      catch
+      {
+        let error = self.errors.zipFailed.rawValue + " (\(sourcePath)).";
+        self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+        return
+      }
+    }
+  
+    if let coordinatorError = coordinationError
+    {
+      let error = self.errors.zipFolderFailed.rawValue + " (\(coordinatorError)).";
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let zippedFile: File;
+    do { zippedFile = try File(path: destinationZipURL.path); }
+    catch
+    {
+      let error = self.errors.fileNotFound.rawValue + " (\(destinationZipURL.path)).";
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    let fileInfo = self.serializeFile(zippedFile, relativeTo: base);
+    let jsonData: Data;
+    do { jsonData = try JSONSerialization.data(withJSONObject: fileInfo); }
+    catch
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    guard let jsonString = String(data: jsonData, encoding: .utf8) else
+    {
+      let error = self.errors.jsonEncodingFailed.rawValue;
+      self.dispatchFailure(error: error, jsCallback: "_zipFolderFail", webView: webView, requestId: requestId);
+      return;
+    }
+  
+    self.dispatchSuccessJSON(data: jsonString, jsCallback: "_zipFolderSuccess", webView: webView, requestId: requestId);
+  }
+}
+
+//=======================================================//

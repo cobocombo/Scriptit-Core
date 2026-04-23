@@ -33,14 +33,12 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/JohnSundell/Files", "4.3.0"..<"5.0.0"),
         .package(url: "https://github.com/relatedcode/ProgressHUD.git", "14.1.4"..<"15.0.0")
     ],
     targets: [
         .executableTarget(
             name: "AppModule",
             dependencies: [
-                .product(name: "Files", package: "Files"),
                 .product(name: "ProgressHUD", package: "ProgressHUD")
             ],
             path: ".",
