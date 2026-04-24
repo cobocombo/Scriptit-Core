@@ -15,7 +15,6 @@ open class Console
   static var textColor: UIColor = UIColor.white
   static var textAppearance: [NSAttributedString.Key: Any]
   {
-    return
     [
       .font: self.textFont,
       .foregroundColor: self.textColor

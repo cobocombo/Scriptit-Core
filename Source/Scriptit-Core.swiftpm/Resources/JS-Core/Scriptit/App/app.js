@@ -6,8 +6,6 @@
 class App 
 {
   #componentsById;
-  #coreReleaseDate;
-  #coreVersion;
   #errors;
   #isPresented;
   #root;
@@ -19,15 +17,15 @@ class App
     {
       appAlreadyPresentedError: 'App Error: App is already being presented.',
       appNotYetPresentedError: 'App Error: Cannot retrieve component because the app has not been presented yet.',
+      backgroundColorInvalidError: 'Text Error: Invalid color value for color.',
+      backgroundColorTypeError: 'Text Error: Expected type string for color.',
       componentRegistrationTypeError: 'App Error: Expected type Component during registration.',
       componentNotFoundError: 'App Error: No component found with id',
       idTypeError: 'App Error: Expected type string for parameter id while trying to retrieve a component.',
       noIdComponentRegistrationError: 'App Error: Cannot register component without an id.',
       noRootComponentError: 'App Error: No root component was found',
       rootComponentTypeError: 'App Error: Root was detected as an unsupported type. Supported types are: Navigator, Page, Splitter, Tabbar, & PhaserGame.',
-      singleInstanceError: 'App Error: Only one App object can exist at a time.',
-      statusBarColorInvalidError: 'Text Error: Invalid color value for color.',
-      statusBarColorTypeError: 'Text Error: Expected type string for color.'
+      singleInstanceError: 'App Error: Only one App object can exist at a time.'
     }
 
     if(App._instance) console.error(this.#errors.singleInstanceError);
@@ -36,9 +34,7 @@ class App
       App._instance = this;
       this.#componentsById = new Map();
       this.#isPresented = false;
-      this.statusBarColor = 'black';
-      this.#coreVersion = '2.0';
-      this.#coreReleaseDate = '4/13/26';
+      this.backgroundColor = 'black';
     }    
   }
   
@@ -49,31 +45,12 @@ class App
   }
 
   /** 
-   * Get property to return the latest release date of the Scriptit Core framework.
-   * @return {string} The latest release date of the Scriptit Core framework.
-   */
-  get coreReleaseDate()
-  {
-    return this.#coreReleaseDate;
-  }
-
-  /** 
-   * Get property to return the current released version of the Scriptit Core framework.
-   * @return {string} The current released version of the Scriptit Core framework.
-   */
-  get coreVersion()
-  {
-    return this.#coreVersion;
-  }
-
-  /** 
    * Get property to determine if this is the first launch of the app.
    * @return {boolean} True if this is the first launch, otherwise false.
    */
   get isFirstLaunch()
   {
     let key = 'is-first-launch';
-
     if(localStorage.getItem(key) === null)
     {
       localStorage.setItem(key, 'false');
@@ -84,28 +61,28 @@ class App
   }
 
   /** 
-   * Get property to return the color of the status bar.
-   * @return {string} The color of the status bar. Defaults to black.
+   * Get property to return the color of the background.
+   * @return {string} The color of the background bar. Defaults to black.
    */
-  get statusBarColor()
+  get backgroundColor()
   {
     return document.body.style.backgroundColor;
   }
 
   /** 
-   * Set property to change the color of the status bar.
-   * @param {string} value - The color of the status bar.
+   * Set property to change the color of the background.
+   * @param {string} value - The color of the background.
    */
-  set statusBarColor(value)
+  set backgroundColor(value)
   {
     if(!typechecker.check({ type: 'string', value: value })) 
     {
-      console.error(this.#errors.statusBarColorTypeError);
+      console.error(this.#errors.backgroundColorTypeError);
       return;
     }
     if(!color.isValid({ color: value })) 
     {
-      console.error(this.#errors.statusBarColorInvalidError);
+      console.error(this.#errors.backgroundColorInvalidError);
       return;
     }
     document.body.style.backgroundColor = value;

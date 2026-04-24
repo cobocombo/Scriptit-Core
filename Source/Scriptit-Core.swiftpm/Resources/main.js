@@ -11,16 +11,10 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.backgroundColor = 'red';
     
-    console.font = console.fonts.courier;
-    console.fontSize = 15;
+    console.log(versions.axios);
+    console.log(versions.scriptitCore);
     
-    let consoleButton = new ui.BarButton({ icon: 'ion-ios-hammer' });
-    consoleButton.onTap = () => 
-    { 
-      console.fullscreen();
-      setTimeout(() => { console.log("Hello World"); }, 3000);
-    }
-    this.toolbarButtonsRight = [ consoleButton ];
+    console.toggle();
   }
 }
 
