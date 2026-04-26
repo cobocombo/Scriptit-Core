@@ -1,7 +1,4 @@
 //=======================================================//
-// CORE VERSION: 2.0
-// RELEASE DATE: 4/13/26
-//=======================================================//
 
 import UIKit
 import WebKit
@@ -29,6 +26,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
     self.router.registerHandler(filesMessageManager, forMessageName: "filesMessageManager");
     self.router.registerHandler(HudMessageManager(), forMessageName: "hudMessageManager");
+    self.router.registerHandler(ProjectPreviewMessageManager(), forMessageName: "projectPreviewMessageManager");
     
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
@@ -40,6 +38,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     userContentController.add(self, name: "deviceMessageManager");
     userContentController.add(self, name: "filesMessageManager");
     userContentController.add(self, name: "hudMessageManager");
+    userContentController.add(self, name: "projectPreviewMessageManager");
     
     let webViewConfiguration = WKWebViewConfiguration();
     webViewConfiguration.preferences = preferences;

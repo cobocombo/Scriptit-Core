@@ -119,6 +119,14 @@ class App
     }
   }
   
+  previewProject({ project })
+  {
+    if(window.webkit?.messageHandlers?.projectPreviewMessageManager) 
+    {
+      window.webkit.messageHandlers.projectPreviewMessageManager.postMessage({ project: project });
+    }
+  }
+  
   /** 
    * Public method to register a component in the componentsById map. This is called automatically when the user sets an id in any component.
    * @param {Component} component - The component to be registered in the map.

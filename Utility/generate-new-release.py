@@ -176,7 +176,7 @@ def generate_release_notes(milestone, token):
   """Generate formatted release notes for a milestone."""
   
   status("Generating release notes...")
-  labels_order = ["bug", "documentation", "enhancement", "techdebt"]
+  labels_order = ["enhancement", "bug", "documentation", "techdebt", "utility"]
 
   url = f"https://api.github.com/repos/{OWNER}/{REPO}/issues"
   params = {
