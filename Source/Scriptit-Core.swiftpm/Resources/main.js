@@ -33,10 +33,12 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.backgroundColor = 'red';
     
+    console.fullscreen();
+    
     //files.deleteInvalidFolderOverride = true;
     //files.deleteFolder({ subpath: 'Projects/' });
     
-    setTimeout(() => { app.previewProject({ project: 'Safari' }) }, 3000);
+    //setTimeout(() => { app.previewProject({ project: 'Safari' }) }, 3000);
   }
   
   createFolderStructure()

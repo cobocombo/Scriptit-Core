@@ -67,6 +67,7 @@ class ConsoleViewController: UIViewController
     self.view.bottomAnchor
       .constraint(equalTo: self.consoleTextView.bottomAnchor)
       .isActive = true;
+  
     self.emptyLabel.translatesAutoresizingMaskIntoConstraints = false;
     self.emptyLabel.centerXAnchor
       .constraint(equalTo: self.view.centerXAnchor)
@@ -74,19 +75,21 @@ class ConsoleViewController: UIViewController
     self.emptyLabel.centerYAnchor
       .constraint(equalTo: self.view.centerYAnchor)
       .isActive = true;
-    self.closeButton.translatesAutoresizingMaskIntoConstraints = false;
-    self.closeButton.leftAnchor
+  
+    self.clearButton.translatesAutoresizingMaskIntoConstraints = false;
+    self.clearButton.leftAnchor
       .constraint(equalTo: self.view.safeAreaLayoutGuide.leftAnchor, constant: 8)
       .isActive = true;
     self.view.safeAreaLayoutGuide.bottomAnchor
-      .constraint(equalTo: self.closeButton.bottomAnchor, constant: 8)
+      .constraint(equalTo: self.clearButton.bottomAnchor, constant: 8)
       .isActive = true;
-    self.clearButton.translatesAutoresizingMaskIntoConstraints = false;
+
+    self.closeButton.translatesAutoresizingMaskIntoConstraints = false;
     self.view.safeAreaLayoutGuide.rightAnchor
-      .constraint(equalTo: self.clearButton.rightAnchor, constant: 8)
+      .constraint(equalTo: self.closeButton.rightAnchor, constant: 8)
       .isActive = true;
     self.view.safeAreaLayoutGuide.bottomAnchor
-      .constraint(equalTo: self.clearButton.bottomAnchor, constant: 8)
+      .constraint(equalTo: self.closeButton.bottomAnchor, constant: 8)
       .isActive = true;
   }
   
