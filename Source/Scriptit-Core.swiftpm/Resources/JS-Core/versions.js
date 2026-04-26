@@ -79,7 +79,7 @@ class Versions
   /** Public method to return the Scriptit-Core version. */
   get scriptitCore()
   {
-    return '2.1';
+    return '2.2';
   }
 }
 
