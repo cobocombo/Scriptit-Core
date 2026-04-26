@@ -8,7 +8,7 @@ import UIKit
 open class Console
 {
   public static var shared = Console()
-  public static var maxLines: Int = 100
+  public static var maxLines: Int = 2000
   var textView: UITextView?
   var consoleController: ConsoleController
   static var textFont: UIFont = UIFont.monospacedSystemFont(ofSize: 12.0, weight: .regular)
