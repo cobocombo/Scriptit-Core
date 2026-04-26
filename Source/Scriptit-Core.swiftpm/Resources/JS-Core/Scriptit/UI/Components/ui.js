@@ -333,12 +333,6 @@ class UserInterface
     return _UnorderedList_;
   }
   
-  /** Get property to return a new instance of Toast. */
-  get Webframe() 
-  {
-    return _Webframe_;
-  }
-
   /** 
    * Public method to register a new ui class. 
    * @param {array} name - The name to reference the class with.
