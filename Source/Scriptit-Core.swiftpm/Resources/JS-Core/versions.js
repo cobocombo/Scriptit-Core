@@ -46,6 +46,12 @@ class Versions
     return '4.6.0';
   }
   
+  /** Static method to return the FontAwesome verion. */
+  static fontAwesome() 
+  {
+    return '7.2.0';
+  }
+  
   /** Public method to return the Howler version. */
   get howler()
   {
