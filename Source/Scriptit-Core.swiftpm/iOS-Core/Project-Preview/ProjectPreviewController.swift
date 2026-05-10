@@ -156,7 +156,7 @@ class ProjectPreviewController: UIViewController, WKScriptMessageHandler
     let fileManager = FileManager.default
     guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else
     {
-      print("❌ Could not access Documents directory")
+      print("Project Preview Error: Could not access Documents directory")
       return
     }
     
@@ -164,11 +164,11 @@ class ProjectPreviewController: UIViewController, WKScriptMessageHandler
       .appendingPathComponent("Projects")
       .appendingPathComponent(self.project)
     
-    let indexURL = projectURL.appendingPathComponent("index.html")
+    let indexURL = projectURL.appendingPathComponent("main.html")
     
-    if !fileManager.fileExists(atPath: indexURL.path)
+    if!fileManager.fileExists(atPath: indexURL.path)
     {
-      print("❌ index.html not found at:", indexURL.path)
+      print("Project Preview Error: main.html not found at:", indexURL.path)
       return
     }
     
