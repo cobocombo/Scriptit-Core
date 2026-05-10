@@ -27,7 +27,7 @@ class App
       rootComponentTypeError: 'App Error: Root was detected as an unsupported type. Supported types are: Navigator, Page, Splitter, Tabbar, & PhaserGame.',
       singleInstanceError: 'App Error: Only one App object can exist at a time.'
     }
-
+    
     if(App._instance) console.error(this.#errors.singleInstanceError);
     else
     {
@@ -91,7 +91,7 @@ class App
   
   /** 
    * Public method to present the app from the root component.
-   * @param {Multiple} root - The root component of the app. Supports Navigator, Page, Splitter, Tabbar.
+   * @param {Multiple} root - The root component of the app. Supports Navigator, Page, Splitter, Tabbar, and Phaser Game.
    */
   present({ root } = {}) 
   {

@@ -47,6 +47,7 @@ class ProjectPreviewController: UIViewController, WKScriptMessageHandler
     config.userContentController = userContentController;
     config.allowsInlineMediaPlayback = true;
     config.mediaTypesRequiringUserActionForPlayback = [];
+    config.websiteDataStore = .nonPersistent()
     
     self.webView = WKWebView(frame: .zero, configuration: config);
     self.webView.backgroundColor = .white;
@@ -149,7 +150,7 @@ class ProjectPreviewController: UIViewController, WKScriptMessageHandler
   {
     guard !self.project.isEmpty else
     {
-      print("❌ ProjectPreviewController: project is empty")
+      print("Project Preview Error: project is empty")
       return
     }
     
@@ -166,7 +167,7 @@ class ProjectPreviewController: UIViewController, WKScriptMessageHandler
     
     let indexURL = projectURL.appendingPathComponent("main.html")
     
-    if!fileManager.fileExists(atPath: indexURL.path)
+    if !fileManager.fileExists(atPath: indexURL.path)
     {
       print("Project Preview Error: main.html not found at:", indexURL.path)
       return
