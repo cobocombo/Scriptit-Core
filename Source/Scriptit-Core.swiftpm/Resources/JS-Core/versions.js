@@ -63,6 +63,18 @@ class Versions
   {
     return '11.9.0';
   }
+  
+  /** Static method to return the Ionicon version. */
+  static ionicons() 
+  {
+    return '4.6.3';
+  }
+  
+  /** Static method to return the Material Design Icon vesrion. */
+  static materialDesign() 
+  {
+    return '7.4.47';
+  }
  
   /** Public method to return the Highlight version. */
   get onsen()
