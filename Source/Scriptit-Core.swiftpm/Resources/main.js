@@ -11,7 +11,7 @@ class HomePage extends ui.Page
     this.navigationBarTitle = 'Home';
     this.backgroundColor = 'red';
     
-    let addButton = new ui.BarButton({ icon: 'fa-add' });
+    let addButton = new ui.BarButton({ icon: 'fa-apple' });
     this.toolbarButtonsLeft = [ addButton ];
   }
 }

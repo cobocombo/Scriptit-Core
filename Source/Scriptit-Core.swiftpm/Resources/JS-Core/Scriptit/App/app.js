@@ -35,6 +35,7 @@ class App
       this.#componentsById = new Map();
       this.#isPresented = false;
       this.backgroundColor = 'black';
+      ons.disableIconAutoPrefix();
     }    
   }
   
