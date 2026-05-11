@@ -70,6 +70,12 @@ class Versions
     return '4.6.3';
   }
   
+  /** Static method to return the Lockr version. */
+  static lockr() 
+  {
+    return '0.9.0';
+  }
+  
   /** Static method to return the Material Design Icon vesrion. */
   static materialDesign() 
   {
@@ -97,7 +103,7 @@ class Versions
   /** Public method to return the Scriptit-Core version. */
   get scriptitCore()
   {
-    return '2.2';
+    return '2.3';
   }
 }
 
