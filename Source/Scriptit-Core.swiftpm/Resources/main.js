@@ -17,3 +17,5 @@ class HomePage extends ui.Page
 }
 
 app.present({ root: new HomePage() });
+console.log(app.totalNumLaunches)
+console.log(app.isFirstLaunch)

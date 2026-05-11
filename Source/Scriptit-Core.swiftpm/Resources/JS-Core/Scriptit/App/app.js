@@ -8,6 +8,7 @@ class App
   #appInfoStorageKey;
   #componentsById;
   #errors;
+  #isFirstLaunch;
   #isPresented;
   #root;
   
@@ -29,7 +30,6 @@ class App
       singleInstanceError: 'App Error: Only one App object can exist at a time.'
     }
     
-    
     if(App._instance) console.error(this.#errors.singleInstanceError);
     else
     {
@@ -39,9 +39,23 @@ class App
       this.backgroundColor = 'black';
       ons.disableIconAutoPrefix();
       
+      // APP INFO STORAGE
       this.#appInfoStorageKey = 'app-information-storage';
-      let appInfo = Lockr.get(this.#appInfoStorageKey);
-      if(appInfo == null) { Lockr.set(this.#appInfoStorageKey, {} ); }    
+      let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+      
+      // FIRST LAUNCH TRACKING
+      if(appInfo.hasLaunchedBefore === undefined)
+      {
+        this.#isFirstLaunch = true;
+        appInfo.hasLaunchedBefore = true;
+      }
+      else { this.#isFirstLaunch = false; }
+      
+      // TOTAL LAUNCH TRACKING
+      if(appInfo.totalNumLaunches === undefined) { appInfo.totalNumLaunches = 1; }
+      else { appInfo.totalNumLaunches += 1; }
+      
+      Lockr.set(this.#appInfoStorageKey, appInfo);
     }    
   }
   
@@ -49,23 +63,6 @@ class App
   static getInstance() 
   {
     return new App();
-  }
-
-  /** 
-   * Get property to determine if this is the first launch of the app.
-   * @return {boolean} True if this is the first launch, otherwise false.
-   */
-  get isFirstLaunch()
-  {
-    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
-    if(appInfo.isFirstLaunch === undefined)
-    {
-      appInfo.isFirstLaunch = false;
-      Lockr.set(this.#appInfoStorageKey, appInfo);
-      return true;
-    }
-  
-    return false;
   }
 
   /** 
@@ -88,12 +85,23 @@ class App
       console.error(this.#errors.backgroundColorTypeError);
       return;
     }
+    
     if(!color.isValid({ color: value })) 
     {
       console.error(this.#errors.backgroundColorInvalidError);
       return;
     }
+    
     document.body.style.backgroundColor = value;
+  }
+  
+  /** 
+   * Get property to determine if this is the first launch of the app.
+   * @return {boolean} True if this is the first launch, otherwise false.
+   */
+  get isFirstLaunch()
+  {
+    return this.#isFirstLaunch;
   }
   
   /** 
@@ -103,17 +111,36 @@ class App
   get totalNumLaunches()
   {
     let appInfo = Lockr.get(this.#appInfoStorageKey, {});
-    if(appInfo.totalNumLaunches === undefined)
-    {
-      appInfo.totalNumLaunches = 1;
-    }
-    else
-    {
-      appInfo.totalNumLaunches += 1;
-    }
+    return appInfo.totalNumLaunches || 0;
+  }
   
-    Lockr.set(this.#appInfoStorageKey, appInfo);
-    return appInfo.totalNumLaunches;
+  /** 
+   * Public method to retrieve a previously saved component in the componentsById map.
+   * @param {string} id - The id of the component that should be registered in the map.
+   */
+  getComponentById({ id } = {}) 
+  {
+    if(!typechecker.check({ type: 'string', value: id })) 
+    {
+      console.error(this.#errors.idTypeError);
+      return;
+    }
+    
+    if(!this.#isPresented) 
+    {
+      console.error(this.#errors.appNotYetPresentedError);
+      return;
+    }
+    
+    let component = this.#componentsById.get(id);
+    
+    if(!component) 
+    {
+      console.error(this.#errors.componentNotFoundError + ` "${id}".`);
+      return;
+    }
+    
+    return component;
   }
   
   /** 
@@ -128,7 +155,10 @@ class App
       return;
     }
 
-    if(typechecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar', 'phaser-game' ], value: root })) this.#root = root;
+    if(typechecker.checkMultiple({ types: [ 'navigator', 'page', 'splitter', 'tabbar', 'phaser-game' ], value: root }))
+    {
+      this.#root = root;
+    }
     else 
     {
       console.error(this.#errors.rootComponentTypeError);
@@ -147,6 +177,10 @@ class App
     }
   }
   
+  /** 
+   * Public method to preview a project in the native iOS preview webview.
+   * @param {string} project - The name of the project to preview.
+   */
   previewProject({ project })
   {
     if(window.webkit?.messageHandlers?.projectPreviewMessageManager) 
@@ -165,38 +199,15 @@ class App
     {
       console.error(this.#errors.componentRegistrationTypeError);
       return;
-    }    
+    }
+    
     if(!component.id) 
     {
       console.error(this.#errors.noIdComponentRegistrationError);
       return;
     }
+    
     this.#componentsById.set(component.id, component);
-  }
-  
-  /** 
-   * Public method to retrieve a previously saved component in the componentsById map.
-   * @param {string} id - The id of the component that should be registered in the map.
-   */
-  getComponentById({ id } = {}) 
-  {
-    if(!typechecker.check({ type: 'string', value: id })) 
-    {
-      console.error(this.#errors.idTypeError);
-      return;
-    }
-    if(!this.#isPresented) 
-    {
-      console.error(this.#errors.appNotYetPresentedError);
-      return;
-    }
-    let component = this.#componentsById.get(id);
-    if(!component) 
-    {
-      console.error(this.#errors.componentNotFoundError + ` "${id}".`);
-      return;
-    }
-    return component;
   }
 }
 
