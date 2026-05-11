@@ -73,7 +73,7 @@ class Versions
   /** Static method to return the Lockr version. */
   static lockr() 
   {
-    return '0.9.0';
+    return '0.8.5';
   }
   
   /** Static method to return the Material Design Icon vesrion. */

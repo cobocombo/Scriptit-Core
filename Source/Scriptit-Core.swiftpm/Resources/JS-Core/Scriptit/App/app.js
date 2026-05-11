@@ -5,6 +5,7 @@
 /** Singleton class representing the main app object. */
 class App 
 {
+  #appInfoStorageKey;
   #componentsById;
   #errors;
   #isPresented;
@@ -28,6 +29,7 @@ class App
       singleInstanceError: 'App Error: Only one App object can exist at a time.'
     }
     
+    
     if(App._instance) console.error(this.#errors.singleInstanceError);
     else
     {
@@ -36,6 +38,10 @@ class App
       this.#isPresented = false;
       this.backgroundColor = 'black';
       ons.disableIconAutoPrefix();
+      
+      this.#appInfoStorageKey = 'app-information-storage';
+      let appInfo = Lockr.get(this.#appInfoStorageKey);
+      if(appInfo == null) { Lockr.set(this.#appInfoStorageKey, {} ); }    
     }    
   }
   
@@ -51,13 +57,14 @@ class App
    */
   get isFirstLaunch()
   {
-    let key = 'is-first-launch';
-    if(localStorage.getItem(key) === null)
+    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+    if(appInfo.isFirstLaunch === undefined)
     {
-      localStorage.setItem(key, 'false');
+      appInfo.isFirstLaunch = false;
+      Lockr.set(this.#appInfoStorageKey, appInfo);
       return true;
     }
-
+  
     return false;
   }
 
@@ -87,6 +94,26 @@ class App
       return;
     }
     document.body.style.backgroundColor = value;
+  }
+  
+  /** 
+   * Get property to determine the total number of app launches.
+   * @return {number} Total lifetime launches of the app.
+   */
+  get totalNumLaunches()
+  {
+    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+    if(appInfo.totalNumLaunches === undefined)
+    {
+      appInfo.totalNumLaunches = 1;
+    }
+    else
+    {
+      appInfo.totalNumLaunches += 1;
+    }
+  
+    Lockr.set(this.#appInfoStorageKey, appInfo);
+    return appInfo.totalNumLaunches;
   }
   
   /** 
