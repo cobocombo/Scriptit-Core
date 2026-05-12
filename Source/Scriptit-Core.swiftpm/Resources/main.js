@@ -17,3 +17,4 @@ class HomePage extends ui.Page
 }
 
 app.present({ root: new HomePage() });
+setTimeout(() => { app.printAppInfo(); }, 3000);

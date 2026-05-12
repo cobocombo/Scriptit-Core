@@ -43,33 +43,10 @@ class App
       
       this.#getVersionPending = new Map();
       this.#getVersionRequestCounter = 0;
-      
-      // APP INFO STORAGE
+  
       this.#appInfoStorageKey = 'app-information-storage';
-      let appInfo = Lockr.get(this.#appInfoStorageKey, {});
-      
-      // FIRST LAUNCH TRACKING
-      if(appInfo.hasLaunchedBefore === undefined)
-      {
-        this.#isFirstLaunch = true;
-        appInfo.hasLaunchedBefore = true;
-      }
-      else { this.#isFirstLaunch = false; }
-      
-      // TOTAL LAUNCH TRACKING
-      if(appInfo.totalNumLaunches === undefined) { appInfo.totalNumLaunches = 1; }
-      else { appInfo.totalNumLaunches += 1; }
-      
-      // CURRENT VERSION TRACKING
-      if(appInfo.currentVersion === undefined)
-      {
-        this._getVersion()
-        .then(version => { appInfo.currentVersion = version; })
-        .catch(error => { console.debug(error); });
-      }
-      
-      Lockr.set(this.#appInfoStorageKey, appInfo);
-    }    
+      this.#initAppInfo();
+    }
   }
   
   /** Static method to return a new App instance. Allows for Singleton+Module pattern. */
@@ -115,7 +92,7 @@ class App
   get currentVersion()
   {
     let appInfo = Lockr.get(this.#appInfoStorageKey, {});
-    return appInfo.currentVersion || '0.0s';
+    return appInfo.currentVersion || '0.0';
   }
   
   /** 
@@ -125,6 +102,20 @@ class App
   get isFirstLaunch()
   {
     return this.#isFirstLaunch;
+  }
+  
+  /** 
+   * Get property to determine the total launches on the current app version.
+   * @return {number} Total launches on the current app version.
+   */
+  get totalLaunchesOnCurrentVersion()
+  {
+    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+    
+    if(appInfo.launchesByVersion === undefined) { return 0; }
+    
+    let currentVersion = appInfo.currentVersion || '0.0';
+    return appInfo.launchesByVersion[currentVersion] || 0;
   }
   
   /** 
@@ -212,6 +203,20 @@ class App
   }
   
   /** 
+   * Public method to print the full app info object stored in Lockr.
+   * Useful for debugging app state, launch tracking, and version data.
+   */
+  printAppInfo()
+  {
+    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+  
+    console.log('--- App Info ---');
+    console.log(`Is First Launch: ${this.isFirstLaunch}`);
+    console.log(JSON.stringify(appInfo, null, 2));
+    console.log('----------------');
+  }
+  
+  /** 
    * Public method to register a component in the componentsById map. This is called automatically when the user sets an id in any component.
    * @param {Component} component - The component to be registered in the map.
    */
@@ -232,9 +237,38 @@ class App
     this.#componentsById.set(component.id, component);
   }
   
-  /** 
-   * Private method to request the app version from the native app.
-   */
+  /** Private method to init the app info storage object and do initial business logic on app startup. */
+  #initAppInfo()
+  {
+    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+    if(appInfo.hasLaunchedBefore === undefined)
+    {
+      this.#isFirstLaunch = true;
+      appInfo.hasLaunchedBefore = true;
+    }
+    else { this.#isFirstLaunch = false; }
+    
+    if(appInfo.totalNumLaunches === undefined) { appInfo.totalNumLaunches = 1; }
+    else { appInfo.totalNumLaunches += 1; }
+    
+    Lockr.set(this.#appInfoStorageKey, appInfo);
+    
+    this._getVersion()
+    .then(version =>
+    {
+      let latest = Lockr.get(this.#appInfoStorageKey, {});
+      latest.currentVersion = version;
+      
+      if(latest.launchesByVersion === undefined) { latest.launchesByVersion = {}; }
+      if(latest.launchesByVersion[version] === undefined) { latest.launchesByVersion[version] = 1; }
+      else { latest.launchesByVersion[version] += 1; }
+      
+      Lockr.set(this.#appInfoStorageKey, latest);
+    })
+    .catch(error => console.error(error));
+  }
+  
+  /** Public internal method to request the app version from the native app. */
   _getVersion()
   {
     return new Promise((resolve, reject) =>
@@ -250,7 +284,7 @@ class App
   }
   
   /** 
-   * Private method called when the app version request succeeds.
+   * Public internal method called when the app version request succeeds.
    * @param {Object} payload - The success payload returned from native code.
    */
   _getVersionSuccess(payload)
@@ -263,7 +297,7 @@ class App
   }
   
   /** 
-   * Private method called when the app version request fails.
+   * Public internal method called when the app version request fails.
    * @param {Object} payload - The failure payload returned from native code.
    */
   _getVersionFail(payload)
