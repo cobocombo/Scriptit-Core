@@ -8,6 +8,8 @@ class App
   #appInfoStorageKey;
   #componentsById;
   #errors;
+  #getVersionPending;
+  #getVersionRequestCounter;
   #isFirstLaunch;
   #isPresented;
   #root;
@@ -39,6 +41,9 @@ class App
       this.backgroundColor = 'black';
       ons.disableIconAutoPrefix();
       
+      this.#getVersionPending = new Map();
+      this.#getVersionRequestCounter = 0;
+      
       // APP INFO STORAGE
       this.#appInfoStorageKey = 'app-information-storage';
       let appInfo = Lockr.get(this.#appInfoStorageKey, {});
@@ -54,6 +59,14 @@ class App
       // TOTAL LAUNCH TRACKING
       if(appInfo.totalNumLaunches === undefined) { appInfo.totalNumLaunches = 1; }
       else { appInfo.totalNumLaunches += 1; }
+      
+      // CURRENT VERSION TRACKING
+      if(appInfo.currentVersion === undefined)
+      {
+        this._getVersion()
+        .then(version => { appInfo.currentVersion = version; })
+        .catch(error => { console.debug(error); });
+      }
       
       Lockr.set(this.#appInfoStorageKey, appInfo);
     }    
@@ -96,6 +109,16 @@ class App
   }
   
   /** 
+   * Get property to determine the current stored version string of the app.
+   * @return {string} Current version string of the app.
+   */
+  get currentVersion()
+  {
+    let appInfo = Lockr.get(this.#appInfoStorageKey, {});
+    return appInfo.currentVersion || '0.0s';
+  }
+  
+  /** 
    * Get property to determine if this is the first launch of the app.
    * @return {boolean} True if this is the first launch, otherwise false.
    */
@@ -133,7 +156,6 @@ class App
     }
     
     let component = this.#componentsById.get(id);
-    
     if(!component) 
     {
       console.error(this.#errors.componentNotFoundError + ` "${id}".`);
@@ -208,6 +230,49 @@ class App
     }
     
     this.#componentsById.set(component.id, component);
+  }
+  
+  /** 
+   * Private method to request the app version from the native app.
+   */
+  _getVersion()
+  {
+    return new Promise((resolve, reject) =>
+    {
+      let requestId = ++this.#getVersionRequestCounter;
+      this.#getVersionPending.set(requestId, { resolve, reject });
+  
+      window.webkit?.messageHandlers?.appMessageManager?.postMessage({
+        command: 'getVersion',
+        requestId: requestId
+      });
+    });
+  }
+  
+  /** 
+   * Private method called when the app version request succeeds.
+   * @param {Object} payload - The success payload returned from native code.
+   */
+  _getVersionSuccess(payload)
+  {
+    let pending = this.#getVersionPending.get(payload.requestId);
+    if(!pending) return;
+    
+    pending.resolve(payload.data);
+    this.#getVersionPending.delete(payload.requestId);
+  }
+  
+  /** 
+   * Private method called when the app version request fails.
+   * @param {Object} payload - The failure payload returned from native code.
+   */
+  _getVersionFail(payload)
+  {
+    let pending = this.#getVersionPending.get(payload.requestId);
+    if(!pending) return;
+  
+    pending.reject(payload.error);
+    this.#getVersionPending.delete(payload.requestId);
   }
 }
 

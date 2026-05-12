@@ -21,6 +21,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     filesMessageManager.webView = self.webView;
     
     self.router = JavascriptMessageRouter();
+    self.router.registerHandler(AppMessageManager(), forMessageName: "appMessageManager");
     self.router.registerHandler(ConsoleMessageManager(), forMessageName: "consoleMessageManager");
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
     self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
@@ -33,6 +34,7 @@ class ScriptitCoreController: UIViewController, WKScriptMessageHandler
     preferences.setValue(true, forKey: "allowFileAccessFromFileURLs");
     
     let userContentController = WKUserContentController();
+    userContentController.add(self, name: "appMessageManager");
     userContentController.add(self, name: "consoleMessageManager");
     userContentController.add(self, name: "browserMessageManager");
     userContentController.add(self, name: "deviceMessageManager");
