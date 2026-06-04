@@ -47,7 +47,7 @@ class Versions
   }
   
   /** Static method to return the FontAwesome verion. */
-  static fontAwesome() 
+  get fontAwesome() 
   {
     return '7.2.0';
   }
@@ -65,19 +65,19 @@ class Versions
   }
   
   /** Static method to return the Ionicon version. */
-  static ionicons() 
+  get ionicons() 
   {
     return '4.6.3';
   }
   
   /** Static method to return the Lockr version. */
-  static lockr() 
+  get lockr() 
   {
     return '0.8.5';
   }
   
   /** Static method to return the Material Design Icon vesrion. */
-  static materialDesign() 
+  get materialDesign() 
   {
     return '7.4.47';
   }
