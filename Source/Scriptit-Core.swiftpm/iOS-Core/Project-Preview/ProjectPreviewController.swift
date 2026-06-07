@@ -30,7 +30,6 @@ class ProjectPreviewController: UIViewController, WKScriptMessageHandler
     self.router.registerHandler(BrowserMessageManager(), forMessageName: "browserMessageManager");
     self.router.registerHandler(DeviceMessageManager(), forMessageName: "deviceMessageManager");
     self.router.registerHandler(filesMessageManager, forMessageName: "filesMessageManager");
-    self.router.registerHandler(HudMessageManager(), forMessageName: "hudMessageManager");
     
     let preferences = WKPreferences();
     preferences.setValue(true, forKey: "developerExtrasEnabled");
