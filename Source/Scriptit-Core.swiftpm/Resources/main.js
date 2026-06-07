@@ -9,7 +9,7 @@ class HomePage extends ui.Page
   onInit()
   {     
     this.navigationBarTitle = 'Home';
-    this.backgroundColor = 'red';
+    this.backgroundColor = 'blue';
     
     let addButton = new ui.BarButton({ icon: 'ion-ios-add' });
     this.toolbarButtonsLeft = [ addButton ];
@@ -17,4 +17,3 @@ class HomePage extends ui.Page
 }
 
 app.present({ root: new HomePage() });
-setTimeout(() => { app.printAppInfo(); }, 3000);
