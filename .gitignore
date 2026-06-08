@@ -2,3 +2,4 @@
 github-token.txt
 
 .venv/
+.tmp/

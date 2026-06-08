@@ -1,0 +1,9 @@
+{
+  "applicationId": "js.neutralino.myapp",
+  "version": "1.0.0",
+  "defaultMode": "window",
+  "url": "/",
+  "documentRoot": "/resources/",
+  "enableServer": true,
+  "enableNativeAPI": true
+}
