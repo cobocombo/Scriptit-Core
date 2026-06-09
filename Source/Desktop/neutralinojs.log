@@ -1,2 +1,1 @@
-ERROR 2026-06-08 00:23:34,305 NE_RS_UNBLDRE: Unable to load application resource file /Resources/Shared/versions.js api/debug/debug.cpp:20 coltonboyd@unknown-host
-INFO 2026-06-08 00:26:58,610 1.13.2 api/debug/debug.cpp:17 coltonboyd@unknown-host
+ERROR 2026-06-09 00:11:00,069 NE_RS_UNBLDRE: Unable to load application resource file /Resources/CSS/materialdesignicons.css.map api/debug/debug.cpp:20 coltonboyd@unknown-host

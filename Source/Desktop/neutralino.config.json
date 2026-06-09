@@ -2,8 +2,15 @@
   "applicationId": "js.neutralino.myapp",
   "version": "1.0.0",
   "defaultMode": "window",
-  "url": "/main.html",
+  "url": "/index.html",
   "documentRoot": "/Resources/",
   "enableServer": true,
-  "enableNativeAPI": true
+  "enableNativeAPI": true,
+  "modes": {
+    "window": {
+      "title": "Scriptit-Core",
+      "resizable": true,
+      "enableInspector": true
+    }
+  }
 }
