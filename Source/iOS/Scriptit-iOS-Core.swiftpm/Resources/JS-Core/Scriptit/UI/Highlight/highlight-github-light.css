@@ -1,0 +1,111 @@
+/*!
+  Theme: GitHub
+  Description: Light theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-light
+  Current colors taken from GitHub's CSS
+*/
+
+.codeblock-theme-github-light .hljs {
+  color: #24292e;
+  background: #ffffff;
+}
+
+.codeblock-theme-github-light .hljs-doctag,
+.codeblock-theme-github-light .hljs-keyword,
+.codeblock-theme-github-light .hljs-meta .hljs-keyword,
+.codeblock-theme-github-light .hljs-template-tag,
+.codeblock-theme-github-light .hljs-template-variable,
+.codeblock-theme-github-light .hljs-type,
+.codeblock-theme-github-light .hljs-variable.language_ {
+  color: #d73a49;
+}
+
+.codeblock-theme-github-light .hljs-title,
+.codeblock-theme-github-light .hljs-title.class_,
+.codeblock-theme-github-light .hljs-title.class_.inherited__,
+.codeblock-theme-github-light .hljs-title.function_ {
+  color: #6f42c1;
+}
+
+.codeblock-theme-github-light .hljs-attr,
+.codeblock-theme-github-light .hljs-attribute,
+.codeblock-theme-github-light .hljs-literal,
+.codeblock-theme-github-light .hljs-meta,
+.codeblock-theme-github-light .hljs-number,
+.codeblock-theme-github-light .hljs-operator,
+.codeblock-theme-github-light .hljs-variable,
+.codeblock-theme-github-light .hljs-selector-attr,
+.codeblock-theme-github-light .hljs-selector-class,
+.codeblock-theme-github-light .hljs-selector-id {
+  color: #005cc5;
+}
+
+.codeblock-theme-github-light .hljs-regexp,
+.codeblock-theme-github-light .hljs-string,
+.codeblock-theme-github-light .hljs-meta .hljs-string {
+  color: #032f62;
+}
+
+.codeblock-theme-github-light .hljs-built_in,
+.codeblock-theme-github-light .hljs-symbol {
+  color: #e36209;
+}
+
+.codeblock-theme-github-light .hljs-comment,
+.codeblock-theme-github-light .hljs-code,
+.codeblock-theme-github-light .hljs-formula {
+  color: #6a737d;
+}
+
+.codeblock-theme-github-light .hljs-name,
+.codeblock-theme-github-light .hljs-quote,
+.codeblock-theme-github-light .hljs-selector-tag,
+.codeblock-theme-github-light .hljs-selector-pseudo {
+  color: #22863a;
+}
+
+.codeblock-theme-github-light .hljs-subst {
+  color: #24292e;
+}
+
+.codeblock-theme-github-light .hljs-section {
+  color: #005cc5;
+  font-weight: bold;
+}
+
+.codeblock-theme-github-light .hljs-bullet {
+  color: #735c0f;
+}
+
+.codeblock-theme-github-light .hljs-emphasis {
+  color: #24292e;
+  font-style: italic;
+}
+
+.codeblock-theme-github-light .hljs-strong {
+  color: #24292e;
+  font-weight: bold;
+}
+
+.codeblock-theme-github-light .hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+
+.codeblock-theme-github-light .hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0;
+}
+
+.codeblock-theme-github-light .hljs-char.escape_,
+.codeblock-theme-github-light .hljs-link,
+.codeblock-theme-github-light .hljs-params,
+.codeblock-theme-github-light .hljs-property,
+.codeblock-theme-github-light .hljs-punctuation,
+.codeblock-theme-github-light .hljs-tag {
+  /* intentionally left blank (matches original) */
+}

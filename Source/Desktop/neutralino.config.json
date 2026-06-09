@@ -2,8 +2,8 @@
   "applicationId": "js.neutralino.myapp",
   "version": "1.0.0",
   "defaultMode": "window",
-  "url": "/",
-  "documentRoot": "/resources/",
+  "url": "/main.html",
+  "documentRoot": "/Resources/",
   "enableServer": true,
   "enableNativeAPI": true
 }
